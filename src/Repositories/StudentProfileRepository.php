@@ -41,7 +41,7 @@ class StudentProfileRepository
             c.course_title
         FROM users u
         LEFT JOIN students s ON u.user_id = s.user_id
-        LEFT JOIN courses c ON s.course_id = c.course_id /* <<< NEW JOIN: Para makuha ang pangalan ng kurso */
+        LEFT JOIN courses c ON s.course_id = c.course_id
         WHERE u.user_id = :userId AND u.deleted_at IS NULL
     ");
     $stmt->execute([':userId' => $userId]);

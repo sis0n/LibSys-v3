@@ -22,14 +22,11 @@ class TicketController extends Controller
 
   private function generateQr(string $transactionCode): string
   {
-    $qrDir = __DIR__ . "/../../public_html/qrcodes";
-    $qrPath = $qrDir . "/{$transactionCode}.png";
+    $qrDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'qrcodes';
+    $qrPath = $qrDir . DIRECTORY_SEPARATOR . $transactionCode . '.png';
 
     if (!is_dir($qrDir)) {
-      if (!mkdir($qrDir, 0777, true) && !is_dir($qrDir)) {
-        error_log("Failed to create directory: " . $qrDir);
-        throw new \RuntimeException(sprintf('Directory "%s" was not created', $qrDir));
-      }
+      mkdir($qrDir, 0777, true);
     }
 
     try {
@@ -48,8 +45,13 @@ class TicketController extends Controller
 
       return BASE_URL . "/qrcodes/{$transactionCode}.png";
     } catch (\Exception $e) {
-      error_log("QR Code Generation Error for code '$transactionCode': " . $e->getMessage());
-      return '';
+      header('Content-Type: application/json');
+      echo json_encode([
+        "success" => false,
+        "error_from_qr" => $e->getMessage(),
+        "checked_path" => $qrPath
+      ]);
+      exit;
     }
   }
 
@@ -270,7 +272,7 @@ class TicketController extends Controller
 
       unset($_SESSION['last_ticket_code']);
 
-      $qrFile = __DIR__ . "/../../public_html/qrcodes/{$transactionCode}.png";
+      $qrFile = __DIR__ . "/../../public/qrcodes/{$transactionCode}.png";
       if (file_exists($qrFile)) {
         unlink($qrFile);
       }

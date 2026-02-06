@@ -1,66 +1,51 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-// ==========================================================
-// ✅ FRONT CONTROLLER (Unified for Local + Production)
-// ==========================================================
-
-// [1] Start session early
+// Ilagay ang session_start sa pinaka-unahan
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// [2] Define ROOT_PATH
-define('ROOT_PATH', dirname(__DIR__));
+// [1] I-define ang ROOT_PATH
+define('ROOT_PATH', dirname(__DIR__)); 
 
-// [3] Load Composer Autoloader
+// [2] I-load ang Autoloader
 require ROOT_PATH . '/vendor/autoload.php';
 
 use Dotenv\Dotenv;
 use App\Config\RouteConfig;
 
-// [4] Load .env
 date_default_timezone_set('Asia/Manila');
+
+// [3] I-load ang .env
 $dotenv = Dotenv::createImmutable(ROOT_PATH);
 $dotenv->load();
 
-// [5] Define BASE_URL (from .env)
+// [4] I-define ang BASE_URL
 if (!defined('BASE_URL')) {
     $appUrl = $_ENV['APP_URL'] ?? 'http://localhost';
-    define('BASE_URL', rtrim($appUrl, '/'));
+    define('BASE_URL', rtrim($appUrl, '/')); 
 }
 
-// ==========================================================
-// ✅ ROUTE CALCULATION
-// ==========================================================
+// ---------------------------------------------------------------------
+// --- FRONT CONTROLLER LOGIC: Mas Matibay na URI Calculation ---
+// ---------------------------------------------------------------------
 
-// Full URI from server (e.g. /libsys/public/api/superadmin/dashboard/getData)
-$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+// 5. I-parse ang Full URI na galing sa server
+$uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH); // Hal: /libsys/public/api/attendance/logs/ajax
 
-// Base path from APP_URL (e.g. /libsys/public)
-$baseUrlPath = parse_url(BASE_URL, PHP_URL_PATH) ?? '';
-$basePathToRemove = rtrim($baseUrlPath, '/') . '/';
+// 6. I-calculate ang BASE PATH na kailangan nating tanggalin
+$baseUrlPath = parse_url(BASE_URL, PHP_URL_PATH); // Hal: /libsys/public
+// Idagdag ang trailing slash para maging: /libsys/public/
+$basePathToRemove = rtrim($baseUrlPath, '/') . '/'; 
 
-// Remove the base path from URI *safely*
-if ($basePathToRemove !== '/' && str_starts_with($uri, $basePathToRemove)) {
-    $route = substr($uri, strlen($basePathToRemove));
-} else {
-    $route = ltrim($uri, '/');
-}
+// 7. [ANG AYOS AY DITO] Tanggalin ang BASE PATH mula sa URI
+// Hal: /libsys/public/api/attendance/logs/ajax -> api/attendance/logs/ajax
+$route = str_replace($basePathToRemove, '', $uri); 
 
-// Normalize route (default: dashboard)
+// 8. Final Route Normalization
 $route = trim($route, '/');
-$route = $route === '' ? '' : $route;
+$route = $route === '' ? 'dashboard' : $route; 
 
-
-// ==========================================================
-// ✅ DEBUG MODE (Optional)
-// Uncomment if you need to see what's happening
-// echo "<pre>BASE_URL: " . BASE_URL . "\nURI: " . $uri . "\nBASE_PATH_TO_REMOVE: " . $basePathToRemove . "\nFINAL ROUTE: " . $route . "</pre>"; exit;
-// ==========================================================
-
-// [6] Resolve Route
+// 9. I-resolve ang Router
 $method = $_SERVER['REQUEST_METHOD'];
 $router = RouteConfig::register();
 $router->resolve($route, $method);

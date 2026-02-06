@@ -4,6 +4,7 @@ namespace App\Core;
 
 use PDO;
 use PDOException;
+use Dotenv\Dotenv;
 
 class Database
 {
@@ -12,18 +13,17 @@ class Database
 
     private function __construct()
     {
-        $driver = 'mysql';
-        $host = '127.0.0.1';            
-        $db   = 'u896434489_library_system';     
-        $user = 'u896434489_libsys';  
-        $pass = ':8kC!zfaEX8w';             
+        $dotenv = Dotenv::createImmutable(__DIR__ . '/../../');
+        $dotenv->load();
+
+        $driver = $_ENV['DB_CONNECTION'] ?? 'mysql';
+        $host = $_ENV['DB_HOST'] ?? 'localhost';
+        $db = $_ENV['DB_DATABASE'] ?? 'library-mobile';
+        $user = $_ENV['DB_USERNAME'] ?? 'root';
+        $pass = $_ENV['DB_PASSWORD'] ?? '';
 
         try {
-            $this->connection = new PDO(
-                "$driver:host=$host;dbname=$db;charset=utf8",
-                $user,
-                $pass
-            );
+            $this->connection = new PDO("$driver:host=$host;dbname=$db;charset=utf8", $user, $pass);
             $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (PDOException $e) {
             die("Database connection failed: " . $e->getMessage());
