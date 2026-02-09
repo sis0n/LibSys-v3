@@ -97,31 +97,37 @@ class BookManagementRepository
 
     public function createBook($data)
     {
-        $columns = "(accession_number, call_number, title, author, book_place, book_publisher, year, book_edition, description, book_isbn, book_supplementary, subject, availability";
-        $placeholders = "(:accession_number, :call_number, :title, :author, :book_place, :book_publisher, :year, :book_edition, :description, :book_isbn, :book_supplementary, :subject, :availability";
-        $params = [
-            ':accession_number' => $data['accession_number'],
-            ':call_number' => $data['call_number'],
-            ':title' => $data['title'],
-            ':author' => $data['author'],
-            ':book_place' => $data['book_place'] ?? null,
-            ':book_publisher' => $data['book_publisher'] ?? null,
-            ':year' => empty($data['year']) ? null : $data['year'],
-            ':book_edition' => $data['book_edition'] ?? null,
-            ':description' => $data['description'] ?? null,
-            ':book_isbn' => $data['book_isbn'] ?? null,
-            ':book_supplementary' => $data['book_supplementary'] ?? null,
-            ':subject' => $data['subject'] ?? null,
-            ':availability' => 'available'
+        $fields = [
+            'accession_number',
+            'call_number',
+            'title',
+            'author',
+            'book_place',
+            'book_publisher',
+            'year',
+            'book_edition',
+            'description',
+            'book_isbn',
+            'book_supplementary',
+            'subject',
+            'availability'
         ];
+
         if (!empty($data['cover'])) {
-            $columns .= ", cover";
-            $placeholders .= ", :cover";
-            $params[':cover'] = $data['cover'];
+            $fields[] = 'cover';
         }
-        $columns .= ")";
-        $placeholders .= ")";
-        $stmt = $this->db->prepare("INSERT INTO books $columns VALUES $placeholders");
+
+        $columns = implode(", ", $fields);
+        $placeholders = ":" . implode(", :", $fields);
+
+        $sql = "INSERT INTO books ($columns) VALUES ($placeholders)";
+        $stmt = $this->db->prepare($sql);
+
+        $params = [];
+        foreach ($fields as $field) {
+            $params[":$field"] = $data[$field] ?? null;
+        }
+
         return $stmt->execute($params);
     }
 
