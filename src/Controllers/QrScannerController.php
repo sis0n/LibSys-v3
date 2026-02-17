@@ -93,6 +93,19 @@ class QRScannerController extends Controller
       $userInfo['id'] = $transaction['student_number'] ?? 'N/A';
       $userInfo['course'] = $transaction['course_code'] ?? 'N/A';
       $userInfo['yearsection'] = ($transaction['year_level'] ?? '') . '-' . ($transaction['section'] ?? '');
+
+      // --- Registration Form URL Construction ---
+      $regFormPath = $transaction['registration_form'] ?? null;
+      $regFormUrl = null;
+      if ($regFormPath) {
+        $baseUrlCleaned = rtrim(BASE_URL, '/');
+        $uploadsPosition = strpos($regFormPath, 'uploads/');
+        if ($uploadsPosition !== false) {
+          $finalRelativePath = substr($regFormPath, $uploadsPosition);
+          $regFormUrl = $baseUrlCleaned . '/' . $finalRelativePath;
+        }
+      }
+      $userInfo['registrationFormUrl'] = $regFormUrl;
     } elseif ($userType === 'faculty') {
       // FIXED: Gamitin ang unique_faculty_id
       $userInfo['id'] = $transaction['unique_faculty_id'] ?? 'N/A';

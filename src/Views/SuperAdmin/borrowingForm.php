@@ -168,14 +168,14 @@
                     <input type="text" id="book_title" name="book_title" placeholder="Enter book title"
                         class="w-full px-4 py-2 rounded-lg border border-emerald-300 bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition text-sm">
                 </div>
-                <div class="md:col-span-1">
+                <div class="md:col-span-1" id="item_id_wrapper">
                     <label id="item_id_label" for="item_id"
                         class="block text-sm font-medium text-gray-700 mb-1">Equipment ID <span
                             class="text-red-500">*</span></label>
                     <input type="text" id="item_id" name="item_id" placeholder="Enter equipment ID"
                         class="w-full px-4 py-2 rounded-lg border border-emerald-300 bg-white focus:ring-2 focus:ring-emerald-500 outline-none transition text-sm">
                 </div>
-                <div class="md:col-span-1">
+                <div class="md:col-span-1" id="item_name_wrapper">
                     <label id="item_name_label" for="item_name"
                         class="block text-sm font-medium text-gray-700 mb-1">Equipment Name <span
                             class="text-red-500">*</span></label>

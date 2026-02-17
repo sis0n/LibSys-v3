@@ -33,19 +33,18 @@ class FacultyProfileController extends Controller
       return null;
     }
 
-    $uploadDir = __DIR__ . '/../../public/uploads/profile_images/';
+    $uploadDir = 'C:/Users/adria/Desktop/backend/public/uploads/profile_images/';
 
     if (!file_exists($uploadDir)) {
       mkdir($uploadDir, 0777, true);
     }
 
     $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    $fileName = uniqid('file_', true) . '.' . $extension;
+    $fileName = 'file_' . uniqid() . '.' . $extension;
     $targetFile = $uploadDir . $fileName;
 
     if (move_uploaded_file($file['tmp_name'], $targetFile)) {
-      // Ito ang URL path na i-store sa DB o ibabalik
-      return  BASE_URL . '/uploads/profile_images/' . $fileName;
+      return 'uploads/profile_images/' . $fileName;
     }
 
     return null;

@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (paginationContainer) paginationContainer.classList.add('hidden');
         
         try {
-            const response = await fetch('api/admin/transactionHistory/json');
+            const response = await fetch(`${BASE_URL_JS}/api/admin/transactionHistory/json`);
             if (!response.ok) throw new Error("Failed to fetch data.");
             
             allTransactions = await response.json();

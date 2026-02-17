@@ -201,11 +201,21 @@ function renderScanResult(data) {
     const profilePicPath = user.profilePicture || defaultAvatar;
 
     const actionButton = isBorrowed ?
-        `<p class="text-sm text-green-600 font-semibold py-3">This ticket has already been processed.</p>` :
-        `<button id="processBorrowBtn" data-code="${data.ticket.id}" data-action="borrow"
-            class="w-full bg-orange-500 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-orange-600 transition">
-            Confirm Borrow (${data.items.length} Items)
-          </button>`;
+        `<div>
+            <p class="text-sm text-green-600 font-semibold py-3 text-center">This ticket has already been processed.</p>
+            <button id="cancelScanBtn" class="w-full bg-gray-100 text-gray-600 font-semibold py-3 rounded-lg hover:bg-gray-200 transition">
+                Clear Result
+            </button>
+        </div>` :
+        `<div class="flex flex-col gap-2">
+            <button id="processBorrowBtn" data-code="${data.ticket.id}" data-action="borrow"
+                class="w-full bg-orange-500 text-white font-semibold py-3 rounded-lg shadow-md hover:bg-orange-600 transition">
+                Confirm Borrow (${data.items.length} Items)
+            </button>
+            <button id="cancelScanBtn" class="w-full bg-gray-100 text-gray-600 font-semibold py-3 rounded-lg hover:bg-gray-200 transition">
+                Cancel Scan
+            </button>
+        </div>`;
 
     const itemsHtml = data.items.map((item, index) => `
         <li class="mb-3 flex items-start gap-3">
@@ -291,6 +301,18 @@ function renderScanResult(data) {
     const processBorrowBtn = document.getElementById('processBorrowBtn');
     if (processBorrowBtn) {
         processBorrowBtn.addEventListener('click', () => processTransaction(data.ticket.id, 'borrow'));
+    }
+
+    const cancelScanBtn = document.getElementById('cancelScanBtn');
+    if (cancelScanBtn) {
+        cancelScanBtn.addEventListener('click', () => {
+            renderScanResult(null);
+            const scannerInput = document.getElementById('scannerInput');
+            if (scannerInput) {
+                scannerInput.value = '';
+                scannerInput.focus();
+            }
+        });
     }
 }
 

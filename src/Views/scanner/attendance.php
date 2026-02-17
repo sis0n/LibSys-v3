@@ -263,7 +263,7 @@
                                 <i class="ph ph-x-circle text-red-600 text-3xl"></i>
                             </div>
                             <h3 class="text-2xl font-bold text-red-700">Attendance Failed</h3>
-                            <p class="text-base text-red-600 mt-1">Invalid QR. Please try again.</p>
+                            <p class="text-base text-red-600 mt-1">${data.message || 'Invalid QR. Please try again.'}</p>
                             <div class="w-full bg-red-100 h-2 rounded mt-4 overflow-hidden">
                                 <div id="progress-bar" class="bg-red-500 h-2 w-full transition-all"></div>
                             </div>
@@ -356,7 +356,7 @@
                                 <i class="ph ph-x-circle text-red-600 text-3xl"></i>
                             </div>
                             <h3 class="text-2xl font-bold text-red-700">Attendance Failed</h3>
-                            <p class="text-base text-red-600 mt-1">Invalid Student Number. Please try again.</p>
+                            <p class="text-base text-red-600 mt-1">${data.message || 'Invalid Student Number. Please try again.'}</p>
                             <div class="w-full bg-red-100 h-2 rounded mt-4 overflow-hidden">
                                 <div id="progress-bar" class="bg-red-500 h-2 w-full transition-all"></div>
                             </div>

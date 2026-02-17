@@ -136,8 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const itemIcon = document.getElementById('item_icon');
-  const itemIdWrapper = document.getElementById('item_id').parentElement;
-  const itemNameWrapper = document.getElementById('item_name').parentElement;
+  const itemIdWrapper = document.getElementById('item_id_wrapper');
+  const itemNameWrapper = document.getElementById('item_name_wrapper');
   const accessionWrapper = document.getElementById('accession_number_wrapper');
   const bookTitleWrapper = document.getElementById('book_title_wrapper');
 
@@ -146,16 +146,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (type === 'Book') {
       itemIcon.className = 'ph ph-book-open text-3xl text-emerald-600';
-      itemIdWrapper.style.display = 'none';
-      itemNameWrapper.style.display = 'none';
-      accessionWrapper.style.display = 'block';
-      bookTitleWrapper.style.display = 'block';
+      if (itemIdWrapper) itemIdWrapper.style.display = 'none';
+      if (itemNameWrapper) itemNameWrapper.style.display = 'none';
+      if (accessionWrapper) accessionWrapper.style.display = 'block';
+      if (bookTitleWrapper) bookTitleWrapper.style.display = 'block';
     } else {
       itemIcon.className = 'ph ph-desktop text-3xl text-emerald-600';
-      itemIdWrapper.style.display = 'block';
-      itemNameWrapper.style.display = 'block';
-      accessionWrapper.style.display = 'none';
-      bookTitleWrapper.style.display = 'none';
+      if (itemIdWrapper) itemIdWrapper.style.display = 'block';
+      if (itemNameWrapper) itemNameWrapper.style.display = 'block';
+      if (accessionWrapper) accessionWrapper.style.display = 'none';
+      if (bookTitleWrapper) bookTitleWrapper.style.display = 'none';
       document.getElementById('accession_number').value = '';
       document.getElementById('book_title').value = '';
     }

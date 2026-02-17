@@ -40,25 +40,24 @@ class ViewController extends Controller
 
       case 'admin':
       case 'librarian':
-        $priority_privileges = [
-          'book management',
-          'qr scanner',
-          'returning',
-          'borrowing form',
-          'attendance logs',
-          'reports',
-          'transaction history',
-          'restore books',
-          'user management',
-          'restore users'
+        $privilege_to_page = [
+          'book management' => 'bookManagement',
+          'qr scanner' => 'qrScanner',
+          'returning' => 'returning',
+          'borrowing form' => 'borrowingForm',
+          'attendance logs' => 'attendanceLogs',
+          'reports' => 'topVisitor',
+          'transaction history' => 'transactionHistory',
+          'restore books' => 'restoreBooks',
+          'user management' => 'userManagement',
+          'restore users' => 'restoreUser'
         ];
 
-        foreach ($priority_privileges as $privilege) {
-          if (in_array($privilege, $normalizedPermissions) || $role === 'superadmin') {
-            $action = str_replace(' ', '', ucwords($privilege));
-            $view_path = $role . '/' . $action;
-            $current_page = $action;
-            $title = ucfirst($action);
+        foreach ($privilege_to_page as $privilege => $pageName) {
+          if (in_array($privilege, $normalizedPermissions)) {
+            $view_path = $role . '/' . $pageName;
+            $current_page = $pageName;
+            $title = ucwords(preg_replace('/(?<!^)[A-Z]/', ' $0', $pageName));
             break;
           }
         }

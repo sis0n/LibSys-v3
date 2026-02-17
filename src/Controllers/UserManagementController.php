@@ -23,6 +23,7 @@ class UserManagementController extends Controller
     $this->studentRepo = new StudentRepository();
     $this->userPermissionRepo = new UserPermissionModuleRepository();
     $this->facultyRepo = new FacultyRepository();
+    $this->staffRepo = new StaffRepository();
   }
 
   public function index()
@@ -531,8 +532,6 @@ class UserManagementController extends Controller
       exit;
     }
 
-    $userRepo = new \App\Repositories\UserRepository();
-
     if (($handle = fopen($file, 'r')) !== false) {
       $header = fgetcsv($handle);
       $rowNumber = 2;
@@ -550,7 +549,7 @@ class UserManagementController extends Controller
           continue;
         }
 
-        $existingUser = $userRepo->findByIdentifier($username);
+        $existingUser = $this->userRepo->findByIdentifier($username);
         if ($existingUser) {
           $errors[] = "Row $rowNumber: Username '$username' already exists";
           $rowNumber++;
@@ -560,13 +559,13 @@ class UserManagementController extends Controller
         try {
           if (strtolower($role) === 'student') {
             // 1. Insert sa users table
-            $userId = $userRepo->insertUser([
+            $userId = $this->userRepo->insertUser([
               'username' => $username,
               'password' => password_hash('12345', PASSWORD_DEFAULT),
               'first_name' => $firstName,
               'middle_name' => $middleName ?: null,
               'last_name' => $lastName,
-              'role' => 'student',
+              'role' => 'Student',
               'is_active' => 1,
               'created_at' => date('Y-m-d H:i:s')
             ]);

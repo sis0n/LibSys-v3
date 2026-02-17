@@ -102,7 +102,7 @@ class RouteConfig
     $router->get('api/librarian/reports/deleted-books', 'ReportController@getDeletedBooks', ['reports']);
     $router->get('api/librarian/reports/library-visits-department', 'ReportController@getLibraryVisitsByDepartment', ['reports']);
     $router->get('api/librarian/reports/getGraphData', 'ReportController@getReportGraphData', ['reports']);
-    $router->get('api/librarian/transactionHistory/json', 'TransactionHistoryController@getTransactionsJson', ['borrowing form']);
+    // $router->get('api/librarian/transactionHistory/json', 'TransactionHistoryController@getTransactionsJson', ['borrowing form']);
     $router->get('api/librarian/borrowingForm/manualBorrow', 'ManualBorrowingController@manualBorrow', ['borrowing form']);
     $router->post('api/librarian/borrowingForm/checkUser', 'ManualBorrowingController@checkUser', ['borrowing form']);
     $router->post('api/librarian/borrowingForm/create', 'ManualBorrowingController@create', ['borrowing form']);
@@ -150,7 +150,7 @@ class RouteConfig
     $router->get('api/admin/reports/deleted-books', 'ReportController@getDeletedBooks', ['reports']);
     $router->get('api/admin/reports/library-visits-department', 'ReportController@getLibraryVisitsByDepartment', ['reports']);
     $router->get('api/admin/reports/getGraphData', 'ReportController@getReportGraphData', ['reports']);
-    $router->get('api/admin/transactionHistory/json', 'TransactionHistoryController@getTransactionsJson', ['borrowing form']);
+    // $router->get('api/admin/transactionHistory/json', 'TransactionHistoryController@getTransactionsJson', ['borrowing form']);
     $router->get('api/admin/userManagement/pagination', 'UserManagementController@fetchPaginatedUsers', ['user management']); // Pagination Route
     $router->get('api/admin/userManagement/get/{id}', 'UserManagementController@getUserById', ['user management']);
     $router->get('api/admin/userManagement/search', 'UserManagementController@search', ['user management']);

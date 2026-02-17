@@ -22,7 +22,7 @@ class QRScannerRepository
             bt.transaction_id, bt.transaction_code, bt.borrowed_at, bt.due_date, bt.status,
             bt.student_id, bt.faculty_id, bt.staff_id,
 
-            s.student_number, s.year_level, s.section, 
+            s.student_number, s.year_level, s.section, s.registration_form,
             
             f.unique_faculty_id, /* <<< FIXED: Walang alias, direkta sa field name */
             f.college_id,

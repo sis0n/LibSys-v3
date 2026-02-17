@@ -43,7 +43,6 @@ $route = str_replace($basePathToRemove, '', $uri);
 
 // 8. Final Route Normalization
 $route = trim($route, '/');
-$route = $route === '' ? 'dashboard' : $route; 
 
 // 9. I-resolve ang Router
 $method = $_SERVER['REQUEST_METHOD'];

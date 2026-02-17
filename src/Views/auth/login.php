@@ -17,7 +17,7 @@
 <body class="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-green-50 font-sans">
     <div class="w-full max-w-md p-6">
         <div class="bg-white shadow-lg rounded-xl p-8 pt-12 relative">
-            <a href="<?= BASE_URL ?>/landingPage"
+            <a href="<?= BASE_URL ?>/"
                 class="absolute top-4 left-4 text-sm font-medium text-gray-600 hover:text-orange-600 transition inline-flex items-center gap-1">
                 <i class="ph ph-arrow-left text-lg"></i>
                 Back to Library
