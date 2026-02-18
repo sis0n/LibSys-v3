@@ -111,6 +111,14 @@ class UserManagementController extends Controller
     }
 
     try {
+
+      if ($this->userRepo->usernameExists($username)) {
+        echo json_encode([
+          'success' => false,
+          'message' => "The username '$username' is already taken. Please use a different one."
+        ]);
+        return;
+      }
       if ($role === 'student') {
         $studentNumber = $username;
         if ($this->studentRepo->studentNumberExists($studentNumber)) {

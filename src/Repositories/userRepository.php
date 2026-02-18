@@ -565,19 +565,19 @@ class UserRepository
     $params = [];
 
     if ($search !== '') {
-        $baseQuery .= " AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?)";
-        $searchTerm = "%$search%";
-        array_push($params, $searchTerm, $searchTerm, $searchTerm, $searchTerm);
+      $baseQuery .= " AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?)";
+      $searchTerm = "%$search%";
+      array_push($params, $searchTerm, $searchTerm, $searchTerm, $searchTerm);
     }
 
     if ($role !== '' && strtolower($role) !== 'all roles') {
-        $baseQuery .= " AND u.role = ?";
-        $params[] = $role;
+      $baseQuery .= " AND u.role = ?";
+      $params[] = $role;
     }
 
     if ($status !== '' && strtolower($status) !== 'all status') {
-        $baseQuery .= " AND u.is_active = ?";
-        $params[] = ($status === 'Active' ? 1 : 0);
+      $baseQuery .= " AND u.is_active = ?";
+      $params[] = ($status === 'Active' ? 1 : 0);
     }
 
     $orderBy = " ORDER BY u.created_at DESC";
@@ -591,17 +591,17 @@ class UserRepository
         " . $baseQuery . " GROUP BY u.user_id" . $orderBy . $limitOffset;
 
     try {
-        $stmt = $this->db->prepare($query);
-        $stmt->execute($params);
-        $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      $stmt = $this->db->prepare($query);
+      $stmt->execute($params);
+      $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        foreach ($users as &$user) {
-            $user['modules'] = $user['modules'] ? explode(',', $user['modules']) : [];
-        }
-        return $users;
+      foreach ($users as &$user) {
+        $user['modules'] = $user['modules'] ? explode(',', $user['modules']) : [];
+      }
+      return $users;
     } catch (PDOException $e) {
-        error_log('[UserRepository::getPaginatedUsers] ' . $e->getMessage());
-        return [];
+      error_log('[UserRepository::getPaginatedUsers] ' . $e->getMessage());
+      return [];
     }
   }
 
@@ -611,29 +611,37 @@ class UserRepository
     $params = [];
 
     if ($search !== '') {
-        $query .= " AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?)";
-        $searchTerm = "%$search%";
-        array_push($params, $searchTerm, $searchTerm, $searchTerm, $searchTerm);
+      $query .= " AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?)";
+      $searchTerm = "%$search%";
+      array_push($params, $searchTerm, $searchTerm, $searchTerm, $searchTerm);
     }
 
     if ($role !== '' && strtolower($role) !== 'all roles') {
-        $query .= " AND u.role = ?";
-        $params[] = $role;
+      $query .= " AND u.role = ?";
+      $params[] = $role;
     }
 
     if ($status !== '' && strtolower($status) !== 'all status') {
-        $query .= " AND u.is_active = ?";
-        $params[] = ($status === 'Active' ? 1 : 0);
+      $query .= " AND u.is_active = ?";
+      $params[] = ($status === 'Active' ? 1 : 0);
     }
 
     try {
-        $stmt = $this->db->prepare($query);
-        $stmt->execute($params);
-        return (int) $stmt->fetchColumn();
+      $stmt = $this->db->prepare($query);
+      $stmt->execute($params);
+      return (int) $stmt->fetchColumn();
     } catch (PDOException $e) {
-        error_log('[UserRepository::countPaginatedUsers] ' . $e->getMessage());
-        return 0;
+      error_log('[UserRepository::countPaginatedUsers] ' . $e->getMessage());
+      return 0;
     }
   }
   // Pagination End
+
+  public function usernameExists($username)
+  {
+    $sql = "SELECT COUNT(*) FROM users WHERE username = :username";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([':username' => $username]);
+    return $stmt->fetchColumn() > 0;
+  }
 }
