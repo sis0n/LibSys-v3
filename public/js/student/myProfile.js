@@ -205,6 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const regFormUpload = document.getElementById("regFormUpload");
   const viewRegForm = document.getElementById("viewRegForm");
   const uploadBtn = document.getElementById("uploadBtn");
+  const removeRegForm = document.getElementById("removeRegForm");
 
   const profileForm = document.getElementById("profileForm");
   const editProfileBtn = document.getElementById("editProfileBtn");
@@ -441,6 +442,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       formActions.classList.add("hidden");
       regFormUpload.disabled = true;
+      if (removeRegForm) removeRegForm.classList.add("hidden");
 
       if (originalProfileData.profile_updated == 1) {
         editProfileBtn.classList.add("hidden");
@@ -731,12 +733,40 @@ document.addEventListener("DOMContentLoaded", () => {
     viewRegForm.href = fileURL;
     viewRegForm.classList.remove("hidden");
     uploadBtn.classList.add("hidden");
+    if (removeRegForm) removeRegForm.classList.remove("hidden");
     showProfileToast(
       "ph-check-circle",
       "Form Ready",
       "Registration form has been attached.",
       "success",
       3000,
+    );
+  });
+
+  removeRegForm?.addEventListener("click", () => {
+    regFormUpload.value = "";
+    if (originalProfileData.registration_form && !isEditing) {
+      viewRegForm.href = originalProfileData.registration_form;
+      viewRegForm.classList.remove("hidden");
+      uploadBtn.classList.add("hidden");
+      removeRegForm.classList.add("hidden");
+    } else if (isEditing) {
+      // Kung nasa edit mode at clinick ang remove, ibalik sa "Upload" state
+      viewRegForm.href = "#";
+      viewRegForm.classList.add("hidden");
+      uploadBtn.classList.remove("hidden");
+      removeRegForm.classList.add("hidden");
+    } else {
+      viewRegForm.classList.add("hidden");
+      uploadBtn.classList.remove("hidden");
+      removeRegForm.classList.add("hidden");
+    }
+    showProfileToast(
+      "ph-info",
+      "Removed",
+      "Attached registration form has been removed.",
+      "warning",
+      2000,
     );
   });
 

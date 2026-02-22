@@ -588,7 +588,7 @@ class UserRepository
   }
 
   // Pagination Start
-  public function getPaginatedUsers(int $limit, int $offset, string $search, string $role, string $status): array
+  public function getPaginatedUsers(int $limit, int $offset, string $search, string $role, string $status, ?int $excludeUserId = null): array
   {
     $baseQuery = "
         FROM users u
@@ -596,6 +596,11 @@ class UserRepository
         WHERE u.deleted_at IS NULL AND u.role NOT IN ('superadmin')
     ";
     $params = [];
+
+    if ($excludeUserId !== null) {
+        $baseQuery .= " AND u.user_id != ?";
+        $params[] = $excludeUserId;
+    }
 
     if ($search !== '') {
       $baseQuery .= " AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?)";
@@ -638,10 +643,15 @@ class UserRepository
     }
   }
 
-  public function countPaginatedUsers(string $search, string $role, string $status): int
+  public function countPaginatedUsers(string $search, string $role, string $status, ?int $excludeUserId = null): int
   {
     $query = "SELECT COUNT(DISTINCT u.user_id) FROM users u WHERE u.deleted_at IS NULL AND u.role NOT IN ('superadmin')";
     $params = [];
+
+    if ($excludeUserId !== null) {
+        $query .= " AND u.user_id != ?";
+        $params[] = $excludeUserId;
+    }
 
     if ($search !== '') {
       $query .= " AND (u.first_name LIKE ? OR u.last_name LIKE ? OR u.username LIKE ? OR u.email LIKE ?)";

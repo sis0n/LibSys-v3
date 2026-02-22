@@ -201,6 +201,10 @@ $laravel_url = "http://localhost:8000/";
                             class="px-4 py-1.5 text-sm rounded-md border border-gray-300 bg-white hover:bg-gray-100 transition hidden">
                             View
                         </a>
+                        <button type="button" id="removeRegForm"
+                            class="px-4 py-1.5 text-sm rounded-md border border-red-300 bg-red-50 text-red-600 hover:bg-red-100 transition hidden">
+                            Remove
+                        </button>
                     </div>
                 </div>
             </div>

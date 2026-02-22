@@ -44,8 +44,10 @@ class UserManagementController extends Controller
       $role = $_GET['role'] ?? 'All Roles';
       $status = $_GET['status'] ?? 'All Status';
 
-      $users = $this->userRepo->getPaginatedUsers($limit, $offset, $search, $role, $status);
-      $totalCount = $this->userRepo->countPaginatedUsers($search, $role, $status);
+      $currentUserId = $_SESSION['user_id'] ?? null;
+
+      $users = $this->userRepo->getPaginatedUsers($limit, $offset, $search, $role, $status, $currentUserId);
+      $totalCount = $this->userRepo->countPaginatedUsers($search, $role, $status, $currentUserId);
 
       echo json_encode(['success' => true, 'users' => $users, 'totalCount' => $totalCount]);
     } catch (\Exception $e) {
