@@ -28,7 +28,7 @@ class StudentRepository
     return (bool) $stmt->fetch();
   }
 
-  public function insertStudent(int $userId, string $studentNumber, int $courseId, int $yearLevel, string $status): int
+  public function insertStudent(int $userId, string $studentNumber, ?int $courseId, int $yearLevel, string $status): int
   {
     $stmt = $this->db->prepare("
     INSERT INTO students (user_id, student_number, course_id, year_level, status)
@@ -38,11 +38,31 @@ class StudentRepository
     $stmt->execute([
       ':user_id' => $userId,
       ':student_number' => $studentNumber,
-      ':course_id' => $courseId, 
+      ':course_id' => $courseId,
       ':year_level' => $yearLevel,
       ':status' => $status
     ]);
 
     return (int)$this->db->lastInsertId();
+  }
+
+  public function bulkInsertStudentDetails(array $studentsBatch)
+  {
+    if (empty($studentsBatch)) return;
+
+    $placeholders = [];
+    $values = [];
+
+    foreach ($studentsBatch as $s) {
+      $placeholders[] = '(?, ?, ?, ?, ?)';
+      $values[] = $s['user_id'];
+      $values[] = $s['student_number'];
+      $values[] = $s['course_id'];
+      $values[] = $s['year_level'];
+      $values[] = $s['status'];
+    }
+
+    $sql = "INSERT INTO students (user_id, student_number, course_id, year_level, status) VALUES " . implode(',', $placeholders);
+    $this->db->prepare($sql)->execute($values);
   }
 }

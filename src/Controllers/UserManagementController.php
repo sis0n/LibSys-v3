@@ -524,89 +524,111 @@ class UserManagementController extends Controller
   public function bulkImport()
   {
     header('Content-Type: application/json');
-
-    $imported = 0;
-    $errors = [];
-
     if (!isset($_FILES['csv_file'])) {
       echo json_encode(['success' => false, 'message' => 'No file uploaded.']);
       exit;
     }
 
     $file = $_FILES['csv_file']['tmp_name'];
+    $userRepo = new \App\Repositories\UserRepository();
+    $studentRepo = new \App\Repositories\StudentRepository();
+    $db = $userRepo->getDbConnection();
 
-    if (!file_exists($file) || !is_readable($file)) {
-      echo json_encode(['success' => false, 'message' => 'Uploaded file not readable.']);
-      exit;
-    }
+    $imported = 0;
+    $errors = [];
+    $batchSize = 500;
+    $usersBuffer = [];
+    $studentDataBuffer = [];
+
+    $defaultPassword = password_hash('12345', PASSWORD_DEFAULT);
+    $timestamp = date('Y-m-d H:i:s');
 
     if (($handle = fopen($file, 'r')) !== false) {
-      $header = fgetcsv($handle);
+      // 1. Kunin ang header
+      $header = array_map('strtolower', array_map('trim', fgetcsv($handle)));
+
       $rowNumber = 2;
+      $db->beginTransaction();
 
-      while (($row = fgetcsv($handle)) !== false) {
-        $firstName = trim($row[0] ?? '');
-        $middleName = trim($row[1] ?? '');
-        $lastName = trim($row[2] ?? '');
-        $username = trim($row[3] ?? '');
-        $role = trim($row[4] ?? '');
+      try {
+        while (($row = fgetcsv($handle)) !== false) {
+          $data = array_combine($header, array_pad($row, count($header), ''));
 
-        if (!$firstName || !$lastName || !$username || !$role) {
-          $errors[] = "Row $rowNumber missing required fields";
-          $rowNumber++;
-          continue;
-        }
+          $studentId = trim($data['student_number'] ?? '');
+          $firstName = trim($data['first_name'] ?? '');
+          $lastName  = trim($data['last_name'] ?? '');
 
-        $existingUser = $this->userRepo->findByIdentifier($username);
-        if ($existingUser) {
-          $errors[] = "Row $rowNumber: Username '$username' already exists";
-          $rowNumber++;
-          continue;
-        }
-
-        try {
-          if (strtolower($role) === 'student') {
-            // 1. Insert sa users table
-            $userId = $this->userRepo->insertUser([
-              'username' => $username,
-              'password' => password_hash('12345', PASSWORD_DEFAULT),
-              'first_name' => $firstName,
-              'middle_name' => $middleName ?: null,
-              'last_name' => $lastName,
-              'role' => 'Student',
-              'is_active' => 1,
-              'created_at' => date('Y-m-d H:i:s')
-            ]);
-
-            $courseIdRaw = $row[5] ?? null;
-            $courseId = ($courseIdRaw === '' || $courseIdRaw === null) ? null : filter_var($courseIdRaw, FILTER_VALIDATE_INT);
-
-            $yearLevel = filter_var($row[6] ?? 1, FILTER_VALIDATE_INT);
-
-            $this->studentRepo->insertStudent(
-              $userId,
-              $username,
-              $courseId,
-              $yearLevel,
-              'enrolled'
-            );
-
-            $imported++;
+          if ($studentId === '' || $firstName === '' || $lastName === '') {
+            $errors[] = "Row $rowNumber: Skip - Missing required fields.";
+            $rowNumber++;
+            continue;
           }
-        } catch (\Exception $e) {
-          $errors[] = "Row $rowNumber: " . $e->getMessage();
+
+          if ($userRepo->findByStudentNumber($studentId)) {
+            $errors[] = "Row $rowNumber: Skip - Student ID ($studentId) already exists.";
+            $rowNumber++;
+            continue;
+          }
+
+          $usersBuffer[] = [
+            'username'    => $studentId,
+            'password'    => $defaultPassword,
+            'first_name'  => $firstName,
+            'middle_name' => null,
+            'last_name'   => $lastName,
+            'role'        => 'student',
+            'is_active'   => 1,
+            'created_at'  => $timestamp
+          ];
+
+          $studentDataBuffer[] = [
+            'student_number' => $studentId,
+            'course_id'      => null,
+            'year_level'     => 1,
+            'status'         => 'enrolled'
+          ];
+
+          if (count($usersBuffer) >= $batchSize) {
+            $this->processBatch($userRepo, $studentRepo, $usersBuffer, $studentDataBuffer);
+            $imported += count($usersBuffer);
+            $usersBuffer = [];
+            $studentDataBuffer = [];
+          }
+          $rowNumber++;
         }
 
-        $rowNumber++;
-      }
+        if (!empty($usersBuffer)) {
+          $this->processBatch($userRepo, $studentRepo, $usersBuffer, $studentDataBuffer);
+          $imported += count($usersBuffer);
+        }
 
+        $db->commit();
+      } catch (\Exception $e) {
+        if ($db->inTransaction()) {
+          $db->rollBack();
+        }
+        echo json_encode(['success' => false, 'message' => "Database Error: " . $e->getMessage()]);
+        exit;
+      }
       fclose($handle);
     }
+    echo json_encode(['success' => $imported > 0, 'imported' => $imported, 'errors' => $errors]);
+  }
 
-    echo json_encode([
-      'success' => true,
-      'imported' => $imported,
-      'errors' => $errors
-    ]);
+  private function processBatch($userRepo, $studentRepo, $users, $students)
+  {
+    foreach ($users as $index => $userData) {
+      try {
+        $userId = $userRepo->insertUser($userData);
+
+        if ($userId) {
+          $studentRow = $students[$index];
+          $studentRow['user_id'] = $userId;
+          $studentRepo->insertStudent($studentRow);
+        }
+      } catch (\Exception $e) {
+        continue;
+      }
+    }
   }
 }

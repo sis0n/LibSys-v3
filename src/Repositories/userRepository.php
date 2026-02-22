@@ -15,6 +15,11 @@ class UserRepository
     $this->db = Database::getInstance()->getConnection();
   }
 
+  public function getDbConnection()
+  {
+    return $this->db;
+  }
+
   public function findByIdentifier(string $identifier)
   {
     try {
@@ -128,6 +133,34 @@ class UserRepository
       error_log("[UserRepository::findByIdentifier] " . $e->getMessage());
       return null;
     }
+  }
+
+  public function bulkInsertUsers(array $usersBatch)
+  {
+    if (empty($usersBatch)) return [];
+
+    $columns = ['username', 'password', 'first_name', 'middle_name', 'last_name', 'role', 'is_active', 'created_at'];
+    $colString = implode(',', $columns);
+
+    $placeholders = [];
+    $flatValues = [];
+
+    foreach ($usersBatch as $user) {
+      $placeholders[] = '(' . implode(',', array_fill(0, count($columns), '?')) . ')';
+      foreach ($columns as $col) {
+        $flatValues[] = isset($user[$col]) && $user[$col] !== '' ? $user[$col] : null;
+      }
+    }
+
+    $sql = "INSERT IGNORE INTO users ($colString) VALUES " . implode(',', $placeholders);
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute($flatValues);
+
+    $firstId = (int)$this->db->lastInsertId();
+    $count = count($usersBatch);
+
+    return range($firstId, $firstId + $count - 1);
   }
 
   public function insertUser(array $data): int

@@ -252,78 +252,65 @@ class BookManagementController extends Controller
     public function bulkImport()
     {
         header('Content-Type: application/json');
-
         $imported = 0;
         $errors = [];
-
-        if (!isset($_FILES['csv_file'])) {
-            echo json_encode(['success' => false, 'message' => 'No file uploaded.']);
-            exit;
-        }
+        $batchSize = 500;
+        $booksToInsert = [];
 
         $file = $_FILES['csv_file']['tmp_name'];
-
-        if (!file_exists($file) || !is_readable($file)) {
-            echo json_encode(['success' => false, 'message' => 'Uploaded file not readable.']);
-            exit;
-        }
-
         $bookRepo = new \App\Repositories\BookManagementRepository();
 
         if (($handle = fopen($file, 'r')) !== false) {
-            $header = fgetcsv($handle);
+            fgetcsv($handle); // Skip header
             $rowNumber = 2;
 
             while (($row = fgetcsv($handle)) !== false) {
                 $accessionNumber = trim($row[0] ?? '');
-                $callNumber      = trim($row[1] ?? '');
-                $title           = trim($row[2] ?? '');
-                $author          = trim($row[3] ?? '');
-                $bookPlace       = trim($row[4] ?? '');
-                $bookPublisher   = trim($row[5] ?? '');
-                $year            = trim($row[6] ?? '');
-                $bookEdition     = trim($row[7] ?? '');
-                $description     = trim($row[8] ?? '');
-                $bookISBN        = trim($row[9] ?? '');
-                $bookSupplementary = trim($row[10] ?? '');
-                $subject         = trim($row[11] ?? '');
-
                 if (!$accessionNumber) {
-                    $errors[] = "Row $rowNumber: Missing required field accession_number.";
+                    $errors[] = "Row $rowNumber: Missing accession_number.";
                     $rowNumber++;
                     continue;
                 }
 
-                try {
-                    $bookRepo->createBook([
-                        'accession_number'   => $accessionNumber,
-                        'call_number'        => $callNumber ?: null,
-                        'title'              => $title ?: null,
-                        'author'             => $author ?: null,
-                        'book_place'         => $bookPlace ?: null,
-                        'book_publisher'     => $bookPublisher ?: null,
-                        'year'               => $year ?: null,
-                        'book_edition'       => $bookEdition ?: null,
-                        'description'        => $description ?: null,
-                        'book_isbn'          => $bookISBN ?: null,
-                        'book_supplementary' => $bookSupplementary ?: null,
-                        'subject'            => $subject ?: null,
-                        'availability'       => 'available', // default
-                    ]);
-                    $imported++;
-                } catch (\Exception $e) {
-                    $errors[] = "Row $rowNumber: " . $e->getMessage();
-                }
+                $booksToInsert[] = [
+                    'accession_number' => $accessionNumber,
+                    'call_number' => trim($row[1] ?? '') ?: null,
+                    'title' => trim($row[2] ?? '') ?: null,
+                    'author' => trim($row[3] ?? '') ?: null,
+                    'book_place' => trim($row[4] ?? '') ?: null,
+                    'book_publisher' => trim($row[5] ?? '') ?: null,
+                    'year' => trim($row[6] ?? '') ?: null,
+                    'book_edition' => trim($row[7] ?? '') ?: null,
+                    'description' => trim($row[8] ?? '') ?: null,
+                    'book_isbn' => trim($row[9] ?? '') ?: null,
+                    'book_supplementary' => trim($row[10] ?? '') ?: null,
+                    'subject' => trim($row[11] ?? '') ?: null,
+                    'availability' => 'available',
+                ];
 
+                if (count($booksToInsert) >= $batchSize) {
+                    try {
+                        $bookRepo->bulkCreateBooks($booksToInsert);
+                        $imported += count($booksToInsert);
+                        $booksToInsert = []; // Reset ang collection
+                    } catch (\Exception $e) {
+                        $errors[] = "Batch error near row $rowNumber: " . $e->getMessage();
+                    }
+                }
                 $rowNumber++;
+            }
+
+            if (!empty($booksToInsert)) {
+                try {
+                    $bookRepo->bulkCreateBooks($booksToInsert);
+                    $imported += count($booksToInsert);
+                } catch (\Exception $e) {
+                    $errors[] = "Final batch error: " . $e->getMessage();
+                }
             }
             fclose($handle);
         }
 
-        echo json_encode([
-            'success'  => true,
-            'imported' => $imported,
-            'errors'   => $errors
-        ]);
+        echo json_encode(['success' => true, 'imported' => $imported, 'errors' => $errors]);
     }
 }

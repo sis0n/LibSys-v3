@@ -95,6 +95,44 @@ class BookManagementRepository
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function bulkCreateBooks(array $allBooksData)
+    {
+        if (empty($allBooksData)) return false;
+
+        $fields = [
+            'accession_number',
+            'call_number',
+            'title',
+            'author',
+            'book_place',
+            'book_publisher',
+            'year',
+            'book_edition',
+            'description',
+            'book_isbn',
+            'book_supplementary',
+            'subject',
+            'availability'
+        ];
+
+        $columns = implode(", ", $fields);
+
+        $rowPlaceholders = "(" . implode(", ", array_fill(0, count($fields), "?")) . ")";
+        $allPlaceholders = implode(", ", array_fill(0, count($allBooksData), $rowPlaceholders));
+
+        $sql = "INSERT INTO books ($columns) VALUES $allPlaceholders";
+        $stmt = $this->db->prepare($sql);
+
+        $flatParams = [];
+        foreach ($allBooksData as $data) {
+            foreach ($fields as $field) {
+                $flatParams[] = $data[$field] ?? null;
+            }
+        }
+
+        return $stmt->execute($flatParams);
+    }
+
     public function createBook($data)
     {
         $fields = [
