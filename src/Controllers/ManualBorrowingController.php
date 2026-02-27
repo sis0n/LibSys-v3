@@ -87,8 +87,7 @@ class ManualBorrowingController extends Controller
       if ($data['equipment_type'] === 'Book') {
         $required[] = 'accession_number';
       } else {
-        $required[] = 'equipment_name';
-        $required[] = 'item_id';
+        $required[] = 'equipment_name'; // Now using equipment_name from combobox
       }
 
       foreach ($required as $field) {
@@ -97,7 +96,9 @@ class ManualBorrowingController extends Controller
         }
       }
 
-      // --- Check book availability if type is Book ---
+      // --- Determine Item ID for repository ---
+      $itemId = null; // Will store either book_id (INT) or equipment_identifier (STRING from equipment_name)
+
       if ($data['equipment_type'] === 'Book') {
         $book = $this->manualRepo->checkBook($data['accession_number']);
         if (!$book['exists']) {
@@ -106,11 +107,10 @@ class ManualBorrowingController extends Controller
         if (!$book['available']) {
           $this->sendJson(['success' => false, 'message' => 'Book is currently not available']);
         }
-
-        $data['equipment_name'] = $book['details']['title'];
         $itemId = $book['details']['book_id'];
       } else {
-        $itemId = $data['item_id'];
+        // For equipment, the 'itemId' for the repository is the equipment_name from the form
+        $itemId = $data['equipment_name']; 
       }
 
       // --- Check if user exists ---
@@ -143,7 +143,8 @@ class ManualBorrowingController extends Controller
       if ($data['equipment_type'] === 'Book') {
         $borrowData['book_id'] = $itemId;
       } else {
-        $borrowData['equipment_id'] = $itemId;
+        // For equipment, the itemId is the equipment_name, which the repository will use to find/create an equipment_id
+        $borrowData['equipment_id'] = $itemId; 
       }
 
       $insert = $this->manualRepo->createManualBorrow($borrowData);

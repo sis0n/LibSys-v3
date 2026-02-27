@@ -30,12 +30,15 @@ const limit = 5;
 
 // --- Render Functions ---
 function renderBorrowingTable(records) {
-  if (!records || records.length === 0) {
+  // Filter out records with 'Expired' status
+  const filteredRecords = records.filter(record => record.statusText === 'Borrowed' || record.statusText === 'Returned');
+
+  if (!filteredRecords || filteredRecords.length === 0) {
     recordsContainer.innerHTML = `<div class="text-center py-10 text-gray-500">No borrowing records found.</div>`;
     return;
   }
 
-  const html = records.map(record => {
+  const html = filteredRecords.map(record => {
     const returnedBoxClass = record.statusText === 'Returned' ? 'bg-[var(--color-green-50)]' : 'bg-[var(--color-gray-100)]';
     const returnedIconClass = record.returnedDate !== 'Not returned' ? 'text-[var(--color-green-600)]' : 'text-gray-400';
     const overdueClass = record.isOverdue ? 'bg-red-50 border-red-200' : 'border-[var(--color-border)]';

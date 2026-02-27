@@ -107,9 +107,9 @@ class ManualBorrowingRepository
   // --- Get all equipment names ---
   public function getEquipments(): array
   {
-    $stmt = $this->db->prepare("SELECT DISTINCT name FROM equipments ORDER BY name ASC");
+    $stmt = $this->db->prepare("SELECT equipment_id, equipment_name, asset_tag FROM equipments WHERE status = 'available' ORDER BY equipment_name ASC");
     $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_COLUMN);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC); // Fetch as associative array
   }
 
   // --- Get all collateral names ---
@@ -246,20 +246,51 @@ class ManualBorrowingRepository
       }
 
       if ($isEquipment) {
+        $equipmentId = $borrowData['equipment_id']; // This is actually the name/asset_tag from frontend
+
+        // Try to find existing equipment by asset_tag or equipment_name
+        $stmtFindEquipment = $this->db->prepare("
+          SELECT equipment_id, status FROM equipments 
+          WHERE asset_tag = :identifier OR equipment_name = :identifier
+          LIMIT 1
+        ");
+        $stmtFindEquipment->execute([':identifier' => $equipmentId]);
+        $existingEquipment = $stmtFindEquipment->fetch(PDO::FETCH_ASSOC);
+
+        if ($existingEquipment) {
+          if ($existingEquipment['status'] !== 'available') {
+            throw new Exception("Equipment '{$equipmentId}' is currently not available.");
+          }
+          $actualEquipmentId = $existingEquipment['equipment_id'];
+        } else {
+          // If not found, create a new equipment entry
+          $stmtCreateEquipment = $this->db->prepare("
+            INSERT INTO equipments (equipment_name, asset_tag, status, created_at)
+            VALUES (:equipment_name, :asset_tag, 'borrowed', NOW())
+          ");
+          $stmtCreateEquipment->execute([
+            ':equipment_name' => $equipmentId, // Using the identifier as name for new entry
+            ':asset_tag' => $equipmentId, // Using the identifier as asset tag for new entry
+          ]);
+          $actualEquipmentId = $this->db->lastInsertId();
+        }
+
+        // Insert into borrow_transaction_items
         $stmt = $this->db->prepare("
                 INSERT INTO borrow_transaction_items (transaction_id, equipment_id, status)
                 VALUES (:transaction_id, :equipment_id, 'borrowed')
             ");
         $stmt->execute([
           ':transaction_id' => $transactionId,
-          ':equipment_id' => $borrowData['equipment_id']
+          ':equipment_id' => $actualEquipmentId // Use the actual equipment_id (INT)
         ]);
 
-        // update equipment availability if merong db (gawin ko to future)
-        /*
-            $stmt = $this->db->prepare("UPDATE equipment SET availability = 'borrowed', updated_at = NOW() WHERE equipment_id = ?");
-            $stmt->execute([$borrowData['equipment_id']]);
-            */
+        // Update equipment status in the equipments table
+        $stmtUpdateEquipment = $this->db->prepare("
+          UPDATE equipments SET status = 'borrowed', updated_at = NOW() 
+          WHERE equipment_id = :equipment_id
+        ");
+        $stmtUpdateEquipment->execute([':equipment_id' => $actualEquipmentId]);
       }
 
       $this->db->commit();

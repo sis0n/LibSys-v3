@@ -55,21 +55,19 @@ class FacultyBorrowingHistoryController extends Controller
             $isBorrowed = $record['status'] === 'borrowed';
             $isOverdue = $isBorrowed && ($dueDate < $now);
             $statusText = ucfirst($record['status']);
-            $statusColorClass = 'gray';
+            
+            // Default to gray, will be overridden by specific statuses
+            $statusBgClass = 'bg-gray-100 text-gray-700';
 
-            if ($isOverdue) {
-                $overdueDays = ceil(($now - $dueDate) / (60 * 60 * 24));
-                $statusText = "Overdue (+" . $overdueDays . "d)";
-                $statusColorClass = 'destructive';
+            if ($record['status'] === 'returned') {
+                 $statusBgClass = 'bg-green-100 text-green-700';
+            } elseif ($isOverdue) {
+                // Keep status as 'Borrowed' but use destructive colors for overdue items
+                $statusText = 'Borrowed'; 
+                 $statusBgClass = 'bg-red-100 text-red-700';
             } elseif ($isBorrowed) {
-                $statusColorClass = 'amber';
-            } elseif ($record['status'] === 'returned') {
-                $statusColorClass = 'green';
+                $statusBgClass = 'bg-amber-100 text-amber-700';
             }
-
-            $statusBgClass = ($statusColorClass === 'destructive')
-                ? 'bg-[var(--color-destructive)] text-white'
-                : 'bg-[var(--color-' . $statusColorClass . '-100)] text-[var(--color-' . $statusColorClass . '-700)]';
 
             return [
                 'id' => $record['item_id'],

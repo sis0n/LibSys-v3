@@ -35,8 +35,23 @@ class TransactionHistoryRepository
                 COALESCE(su.middle_name, fu.middle_name, stu.middle_name) AS middle_name,
                 COALESCE(su.last_name, fu.last_name, stu.last_name, g.last_name) AS last_name,
 
-                b.book_id, b.title AS book_title, b.author AS book_author, b.accession_number, b.call_number, b.book_isbn, b.cover,
+                -- Item details (Book or Equipment)
+                COALESCE(b.title, e.equipment_name) as item_name,
+                b.author AS book_author, 
+                b.accession_number, 
+                b.call_number, 
+                b.book_isbn, 
+                b.cover,
+                e.equipment_id,
+                e.equipment_name AS equipment_real_name, -- Added to differentiate from item_name if needed
+                e.asset_tag,
                 
+                CASE 
+                    WHEN bti.book_id IS NOT NULL THEN 'Book'
+                    WHEN bti.equipment_id IS NOT NULL THEN 'Equipment'
+                    ELSE 'Unknown'
+                END as item_type,
+
                 c.course_code, c.course_title,
                 cl.college_code, cl.college_name
         ";
@@ -46,9 +61,12 @@ class TransactionHistoryRepository
   {
     return "
             FROM borrow_transactions bt
-            JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-            JOIN books b ON bti.book_id = b.book_id
+            LEFT JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
             
+            -- Join both books and equipment, one of them will match
+            LEFT JOIN books b ON bti.book_id = b.book_id
+            LEFT JOIN equipments e ON bti.equipment_id = e.equipment_id
+
             LEFT JOIN students s ON bt.student_id = s.student_id
             LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
             LEFT JOIN staff st ON bt.staff_id = st.staff_id

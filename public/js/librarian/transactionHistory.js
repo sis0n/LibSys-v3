@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const searchMatch = !searchTerm ||
                 (transaction.studentName && transaction.studentName.toLowerCase().includes(searchTerm)) ||
                 (transaction.studentNumber && transaction.studentNumber.toLowerCase().includes(searchTerm)) ||
-                (transaction.book_title && transaction.book_title.toLowerCase().includes(searchTerm));
+                (transaction.item_name && transaction.item_name.toLowerCase().includes(searchTerm));
             const dateMatch = !date ||
                 (transaction.borrowed_at && transaction.borrowed_at.startsWith(date)) ||
                 (transaction.returned_at && transaction.returned_at.startsWith(date));
@@ -168,8 +168,10 @@ document.addEventListener('DOMContentLoaded', function () {
             cells[0].textContent = borrowerName;
             cells[1].textContent = borrowerId;
 
-            // FIXED: Gamitin ang accession_number ng item imbes na itemsBorrowed
-            cells[2].textContent = transaction.accession_number || 'N/A';
+            const displayItem = transaction.item_type === 'Book' 
+                ? transaction.accession_number 
+                : transaction.item_name;
+            cells[2].textContent = displayItem || 'N/A';
 
             cells[3].textContent = transaction.borrowed_at || '';
             cells[4].textContent = transaction.returned_at ? transaction.returned_at : 'Not yet returned';
@@ -281,11 +283,45 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('modalYear').textContent = yearOrPosition;
         document.getElementById('modalSection').textContent = transaction.section || (isFaculty ? 'N/A' : (transaction.employee_id ? 'Staff' : 'N/A'));
 
-        document.getElementById('modalItemTitle').textContent = transaction.book_title || '';
-        document.getElementById('modalItemAuthor').textContent = transaction.book_author || '';
-        document.getElementById('modalItemAccession').textContent = transaction.accession_number || '';
-        document.getElementById('modalItemCallNo').textContent = transaction.call_number || '';
-        document.getElementById('modalItemISBN').textContent = transaction.book_isbn || '';
+        // Display item_name for both books and equipment
+        document.getElementById('modalItemTitle').textContent = transaction.item_name || '';
+
+        // Conditionally display book-specific details or equipment-specific details
+        const itemAuthorRow = document.getElementById('modalItemAuthorRow');
+        const itemAccessionRow = document.getElementById('modalItemAccessionRow');
+        const itemCallNoRow = document.getElementById('modalItemCallNoRow');
+        const itemISBNRow = document.getElementById('modalItemISBNRow');
+        const itemAssetTagRow = document.getElementById('modalItemAssetTagRow');
+
+        if (transaction.item_type === 'Book') {
+            document.getElementById('modalItemAuthor').textContent = transaction.book_author || '';
+            document.getElementById('modalItemAccession').textContent = transaction.accession_number || '';
+            document.getElementById('modalItemCallNo').textContent = transaction.call_number || '';
+            document.getElementById('modalItemISBN').textContent = transaction.book_isbn || '';
+
+            if (itemAuthorRow) itemAuthorRow.style.display = '';
+            if (itemAccessionRow) itemAccessionRow.style.display = '';
+            if (itemCallNoRow) itemCallNoRow.style.display = '';
+            if (itemISBNRow) itemISBNRow.style.display = '';
+            if (itemAssetTagRow) itemAssetTagRow.style.display = 'none';
+        } else if (transaction.item_type === 'Equipment') {
+            if (itemAuthorRow) itemAuthorRow.style.display = 'none';
+            if (itemAccessionRow) itemAccessionRow.style.display = 'none';
+            if (itemCallNoRow) itemCallNoRow.style.display = 'none';
+            if (itemISBNRow) itemISBNRow.style.display = 'none';
+
+            if (itemAssetTagRow) {
+                document.getElementById('modalItemAssetTag').textContent = transaction.asset_tag || 'N/A';
+                itemAssetTagRow.style.display = '';
+            }
+        } else {
+            if (itemAuthorRow) itemAuthorRow.style.display = 'none';
+            if (itemAccessionRow) itemAccessionRow.style.display = 'none';
+            if (itemCallNoRow) itemCallNoRow.style.display = 'none';
+            if (itemISBNRow) itemISBNRow.style.display = 'none';
+            if (itemAssetTagRow) itemAssetTagRow.style.display = 'none';
+        }
+
         document.getElementById('modalBorrowedDate').textContent = transaction.borrowed_at || '';
         document.getElementById('modalReturnedDate').textContent = transaction.returned_at ?? 'Not yet returned';
         document.getElementById('modalProcessedBy').textContent = transaction.librarian_name ?? 'Not yet processed';

@@ -85,6 +85,7 @@ class RouteConfig
     $router->post('api/librarian/booksmanagement/delete/{id}', 'BookManagementController@destroy', ['book management']);
     $router->post('api/librarian/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['book management']);
     $router->post('api/librarian/booksmanagement/bulkImport', 'BookManagementController@bulkImport', ['book management']);
+    $router->get('api/librarian/booksmanagement/history/{id}', 'BookManagementController@getBorrowingHistory', ['book management']);
     // --end
     $router->post('api/librarian/qrScanner/scanTicket', 'QRScannerController@scan', ['qr scanner']);
     $router->post('api/librarian/qrScanner/borrowTransaction', 'QRScannerController@borrowTransaction', ['qr scanner']);
@@ -128,6 +129,7 @@ class RouteConfig
     $router->post('api/admin/bookManagement/delete/{id}', 'BookManagementController@destroy', ['book management']);
     $router->post('api/admin/bookManagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['book management']);
     $router->post('api/admin/bookManagement/bulkImport', 'BookManagementController@bulkImport', ['book management']);
+    $router->get('api/admin/bookManagement/history/{id}', 'BookManagementController@getBorrowingHistory', ['book management']);
     // --end
     $router->post('api/admin/qrScanner/scanTicket', 'QRScannerController@scan', ['qr scanner']);
     $router->post('api/admin/qrScanner/borrowTransaction', 'QRScannerController@borrowTransaction', ['qr scanner']);
@@ -198,6 +200,7 @@ class RouteConfig
     $router->post('api/superadmin/booksmanagement/update/{id}', 'BookManagementController@update', ['superadmin']);
     $router->post('api/superadmin/booksmanagement/delete/{id}', 'BookManagementController@destroy', ['superadmin']);
     $router->post('api/superadmin/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['superadmin']);
+    $router->get('api/superadmin/booksmanagement/history/{id}', 'BookManagementController@getBorrowingHistory', ['superadmin']);
     //-- end
     $router->post('api/superadmin/booksmanagement/bulkImport', 'BookManagementController@bulkImport', ['superadmin']);
     $router->post('api/superadmin/qrScanner/scanTicket', 'QRScannerController@scan', ['superadmin']);

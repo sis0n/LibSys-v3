@@ -76,23 +76,46 @@ class ReturningRepository
     }
   }
 
-  public function findBookByAccession($accessionNumber): ?array
+  public function findItemByIdentifier($identifier): ?array
   {
     try {
+      // 1. Subukang hanapin kung LIBRO (via accession number)
       $stmt = $this->db->prepare("SELECT * FROM books WHERE accession_number = ?");
-      $stmt->execute([$accessionNumber]);
+      $stmt->execute([$identifier]);
       $book = $stmt->fetch(PDO::FETCH_ASSOC);
 
-      if (!$book) {
-        return ['status' => 'not_found'];
+      $itemIdForQuery = null;
+      $itemType = null;
+      $itemBasicDetails = null;
+
+      if ($book) {
+        $itemIdForQuery = $book['book_id'];
+        $itemType = 'Book';
+        $itemBasicDetails = $book;
+      } else {
+        // 2. Kung hindi libro, subukang hanapin kung EQUIPMENT (via name o asset tag)
+        $stmt = $this->db->prepare("SELECT * FROM equipments WHERE equipment_name = ? OR asset_tag = ?");
+        $stmt->execute([$identifier, $identifier]);
+        $equipment = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($equipment) {
+          $itemIdForQuery = $equipment['equipment_id'];
+          $itemType = 'Equipment';
+          $itemBasicDetails = $equipment;
+        } else {
+          return ['status' => 'not_found'];
+        }
       }
 
-      $availability = strtolower(trim($book['availability'] ?? ''));
+      // 3. I-check ang availability/status
+      $availability = strtolower(trim(($itemType === 'Book' ? $itemBasicDetails['availability'] : $itemBasicDetails['status']) ?? ''));
 
-      if ($availability === 'borrowed') {
+      if ($availability === 'borrowed' || $availability === 'overdue') {
+        $idColumn = ($itemType === 'Book') ? 'bti.book_id' : 'bti.equipment_id';
+
         $stmt = $this->db->prepare("
                     SELECT 
-                        bti.item_id, bti.transaction_id, bti.book_id,
+                        bti.item_id, bti.transaction_id, bti.book_id, bti.equipment_id,
                         bt.borrowed_at AS date_borrowed, bt.due_date,
                         bt.student_id, bt.faculty_id, bt.staff_id, bt.guest_id,
                         s.student_number, s.year_level, s.section, s.contact AS student_contact,
@@ -104,7 +127,10 @@ class ReturningRepository
                         st.staff_id AS staff_id_num, st.employee_id, st.position AS staff_position, st.contact AS staff_contact,
                         u_staff.first_name AS staff_first_name, u_staff.last_name AS staff_last_name, u_staff.email AS staff_email,
                         g.guest_id AS guest_id_num, g.first_name AS guest_first_name, g.last_name AS guest_last_name, g.contact AS guest_contact,
-                        bti.status, bti.item_id AS borrowing_id, b.title AS book_title
+                        bti.status, bti.item_id AS borrowing_id,
+                        COALESCE(b.title, e.equipment_name) AS item_title,
+                        b.author, b.book_isbn, b.accession_number, b.call_number,
+                        e.asset_tag
                     FROM borrow_transaction_items bti
                     JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
                     LEFT JOIN students s ON bt.student_id = s.student_id
@@ -116,11 +142,13 @@ class ReturningRepository
                     LEFT JOIN staff st ON bt.staff_id = st.staff_id
                     LEFT JOIN users u_staff ON st.user_id = u_staff.user_id
                     LEFT JOIN guests g ON bt.guest_id = g.guest_id
-                    JOIN books b ON bti.book_id = b.book_id
-                    WHERE bti.book_id = ? AND (bti.status = 'borrowed' OR bti.status = 'overdue')
+                    LEFT JOIN books b ON bti.book_id = b.book_id
+                    LEFT JOIN equipments e ON bti.equipment_id = e.equipment_id
+                    WHERE {$idColumn} = ? AND (bti.status = 'borrowed' OR bti.status = 'overdue')
+                    ORDER BY bt.borrowed_at DESC
                     LIMIT 1
                 ");
-        $stmt->execute([$book['book_id']]);
+        $stmt->execute([$itemIdForQuery]);
         $borrowInfo = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($borrowInfo) {
@@ -162,7 +190,14 @@ class ReturningRepository
 
           return [
             'status' => 'borrowed',
-            'details' => array_merge($book, [
+            'details' => [
+              'item_type' => $itemType,
+              'title' => $borrowInfo['item_title'],
+              'author' => $borrowInfo['author'] ?? null,
+              'book_isbn' => $borrowInfo['book_isbn'] ?? null,
+              'accession_number' => $borrowInfo['accession_number'] ?? null,
+              'call_number' => $borrowInfo['call_number'] ?? null,
+              'asset_tag' => $borrowInfo['asset_tag'] ?? null,
               'borrower_type' => $borrowerType,
               'borrower_name' => $borrowerName,
               'id_number' => $idNumber,
@@ -172,17 +207,17 @@ class ReturningRepository
               'email' => $email,
               'date_borrowed' => $borrowInfo['date_borrowed'],
               'due_date' => $borrowInfo['due_date'],
-              'borrowing_id' => $borrowInfo['borrowing_id']
-            ])
+              'borrowing_id' => $borrowInfo['borrowing_id'],
+              'availability' => $borrowInfo['status']
+            ]
           ];
         }
-        // Fallback if status is borrowed but no transaction found (rare edge case)
-        return ['status' => 'available', 'details' => $book];
+        return ['status' => 'available', 'details' => ['item_type' => $itemType, 'title' => ($itemType === 'Book' ? $itemBasicDetails['title'] : $itemBasicDetails['equipment_name'])]];
       }
 
-      return ['status' => 'available', 'details' => $book];
+      return ['status' => 'available', 'details' => ['item_type' => $itemType, 'title' => ($itemType === 'Book' ? $itemBasicDetails['title'] : $itemBasicDetails['equipment_name'])]];
     } catch (PDOException $e) {
-      error_log('[ReturningRepository::findBookByAccession] ' . $e->getMessage());
+      error_log('[ReturningRepository::findItemByIdentifier] ' . $e->getMessage());
       return ['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()];
     }
   }
@@ -193,8 +228,9 @@ class ReturningRepository
       $this->db->beginTransaction();
 
       // Allow returning if status is 'borrowed' OR 'overdue'
+      // Fetch both book_id and equipment_id
       $stmtGetItem = $this->db->prepare("
-                SELECT bti.book_id, bti.transaction_id
+                SELECT bti.book_id, bti.equipment_id, bti.transaction_id
                 FROM borrow_transaction_items bti
                 WHERE bti.item_id = ? AND (bti.status = 'borrowed' OR bti.status = 'overdue')
             ");
@@ -203,12 +239,14 @@ class ReturningRepository
 
       if (!$itemInfo) {
         $this->db->rollBack();
-        return null;
+        return null; // Item not found or already returned
       }
 
       $bookId = $itemInfo['book_id'];
+      $equipmentId = $itemInfo['equipment_id']; // Get equipment_id
       $transactionId = $itemInfo['transaction_id'];
 
+      // Update borrow_transaction_items status
       $stmtUpdateItem = $this->db->prepare("
                 UPDATE borrow_transaction_items
                 SET status = 'returned', returned_at = NOW()
@@ -216,8 +254,20 @@ class ReturningRepository
             ");
       $stmtUpdateItem->execute([$itemId]);
 
-      $stmtUpdateBook = $this->db->prepare("UPDATE books SET availability = 'available' WHERE book_id = ?");
-      $stmtUpdateBook->execute([$bookId]);
+      // Update specific item's availability/status
+      if ($bookId !== null) {
+        // It's a book
+        $stmtUpdateBook = $this->db->prepare("UPDATE books SET availability = 'available' WHERE book_id = ?");
+        $stmtUpdateBook->execute([$bookId]);
+      } elseif ($equipmentId !== null) {
+        // It's an equipment (using its ID/Name)
+        $stmtUpdateEquipment = $this->db->prepare("UPDATE equipments SET status = 'available' WHERE equipment_id = ?");
+        $stmtUpdateEquipment->execute([$equipmentId]);
+      } else {
+        // Neither book nor equipment ID found (error state)
+        $this->db->rollBack();
+        return null;
+      }
 
       // Check if all items in this transaction are returned
       $stmtCheckAll = $this->db->prepare("

@@ -1,16 +1,16 @@
 <div class="min-h-screen">
     <div class="mb-8">
         <h2 class="text-2xl font-bold text-gray-800">Returning</h2>
-        <p class="text-gray-500 mt-4">Scan book barcode to process returns and manage due dates</p>
+        <p class="text-gray-500 mt-4">Scan item barcode or enter identifier to process returns</p>
     </div>
 
     <div class="bg-white rounded-lg p-6 shadow-sm max-w-7xl mx-auto">
         <div class="flex items-center gap-3">
             <i class="ph ph-barcode text-2xl text-gray-700"></i>
-            <h3 class="text-xl font-semibold text-gray-800">Scan Book Barcode</h3>
+            <h3 class="text-xl font-semibold text-gray-800">Manual Input / Scan</h3>
         </div>
         <p class="text-gray-600 mt-1 mb-6 ml-9">
-            Enter or scan the book's barcode to view details and process return
+            Enter or scan the item's identifier to view details and process return
         </p>
 
         <!-- QR Scanner Section -->
@@ -18,7 +18,7 @@
             <div class="w-full max-w-4xl bg-white border border-orange-200 rounded-lg p-8 shadow-sm text-center">
                 <div class="flex items-center justify-center gap-3 mb-6">
                     <i class="ph ph-qr-code text-3xl text-orange-600"></i>
-                    <h4 class="text-xl font-semibold text-gray-800">Book QR Scanner</h4>
+                    <h4 class="text-xl font-semibold text-gray-800">QR Scanner (Books Only)</h4>
                 </div>
                 <p class="text-gray-600 mb-6">
                     Scan the book’s barcode or QR code to retrieve its details automatically.
@@ -38,18 +38,18 @@
         <!-- Manual Input Section -->
         <div class="flex justify-center mt-6">
             <div class="flex items-center w-full max-w-4xl gap-3">
-                <input type="text" id="accession-input" placeholder="Enter book barcode or Accession Number"
+                <input type="text" id="accession-input" placeholder="Enter Accession No., Equipment Name, or Asset Tag"
                     class="flex-grow p-3 border border-orange-200/80 rounded-md bg-orange-50/40 placeholder-orange-800/40 text-gray-800">
                 <button id="scan-button"
                     class="bg-orange-500 text-white px-5 py-3 rounded-md flex items-center gap-2 hover:bg-orange-600 border border-orange-500">
-                    <i class="ph ph-barcode"></i>
-                    <span>Scan</span>
+                    <i class="ph ph-magnifying-glass"></i>
+                    <span>Find Item</span>
                 </button>
             </div>
         </div>
         <p class="text-sm text-gray-500 mt-3 text-center">
             <i class="ph ph-info"></i>
-            Use a barcode scanner or manually enter the Barcode or Accession Number
+            Use a barcode scanner or manually enter the Accession Number, Equipment Name, or Asset Tag
         </p>
     </div>
 
@@ -85,8 +85,8 @@
         <div class="flex justify-between items-center mb-4">
             <div class="flex items-center gap-3">
                 <div>
-                    <h3 class="text-xl font-bold text-gray-800">Book Barcode Scanned Successfully</h3>
-                    <p class="text-gray-500 text-sm">Book information retrieved from the system</p>
+                    <h3 class="text-xl font-bold text-gray-800" id="return-modal-title">Item Scanned Successfully</h3>
+                    <p class="text-gray-500 text-sm" id="return-modal-subtitle">Item information retrieved from the system</p>
                 </div>
             </div>
             <button id="modal-close-button" class="text-gray-400 hover:text-gray-600">
@@ -97,24 +97,28 @@
         <div class="bg-stone-50 border border-stone-200 rounded-lg p-4 mb-4">
             <div class="flex justify-between items-start mb-2">
                 <div>
-                    <p class="text-xs text-gray-500">Title</p>
+                    <p class="text-xs text-gray-500" id="modal-item-type-label">Item Title</p>
                     <h4 id="modal-book-title" class="font-bold text-gray-800 text-lg"></h4>
-                    <p id="modal-book-author" class="text-sm text-gray-600 mt-0.5"></p>
+                    <p id="modal-book-author" class="text-sm text-gray-600 mt-0.5 book-only-field"></p>
                 </div>
                 <span id="modal-book-status" class="bg-orange-200 text-orange-800 text-xs font-semibold px-3 py-1 rounded-full"></span>
             </div>
             <div class="grid grid-cols-3 gap-4 mt-3">
-                <div>
+                <div class="book-only-field">
                     <p class="text-xs text-gray-500">ISBN</p>
                     <p id="modal-book-isbn" class="text-sm font-medium text-gray-700"></p>
                 </div>
-                <div>
-                    <p class="text-xs text-gray-500">Accession Number</p>
+                <div id="modal-item-identifier-container">
+                    <p class="text-xs text-gray-500" id="modal-item-identifier-label">Accession Number</p>
                     <p id="modal-book-accessionnumber" class="text-sm font-medium text-gray-700"></p>
                 </div>
-                <div>
+                <div class="book-only-field">
                     <p class="text-xs text-gray-500">Call Number</p>
                     <p id="modal-book-callnumber" class="text-sm font-medium text-gray-700"></p>
+                </div>
+                <div id="modal-equipment-asset-tag-container" style="display: none;">
+                    <p class="text-xs text-gray-500">Asset Tag</p>
+                    <p id="modal-equipment-asset-tag" class="text-sm font-medium text-gray-700"></p>
                 </div>
             </div>
         </div>
@@ -188,33 +192,37 @@
         <div class="bg-stone-50 border border-stone-200 rounded-lg p-4 mb-4">
             <div class="flex justify-between items-start mb-2">
                 <div>
-                    <p class="text-xs text-gray-500">Title</p>
+                    <p class="text-xs text-gray-500" id="available-modal-item-type-label">Item Title</p>
                     <h4 id="available-modal-title" class="font-bold text-gray-800 text-lg"></h4>
-                    <p id="available-modal-author" class="text-sm text-gray-600 mt-0.5"></p>
+                    <p id="available-modal-author" class="text-sm text-gray-600 mt-0.5 book-only-field"></p>
                 </div>
                 <span id="available-modal-status"
                     class="bg-green-200 text-green-800 text-xs font-semibold px-3 py-1 rounded-full"></span>
             </div>
 
             <div class="grid grid-cols-3 gap-4 mt-3">
-                <div>
+                <div class="book-only-field">
                     <p class="text-xs text-gray-500">ISBN</p>
                     <p id="available-modal-isbn" class="text-sm font-medium text-gray-700"></p>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-500">Accession No.</p>
+                    <p class="text-xs text-gray-500" id="available-modal-identifier-label">Accession No.</p>
                     <p id="available-modal-accession" class="text-sm font-medium text-gray-700"></p>
                 </div>
-                <div>
+                <div class="book-only-field">
                     <p class="text-xs text-gray-500">Call Number</p>
                     <p id="available-modal-call-number" class="text-sm font-medium text-gray-700">
                     </p>
                 </div>
+                <div id="available-modal-asset-tag-container" style="display: none;">
+                    <p class="text-xs text-gray-500">Asset Tag</p>
+                    <p id="available-modal-asset-tag" class="text-sm font-medium text-gray-700"></p>
+                </div>
             </div>
         </div>
 
-        <!-- Additional Book Information -->
-        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <!-- Additional Book Information (Hidden for Equipment) -->
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-4" id="available-modal-extra-info">
             <div class="flex items-center gap-2 mb-3">
                 <i class="ph ph-book text-gray-600"></i>
                 <h5 class="font-semibold text-gray-800">Book Details</h5>

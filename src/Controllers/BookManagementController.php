@@ -313,4 +313,14 @@ class BookManagementController extends Controller
 
         echo json_encode(['success' => true, 'imported' => $imported, 'errors' => $errors]);
     }
+
+    public function getBorrowingHistory($id)
+    {
+        try {
+            $history = $this->bookRepo->getBookBorrowingHistory((int)$id);
+            $this->json(['success' => true, 'history' => $history]);
+        } catch (\Exception $e) {
+            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
 }

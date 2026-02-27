@@ -37,17 +37,17 @@ class ReturningController extends Controller
 
   public function checkBookStatus()
   {
-    $accessionNumber = $_POST['accession_number'] ?? null;
+    $identifier = $_POST['accession_number'] ?? null;
 
-    if (!$accessionNumber) {
-      $this->sendJson(['success' => false, 'message' => 'Accession Number is required.'], 400);
+    if (!$identifier) {
+      $this->sendJson(['success' => false, 'message' => 'Accession Number or Item ID is required.'], 400);
       return;
     }
 
-    $result = $this->returningRepo->findBookByAccession($accessionNumber);
+    $result = $this->returningRepo->findItemByIdentifier($identifier);
 
     if ($result === null) {
-      $this->sendJson(['success' => false, 'message' => 'An error occurred while searching for the book.'], 500);
+      $this->sendJson(['success' => false, 'message' => 'An error occurred while searching for the item.'], 500);
       return;
     }
 

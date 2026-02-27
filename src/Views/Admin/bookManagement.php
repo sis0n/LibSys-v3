@@ -403,6 +403,47 @@
     </div>
 </div>
 
+<!-- --- BORROWING HISTORY MODAL --- -->
+<div id="historyModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+    <div class="bg-[var(--color-card)] rounded-xl shadow-lg border border-[var(--color-border)] w-full max-w-2xl max-h-[85vh] flex flex-col animate-fadeIn mx-4">
+        <div class="bg-gradient-to-r from-orange-500 to-amber-500 p-5 text-white flex justify-between items-center rounded-t-xl">
+            <h2 class="text-xl font-bold flex items-center gap-2">
+                <i class="ph ph-clock-counter-clockwise text-2xl"></i>
+                Borrowing History
+            </h2>
+            <button id="closeHistoryModal" class="text-white hover:text-red-200 transition">
+                <i class="ph ph-x text-3xl"></i>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-gray-50/30">
+            <div id="historyTableContainer" class="overflow-hidden border border-orange-100 rounded-lg shadow-sm">
+                <table class="min-w-full text-base text-gray-700">
+                    <thead class="bg-orange-50 text-left text-gray-800">
+                        <tr>
+                            <th class="py-4 px-5 font-bold border-b border-orange-100">Borrower</th>
+                            <th class="py-4 px-5 font-bold border-b border-orange-100">ID / Role</th>
+                            <th class="py-4 px-5 font-bold border-b border-orange-100">Borrowed Date</th>
+                            <th class="py-4 px-5 font-bold border-b border-orange-100">Returned Date</th>
+                            <th class="py-4 px-5 font-bold border-b border-orange-100 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody" class="divide-y divide-orange-100 bg-white">
+                        <!-- Rows injected here -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="historyEmptyState" class="hidden py-16 text-center text-gray-500">
+                <i class="ph ph-scroll text-6xl mb-4 text-orange-200"></i>
+                <p class="font-bold text-lg text-gray-700">No borrowing history found</p>
+                <p class="text-sm text-gray-400 mt-1">This book appears to be new or hasn't circulated yet.</p>
+            </div>
+        </div>
+        <div class="p-4 border-t flex justify-end bg-white rounded-b-xl">
+            <button id="closeHistoryBtn" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium text-sm">Close</button>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
@@ -539,8 +580,6 @@
 
     const searchInput = document.getElementById("bookSearchInput");
     const bookTableBody = document.getElementById("bookTableBody");
-    const bookCountSpan = document.getElementById("bookCount");
-    const bookTotalSpan = document.getElementById("bookTotal");
     const resultsIndicator = document.getElementById("resultsIndicator");
 
     const paginationControls = document.getElementById("paginationControls");
@@ -549,14 +588,19 @@
     const fileInput = document.getElementById("csvFile");
     const importMessage = document.getElementById("importMessage");
 
-    // Updated
     const multiSelectBtn = document.getElementById("multiSelectBtn");
     const multiSelectActions = document.getElementById("multiSelectActions");
     const selectAllBtn = document.getElementById("selectAllBtn");
     const cancelSelectionBtn = document.getElementById("cancelSelectionBtn");
     const multiDeleteBtn = document.getElementById("multiDeleteBtn");
     const selectionCount = document.getElementById("selectionCount");
-    // end
+
+    const historyModal = document.getElementById("historyModal");
+    const historyTableBody = document.getElementById("historyTableBody");
+    const historyTableContainer = document.getElementById("historyTableContainer");
+    const historyEmptyState = document.getElementById("historyEmptyState");
+    const closeHistoryModal = document.getElementById("closeHistoryModal");
+    const closeHistoryBtn = document.getElementById("closeHistoryBtn");
 
     if (!bookTableBody || !addBookModal || !editBookModal || !importModal || !searchInput || !paginationList || !resultsIndicator || !viewBookModal) {
         console.error("BookManagement Error: Core components missing.");
@@ -567,9 +611,7 @@
     // ==========================
     // STATE VARIABLES
     // ==========================
-    // Updated
     let books = [];
-    // end
     let totalBooks = 0;
     let currentEditingBookId = null;
     let currentSort = 'default';
@@ -580,11 +622,8 @@
     const limit = 30;
     let currentPage = 1;
     let totalPages = 1;
-    let currentApiBaseUrl = '';
-    // Updated
     let isMultiSelectMode = false;
     let selectedBooks = new Set();
-// end
 
     fileInput.addEventListener("change", () => {
         if (fileInput.files.length) {
@@ -864,7 +903,6 @@
     const renderBooks = (booksToRender) => {
         bookTableBody.innerHTML = "";
 
-        // Updated
         const headerRow = document.querySelector('thead tr');
         if (headerRow) {
             const firstHeader = headerRow.querySelector('th');
@@ -880,7 +918,6 @@
                 }
             }
         }
-        // end
 
         if (!booksToRender || booksToRender.length === 0) {
             const colspan = document.querySelector('thead tr').children.length;
@@ -910,7 +947,6 @@
             const status = book.availability ? String(book.availability).replace(/</g, "&lt;") : 'N/A';
             const safeTitle = title.replace(/'/g, "\\'").replace(/"/g, "&quot;");
 
-            // Updated
             let checkboxCell = '';
             if (isMultiSelectMode) {
                 checkboxCell = `
@@ -922,6 +958,10 @@
 
             let actionsCellHTML = `
                 <td class="py-3 px-4 text-center">
+                    <button onclick="openHistoryModal(${book.book_id})"
+                        class="border border-blue-300 text-blue-700 px-2 py-1 rounded hover:bg-blue-100" title="View Borrowing History">
+                        <i class='ph ph-eye pointer-events-none'></i>
+                    </button>
                     <button onclick="editBook(${book.book_id})"
                         class="border border-orange-300 text-orange-700 px-2 py-1 rounded hover:bg-orange-100">
                         <i class='ph ph-pencil pointer-events-none'></i>
@@ -957,7 +997,6 @@
         });
         bookTableBody.innerHTML = rowsHtml;
     };
-            // end
 
     // ==========================
     // PAGINATION RENDER
@@ -1015,7 +1054,7 @@
         createPageLink("next", `Next <i class="flex ph ph-caret-right text-lg"></i>`, page + 1, page === totalPages);
     }
 
-    paginationList.addEventListener('click', async (e) => { //Updated Naglagay ng async
+    paginationList.addEventListener('click', async (e) => {
         e.preventDefault();
         if (isLoading) return;
         const target = e.target.closest('a[data-page]');
@@ -1024,8 +1063,6 @@
         if (pageStr === '...') return;
         const pageNum = parseInt(pageStr, 10);
         if (!isNaN(pageNum) && pageNum !== currentPage) {
-
-            // Updated
             if (isMultiSelectMode && selectedBooks.size > 0) {
                 const isConfirmed = await showConfirmationModal(
                     "Clear Selection?",
@@ -1040,7 +1077,6 @@
             } else {
                 loadBooks(pageNum);
             }
-            // end
         }
     });
 
@@ -1351,5 +1387,106 @@
     // INIT
     // ==========================
     loadBooks(currentPage);
+
+    // ==========================
+    // HISTORY MODAL LOGIC
+    // ==========================
+    window.openHistoryModal = async (bookId) => {
+        if (!bookId) return;
+        
+        showLoadingModal("Loading History...", "Retrieving borrowing records.");
+        
+        try {
+            const res = await fetch(`api/admin/bookManagement/history/${bookId}`);
+            if (!res.ok) throw new Error("Failed to fetch history.");
+            const data = await res.json();
+            
+            Swal.close();
+
+            if (data.success && Array.isArray(data.history)) {
+                renderHistory(data.history);
+                openModal(historyModal);
+            } else {
+                showErrorToast("Error", data.message || "Could not retrieve history.");
+            }
+        } catch (err) {
+            Swal.close();
+            console.error("History fetch error:", err);
+            showErrorToast("Error", "An error occurred while fetching history.");
+        }
+    };
+
+    function renderHistory(history) {
+        historyTableBody.innerHTML = "";
+        
+        if (history.length === 0) {
+            historyTableContainer.classList.add("hidden");
+            historyEmptyState.classList.remove("hidden");
+            return;
+        }
+
+        historyTableContainer.classList.remove("hidden");
+        historyEmptyState.classList.add("hidden");
+
+        history.forEach(h => {
+            const fullName = `${h.first_name} ${h.last_name}`;
+            
+            // Format Borrowed Date
+            const bDateObj = h.borrowed_at ? new Date(h.borrowed_at) : null;
+            const bDateStr = bDateObj ? bDateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
+            const bTimeStr = bDateObj ? bDateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+            const fullBorrowedDateTime = bDateObj ? `
+                <div class="flex flex-col">
+                    <span class="text-gray-800 font-bold text-[15px]">${bDateStr}</span>
+                    <span class="text-[12px] text-gray-500 font-medium mt-0.5">${bTimeStr}</span>
+                </div>
+            ` : 'N/A';
+
+            // Format Returned Date
+            const rDateObj = h.returned_at ? new Date(h.returned_at) : null;
+            const rDateStr = rDateObj ? rDateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A';
+            const rTimeStr = rDateObj ? rDateObj.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: true }) : '';
+            
+            let fullReturnedDateTime = '';
+            if (h.status === 'returned' && rDateObj) {
+                fullReturnedDateTime = `
+                    <div class="flex flex-col">
+                        <span class="text-green-700 font-bold text-[15px]">${rDateStr}</span>
+                        <span class="text-[12px] text-green-600 font-medium mt-0.5">${rTimeStr}</span>
+                    </div>
+                `;
+            } else {
+                fullReturnedDateTime = `<span class="text-gray-400 italic text-[13px]">In Circulation</span>`;
+            }
+            
+            const statusClass = h.status === 'returned' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-orange-100 text-orange-700 border-orange-200';
+            
+            const row = `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="py-5 px-6 font-bold text-gray-900 text-[16px]">${fullName}</td>
+                    <td class="py-5 px-6">
+                        <div class="flex flex-col">
+                            <span class="text-gray-800 font-mono text-[18px] font-black tracking-tight">${h.identifier}</span>
+                            <span class="text-[11px] uppercase text-gray-500 font-bold tracking-widest">${h.role}</span>
+                        </div>
+                    </td>
+                    <td class="py-5 px-6">${fullBorrowedDateTime}</td>
+                    <td class="py-5 px-6">${fullReturnedDateTime}</td>
+                    <td class="py-5 px-6 text-center">
+                        <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase border-2 ${statusClass}">
+                            ${h.status}
+                        </span>
+                    </td>
+                </tr>
+            `;
+            historyTableBody.insertAdjacentHTML('beforeend', row);
+        });
+    }
+
+    closeHistoryModal?.addEventListener("click", () => closeModal(historyModal));
+    closeHistoryBtn?.addEventListener("click", () => closeModal(historyModal));
+    historyModal?.addEventListener("click", e => {
+        if (e.target === historyModal) closeModal(historyModal);
+    });
 });
 </script>

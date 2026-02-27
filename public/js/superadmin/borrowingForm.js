@@ -136,7 +136,6 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const itemIcon = document.getElementById('item_icon');
-  const itemIdWrapper = document.getElementById('item_id_wrapper');
   const itemNameWrapper = document.getElementById('item_name_wrapper');
   const accessionWrapper = document.getElementById('accession_number_wrapper');
   const bookTitleWrapper = document.getElementById('book_title_wrapper');
@@ -146,13 +145,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (type === 'Book') {
       itemIcon.className = 'ph ph-book-open text-3xl text-emerald-600';
-      if (itemIdWrapper) itemIdWrapper.style.display = 'none';
       if (itemNameWrapper) itemNameWrapper.style.display = 'none';
       if (accessionWrapper) accessionWrapper.style.display = 'block';
       if (bookTitleWrapper) bookTitleWrapper.style.display = 'block';
     } else {
       itemIcon.className = 'ph ph-desktop text-3xl text-emerald-600';
-      if (itemIdWrapper) itemIdWrapper.style.display = 'block';
       if (itemNameWrapper) itemNameWrapper.style.display = 'block';
       if (accessionWrapper) accessionWrapper.style.display = 'none';
       if (bookTitleWrapper) bookTitleWrapper.style.display = 'none';
@@ -274,7 +271,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   handleItemTypeChange('Equipment');
 
-  const setupCombobox = (inputId, suggestionsId, listId, arrowId, fetchUrl, fallbackData = [], highlightClass, hoverClass) => {
+  // Add a hidden input to store the selected equipment_id
+  const hiddenEquipmentIdInput = document.createElement('input');
+  hiddenEquipmentIdInput.type = 'hidden';
+  hiddenEquipmentIdInput.id = 'equipment_id_hidden';
+  hiddenEquipmentIdInput.name = 'equipment_id';
+  document.getElementById('main-borrow-form').appendChild(hiddenEquipmentIdInput);
+
+  const setupCombobox = (inputId, suggestionsId, listId, arrowId, fetchUrl, highlightClass, hoverClass) => {
     const input = document.getElementById(inputId);
     const suggestionsContainer = document.getElementById(suggestionsId);
     const suggestionsList = document.getElementById(listId);
@@ -282,21 +286,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!input || !suggestionsContainer || !suggestionsList || !dropdownArrow) return;
 
-    let suggestions = [];
+    let itemsData = []; // To store objects {id, name, asset_tag}
     let highlightedIndex = -1;
     let wasPointerDownOnInput = false;
 
-    const fetchSuggestionsData = async () => {
+    const fetchItemsData = async () => {
       try {
         const response = await fetch(fetchUrl);
-        suggestions = response.ok ? await response.json() : fallbackData;
+        if (response.ok) {
+          itemsData = await response.json();
+        } else {
+          // Fallback to empty array if API fails
+          itemsData = [];
+          showErrorToast('Failed to load items', 'Could not fetch equipment list from server.');
+        }
       } catch {
-        suggestions = fallbackData;
+        itemsData = [];
+        showErrorToast('Connection Failed', 'Could not connect to item list server.');
       }
     };
 
-    if (fetchUrl) fetchSuggestionsData();
-    else suggestions = fallbackData;
+    fetchItemsData();
 
     const updateHighlight = () => {
       const items = suggestionsList.querySelectorAll('li');
@@ -308,18 +318,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const value = input.value.toLowerCase();
       suggestionsList.innerHTML = '';
       highlightedIndex = -1;
-      let filtered = suggestions;
+      let filtered = itemsData;
 
-      if (filter && value.trim() !== '') filtered = suggestions.filter(s => s.toLowerCase().includes(value));
-      if (filtered.length === 0 && value.trim() !== '') return suggestionsContainer.classList.add('hidden');
+      if (filter && value.trim() !== '') {
+        filtered = itemsData.filter(item => item.equipment_name.toLowerCase().includes(value));
+      }
+      
+      if (filtered.length === 0 && value.trim() !== '') {
+        suggestionsContainer.classList.add('hidden');
+        return;
+      }
 
-      filtered.forEach(suggestion => {
+      filtered.forEach(item => {
         const li = document.createElement('li');
         li.className = `px-4 py-2 text-sm cursor-pointer ${hoverClass}`;
-        li.textContent = suggestion;
+        li.textContent = item.equipment_name;
+        li.dataset.equipmentId = item.equipment_id; // Store ID in dataset
+        li.dataset.equipmentName = item.equipment_name; // Store name in dataset
         li.addEventListener('mousedown', e => {
           e.preventDefault();
-          input.value = suggestion;
+          input.value = item.equipment_name;
+          hiddenEquipmentIdInput.value = item.equipment_id; // Set hidden ID
           hideSuggestions();
         });
         suggestionsList.appendChild(li);
@@ -336,7 +355,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     input.addEventListener('pointerdown', () => wasPointerDownOnInput = true);
     input.addEventListener('focus', () => { if (wasPointerDownOnInput) showSuggestions(false); });
-    input.addEventListener('input', () => showSuggestions(true));
+    input.addEventListener('input', () => {
+        hiddenEquipmentIdInput.value = ''; // Clear hidden ID on input change
+        showSuggestions(true);
+    });
     dropdownArrow.addEventListener('pointerdown', () => wasPointerDownOnInput = true);
     dropdownArrow.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); suggestionsContainer.classList.contains('hidden') ? showSuggestions(false) && input.focus() : hideSuggestions(); });
 
@@ -357,7 +379,9 @@ document.addEventListener('DOMContentLoaded', () => {
         case 'Enter':
           e.preventDefault();
           if (highlightedIndex > -1) {
-            input.value = items[highlightedIndex].textContent;
+            const selectedItem = items[highlightedIndex];
+            input.value = selectedItem.textContent;
+            hiddenEquipmentIdInput.value = selectedItem.dataset.equipmentId; // Set hidden ID
             hideSuggestions();
           }
           break;
@@ -377,8 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
     'item_name_suggestions',
     'item_name_suggestions_list',
     'item_name_dropdown_arrow',
-    'api/admin/borrowingForm/getEquipments',
-    ['Computer', 'Table', 'Extension Cord', 'Whiteboard', 'HDMI Cable', 'Chess', 'Scrabble', 'Domino', 'Connect 4'],
+    'api/superadmin/borrowingForm/getEquipments', // Updated API endpoint
     'bg-emerald-100',
     'hover:bg-emerald-50'
   );
@@ -388,8 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
     'collateral_id_suggestions',
     'collateral_id_suggestions_list',
     'collateral_id_dropdown_arrow',
-    'api/admin/borrowingForm/getCollaterals',
-    ['School ID', 'Library ID','Valid ID'],
+    'api/superadmin/borrowingForm/getCollaterals',
     'bg-amber-100',
     'hover:bg-amber-50'
   );

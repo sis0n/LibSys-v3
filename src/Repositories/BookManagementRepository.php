@@ -235,4 +235,32 @@ class BookManagementRepository
             return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
         }
     }
+
+    public function getBookBorrowingHistory(int $bookId): array
+    {
+        $sql = "
+            SELECT 
+                bt.transaction_id, bt.borrowed_at, bt.due_date, bti.returned_at, bti.status,
+                COALESCE(u.first_name, g.first_name) AS first_name,
+                COALESCE(u.last_name, g.last_name) AS last_name,
+                COALESCE(u.role, 'Guest') AS role,
+                COALESCE(s.student_number, f.unique_faculty_id, st.employee_id, 'N/A') AS identifier
+            FROM borrow_transaction_items bti
+            JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+            
+            LEFT JOIN students s ON bt.student_id = s.student_id
+            LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+            LEFT JOIN staff st ON bt.staff_id = st.staff_id
+            LEFT JOIN guests g ON bt.guest_id = g.guest_id
+            
+            LEFT JOIN users u ON (s.user_id = u.user_id OR f.user_id = u.user_id OR st.user_id = u.user_id)
+            
+            WHERE bti.book_id = :book_id AND bti.status IN ('borrowed', 'returned')
+            ORDER BY bt.borrowed_at DESC
+        ";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':book_id' => $bookId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

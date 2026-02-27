@@ -80,8 +80,7 @@
                         Name</th>
                     <th class="px-6 py-3 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">User
                         ID Number</th>
-                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">Accession
-                        Number</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">Accession Number / Item Name</th>
                     <th class="px-6 py-3 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">Borrowed
                         Date/Time</th>
                     <th class="px-6 py-3 text-left text-sm font-medium text-gray-600 uppercase tracking-wider">Returned
@@ -231,21 +230,25 @@
                         <p class="text-gray-500">Title:</p>
                         <p id="modalItemTitle" class="font-medium text-gray-800"></p>
                     </div>
-                    <div>
+                    <div id="modalItemAuthorRow">
                         <p class="text-gray-500">Author:</p>
                         <p id="modalItemAuthor" class="font-medium text-gray-800"></p>
                     </div>
-                    <div>
+                    <div id="modalItemAccessionRow">
                         <p class="text-gray-500">Accession No:</p>
                         <p id="modalItemAccession" class="font-medium text-gray-800"></p>
                     </div>
-                    <div>
+                    <div id="modalItemCallNoRow">
                         <p class="text-gray-500">Call No:</p>
                         <p id="modalItemCallNo" class="font-medium text-gray-800"></p>
                     </div>
-                    <div class="col-span-2">
+                    <div class="col-span-2" id="modalItemISBNRow">
                         <p class="text-gray-500">ISBN:</p>
                         <p id="modalItemISBN" class="font-medium text-gray-800"></p>
+                    </div>
+                    <div class="col-span-2" id="modalItemAssetTagRow" style="display: none;">
+                        <p class="text-gray-500">Asset Tag:</p>
+                        <p id="modalItemAssetTag" class="font-medium text-gray-800"></p>
                     </div>
                 </div>
             </div>

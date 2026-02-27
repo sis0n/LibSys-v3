@@ -278,7 +278,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!accessionNumber || scanInProgress) return;
         scanInProgress = true;
 
-        showLoadingModal("Checking Book Status...", "Please wait while we verify the Accession Number.");
+        showLoadingModal("Checking Item Identifier...", "Please wait while we verify the provided identifier.");
 
         try {
             const formData = new FormData();
@@ -304,16 +304,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
                 if (data.status === 'borrowed' && data.details) openReturnModal(data.details);
                 else if (data.status === 'available' && data.details) openAvailableModal(data.details, data.status);
-                // Gagamitin ang showProfileToast na may ORANGE border (warning)
-                else showProfileToast('ph-warning', 'Not Found', 'No book found with that Accession Number.', 'warning');
+                else showProfileToast('ph-warning', 'Not Found', 'No record found with that identifier.', 'warning');
             } else {
-                // Gagamitin ang showProfileToast na may BLACK/GRAY border (error)
                 showProfileToast('ph-x-circle', 'Error', result.message || 'An error occurred.', 'error');
             }
         } catch (error) {
             Swal.close();
-            console.error('Error checking book:', error);
-            // Gagamitin ang showProfileToast na may BLACK/GRAY border (error)
+            console.error('Error checking item:', error);
             showProfileToast('ph-x-circle', 'Error', error.message || 'Could not connect to the server.', 'error');
         }
 
@@ -329,8 +326,9 @@ document.addEventListener('DOMContentLoaded', function () {
         if (el) el.textContent = value || 'N/A';
     };
 
-    const openReturnModal = (bookData) => {
-        const type = bookData.borrower_type || 'student';
+    const openReturnModal = (itemData) => {
+        const type = itemData.borrower_type || 'student';
+        const itemType = itemData.item_type || 'Book';
         const isStudent = type === 'student';
         const isFaculty = type === 'faculty';
         const isStaff = type === 'staff';
@@ -339,50 +337,73 @@ document.addEventListener('DOMContentLoaded', function () {
         let idLabel = 'Student Number:';
 
         if (isStudent) {
-            borrowerId = bookData.student_number || bookData.id_number || 'N/A';
+            borrowerId = itemData.student_number || itemData.id_number || 'N/A';
         } else if (isFaculty) {
-            borrowerId = bookData.unique_faculty_id || bookData.id_number || bookData.faculty_id || 'N/A';
+            borrowerId = itemData.unique_faculty_id || itemData.id_number || itemData.faculty_id || 'N/A';
             idLabel = 'Faculty ID:';
         } else if (isStaff) {
-            borrowerId = bookData.employee_id || bookData.id_number || 'N/A';
+            borrowerId = itemData.employee_id || itemData.id_number || 'N/A';
             idLabel = 'Employee ID:';
         } else {
-            borrowerId = bookData.id_number || 'N/A';
+            borrowerId = itemData.id_number || 'N/A';
             idLabel = 'Guest ID:';
         }
 
-        let courseOrDepartment = bookData.course_or_department || 'N/A';
+        let courseOrDepartment = itemData.course_or_department || 'N/A';
         let yearSectionLabel = 'Year & Section:';
         let yearSectionValue = 'N/A';
 
         if (isStudent) {
-            yearSectionValue = bookData.student_year_section || 'N/A';
+            yearSectionValue = itemData.student_year_section || 'N/A';
             yearSectionLabel = 'Year & Section:';
-
         } else if (isFaculty) {
-            const facultyDeptString = bookData.course_or_department || ' - ';
+            const facultyDeptString = itemData.course_or_department || ' - ';
             const parts = facultyDeptString.split(' - ');
-
             courseOrDepartment = parts[0] || 'N/A';
             yearSectionLabel = 'College Name:';
             yearSectionValue = parts[1] || 'N/A';
         } else if (isStaff) {
-            courseOrDepartment = bookData.course_or_department || 'N/A';
+            courseOrDepartment = itemData.course_or_department || 'N/A';
             yearSectionLabel = 'Position:';
-            yearSectionValue = bookData.borrower_type?.toUpperCase() || 'N/A';
+            yearSectionValue = itemData.borrower_type?.toUpperCase() || 'N/A';
         } else {
             yearSectionLabel = 'Borrower Type:';
-            yearSectionValue = bookData.borrower_type?.toUpperCase() || 'Guest';
+            yearSectionValue = itemData.borrower_type?.toUpperCase() || 'Guest';
         }
 
-        setText('modal-book-title', bookData.book_title || bookData.title);
-        setText('modal-book-author', bookData.author);
-        setText('modal-book-status', bookData.availability);
-        setText('modal-book-isbn', bookData.book_isbn);
-        setText('modal-book-accessionnumber', bookData.accession_number);
-        setText('modal-book-callnumber', bookData.call_number);
+        // --- Dynamic Item Info Display ---
+        setText('modal-book-title', itemData.title);
+        setText('modal-book-status', itemData.availability);
+        
+        // Modal Headers
+        document.getElementById('return-modal-title').textContent = `${itemType} Identifier Scanned`;
+        document.getElementById('modal-item-type-label').textContent = `${itemType} Title`;
 
-        setText('modal-borrower-name', bookData.borrower_name);
+        // Book Fields vs Equipment Fields
+        const bookOnlyFields = document.querySelectorAll('#return-modal .book-only-field');
+        const assetTagContainer = document.getElementById('modal-equipment-asset-tag-container');
+        const identifierLabel = document.getElementById('modal-item-identifier-label');
+
+        if (itemType === 'Book') {
+            bookOnlyFields.forEach(el => el.style.display = '');
+            if (assetTagContainer) assetTagContainer.style.display = 'none';
+            if (identifierLabel) identifierLabel.textContent = 'Accession Number';
+            
+            setText('modal-book-author', itemData.author);
+            setText('modal-book-isbn', itemData.book_isbn);
+            setText('modal-book-accessionnumber', itemData.accession_number);
+            setText('modal-book-callnumber', itemData.call_number);
+        } else {
+            // It's Equipment
+            bookOnlyFields.forEach(el => el.style.display = 'none');
+            if (assetTagContainer) assetTagContainer.style.display = 'block';
+            if (identifierLabel) identifierLabel.textContent = 'Equipment Name';
+            
+            setText('modal-book-accessionnumber', itemData.title); // Identifier for equipment
+            setText('modal-equipment-asset-tag', itemData.asset_tag || 'N/A');
+        }
+
+        setText('modal-borrower-name', itemData.borrower_name);
 
         const idLabelEl = document.getElementById('modal-student-id-label');
         const yearLabelEl = document.getElementById('modal-year-section-label');
@@ -394,13 +415,13 @@ document.addEventListener('DOMContentLoaded', function () {
         setText('modal-borrower-course', courseOrDepartment);
         setText('modal-borrower-year-section', yearSectionValue);
 
-        setText('modal-borrower-email', bookData.email || 'N/A');
-        setText('modal-borrower-contact', bookData.contact || 'N/A');
-        setText('modal-borrow-date', bookData.date_borrowed);
-        setText('modal-due-date', bookData.due_date);
+        setText('modal-borrower-email', itemData.email || 'N/A');
+        setText('modal-borrower-contact', itemData.contact || 'N/A');
+        setText('modal-borrow-date', itemData.date_borrowed);
+        setText('modal-due-date', itemData.due_date);
 
-        if (modalReturnButton) modalReturnButton.dataset.borrowingId = bookData.borrowing_id;
-        if (modalExtendButton) modalExtendButton.dataset.borrowingId = bookData.borrowing_id;
+        if (modalReturnButton) modalReturnButton.dataset.borrowingId = itemData.borrowing_id;
+        if (modalExtendButton) modalExtendButton.dataset.borrowingId = itemData.borrowing_id;
 
         // Show modal
         if (returnModal) returnModal.classList.remove('hidden');
@@ -459,45 +480,57 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
 
-    const openAvailableModal = (bookData, status) => {
+    const openAvailableModal = (itemData, status) => {
+        const itemType = itemData.item_type || 'Book';
+        
         const setText = (id, value) => {
             const el = document.getElementById(id);
             if (el) el.textContent = value || 'N/A';
         };
 
-        // Book basic info
-        setText('available-modal-title', bookData.book_title || bookData.title);
-        setText('available-modal-author', bookData.author);
-        setText('available-modal-isbn', bookData.book_isbn);
-        setText('available-modal-accession', bookData.accession_number);
-        setText('available-modal-call-number', bookData.call_number);
+        // Header and labels
+        setText('available-modal-title', itemData.title);
+        const modalTitle = document.querySelector('#available-book-modal h3');
+        if (modalTitle) modalTitle.textContent = `${itemType} Identifier Verified Successfully`;
+        
+        document.getElementById('available-modal-item-type-label').textContent = `${itemType} Title`;
+
+        // Toggle fields visibility
+        const bookOnlyFields = document.querySelectorAll('#available-book-modal .book-only-field');
+        const assetTagContainer = document.getElementById('available-modal-asset-tag-container');
+        const identifierLabel = document.getElementById('available-modal-identifier-label');
+        const extraInfoContainer = document.getElementById('available-modal-extra-info');
+
+        if (itemType === 'Book') {
+            bookOnlyFields.forEach(el => el.style.display = '');
+            if (assetTagContainer) assetTagContainer.style.display = 'none';
+            if (identifierLabel) identifierLabel.textContent = 'Accession No.';
+            if (extraInfoContainer) extraInfoContainer.style.display = '';
+            
+            setText('available-modal-author', itemData.author);
+            setText('available-modal-isbn', itemData.book_isbn);
+            setText('available-modal-accession', itemData.accession_number);
+            setText('available-modal-call-number', itemData.call_number);
+        } else {
+            // It's Equipment
+            bookOnlyFields.forEach(el => el.style.display = 'none');
+            if (assetTagContainer) assetTagContainer.style.display = 'block';
+            if (identifierLabel) identifierLabel.textContent = 'Equipment Name';
+            if (extraInfoContainer) extraInfoContainer.style.display = 'none';
+            
+            setText('available-modal-accession', itemData.title); // Identifier for equipment
+            setText('available-modal-asset-tag', itemData.asset_tag || 'N/A');
+        }
 
         // Status
         const statusEl = document.getElementById('available-modal-status');
-        const displayStatus = status || bookData.availability || 'Unknown';
+        const displayStatus = status || itemData.availability || 'Unknown';
         if (statusEl) {
             statusEl.textContent = displayStatus;
             statusEl.className = displayStatus.toLowerCase() === 'available'
                 ? 'bg-green-200 text-green-800 text-xs font-semibold px-3 py-1 rounded-full'
                 : 'bg-gray-200 text-gray-800 text-xs font-semibold px-3 py-1 rounded-full';
         }
-
-        // Borrower info (Ito ay malinis dahil ito ay available book)
-        setText('available-modal-borrower-name', bookData.borrower_name || 'N/A');
-        setText('available-modal-borrower-id', bookData.id_number || 'N/A');
-        setText('available-modal-borrower-course', bookData.course_or_department || 'N/A');
-        setText('available-modal-borrower-contact', bookData.contact || 'N/A');
-        setText('available-modal-date-borrowed', bookData.date_borrowed || 'N/A');
-        setText('available-modal-due-date', bookData.due_date || 'N/A');
-
-        // Additional Book Details
-        setText('available-modal-subject', bookData.subject || 'N/A');
-        setText('available-modal-place', bookData.book_place || 'N/A');
-        setText('available-modal-publisher', bookData.book_publisher || 'N/A');
-        setText('available-modal-year', bookData.year || 'N/A');
-        setText('available-modal-edition', bookData.book_edition || 'N/A');
-        setText('available-modal-supplementary', bookData.book_supplementary || 'N/A');
-        setText('available-modal-description', bookData.description || 'N/A');
 
         // Show modal
         if (availableBookModal) availableBookModal.classList.remove('hidden');
