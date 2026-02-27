@@ -73,6 +73,7 @@ class FacultyBorrowingHistoryController extends Controller
                 'id' => $record['item_id'],
                 'title' => $record['title'] ?? 'N/A',
                 'author' => $record['author'] ?? 'N/A',
+                'item_type' => $record['item_type'] ?? 'Book',
                 'borrowedDate' => $record['borrowed_at'] ? date('M d, Y', strtotime($record['borrowed_at'])) : 'N/A',
                 'dueDate' => $record['due_date'] ? date('M d, Y', $dueDate) : 'N/A',
                 'returnedDate' => $returnedDate ? date('M d, Y', $returnedDate) : 'Not returned',

@@ -44,19 +44,22 @@ class FacultyBorrowingHistoryRepository
             SELECT 
                 bt.transaction_id, 
                 bti.item_id, 
-                b.title, 
-                b.author, 
+                COALESCE(b.title, e.equipment_name) AS title, 
+                COALESCE(b.author, 'N/A') AS author, 
                 bt.borrowed_at, 
                 bt.due_date, 
                 bti.returned_at, 
                 bti.status,
                 CONCAT(faculty_user.first_name, ' ', faculty_user.last_name) AS faculty_name,
-                COALESCE(CONCAT(librarian.first_name, ' ', librarian.last_name), 'N/A') AS librarian_name
+                COALESCE(CONCAT(librarian.first_name, ' ', librarian.last_name), 'N/A') AS librarian_name,
+                CASE WHEN bti.book_id IS NOT NULL THEN 'Book' ELSE 'Equipment' END AS item_type
             FROM borrow_transactions bt
             JOIN borrow_transaction_items bti 
                 ON bt.transaction_id = bti.transaction_id
-            JOIN books b 
+            LEFT JOIN books b 
                 ON bti.book_id = b.book_id
+            LEFT JOIN equipments e
+                ON bti.equipment_id = e.equipment_id
             JOIN faculty f 
                 ON bt.faculty_id = f.faculty_id
             LEFT JOIN users faculty_user 
@@ -78,16 +81,18 @@ class FacultyBorrowingHistoryRepository
         SELECT 
             bt.transaction_id, 
             bti.item_id, 
-            b.title, 
-            b.author, 
+            COALESCE(b.title, e.equipment_name) AS title, 
+            COALESCE(b.author, 'N/A') AS author, 
             bt.borrowed_at, 
             bt.due_date, 
             bti.returned_at, 
             bti.status,
-            COALESCE(CONCAT(librarian.first_name, ' ', librarian.last_name), 'N/A') AS librarian_name
+            COALESCE(CONCAT(librarian.first_name, ' ', librarian.last_name), 'N/A') AS librarian_name,
+            CASE WHEN bti.book_id IS NOT NULL THEN 'Book' ELSE 'Equipment' END AS item_type
         FROM borrow_transactions bt
         JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-        JOIN books b ON bti.book_id = b.book_id
+        LEFT JOIN books b ON bti.book_id = b.book_id
+        LEFT JOIN equipments e ON bti.equipment_id = e.equipment_id
         JOIN faculty s ON bt.faculty_id = s.faculty_id
         LEFT JOIN users librarian ON bt.librarian_id = librarian.user_id
         WHERE s.user_id = :user_id

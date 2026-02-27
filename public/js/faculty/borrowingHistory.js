@@ -42,6 +42,7 @@ function renderBorrowingTable(records) {
     const returnedBoxClass = record.statusText === 'Returned' ? 'bg-[var(--color-green-50)]' : 'bg-[var(--color-gray-100)]';
     const returnedIconClass = record.returnedDate !== 'Not returned' ? 'text-[var(--color-green-600)]' : 'text-gray-400';
     const overdueClass = record.isOverdue ? 'bg-red-50 border-red-200' : 'border-[var(--color-border)]';
+    const itemIconClass = record.item_type === 'Book' ? 'ph ph-book' : 'ph ph-package';
 
     return `
       <div class="relative rounded-lg p-4 border ${overdueClass} bg-[var(--color-card)] shadow-sm">
@@ -49,9 +50,9 @@ function renderBorrowingTable(records) {
               ${record.statusText}
           </span>
           <h4 class="font-semibold text-[var(--color-foreground)] pr-24">${record.title}</h4>
-          <p class="text-sm text-gray-600 mb-3">by ${record.author}</p>
+          <p class="text-sm text-gray-600 mb-3">${record.item_type === 'Book' ? 'by ' + record.author : 'Equipment / Item'}</p>
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-              <div class="bg-orange-50 p-2 rounded"><i class="ph ph-book text-orange-600 mr-1"></i>Borrowed<br><span class="font-medium">${record.borrowedDate}</span></div>
+              <div class="bg-orange-50 p-2 rounded"><i class="${itemIconClass} text-orange-600 mr-1"></i>Borrowed<br><span class="font-medium">${record.borrowedDate}</span></div>
               <div class="bg-gray-100 p-2 rounded"><i class="ph ph-calendar-blank text-gray-600 mr-1"></i>Due Date<br><span class="font-medium">${record.dueDate}</span></div>
               <div class="${returnedBoxClass} p-2 rounded"><i class="ph ph-check-circle ${returnedIconClass} mr-1"></i>Returned<br><span class="font-medium">${record.returnedDate}</span></div>
               <div class="bg-gray-100 p-2 rounded"><i class="ph ph-user text-gray-600 mr-1"></i>Librarian<br><span class="font-medium">${record.librarianName || 'N/A'}</span></div>

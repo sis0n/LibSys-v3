@@ -14,7 +14,6 @@ class StaffBorrowingHistoryController extends Controller
         $this->repo = new StaffBorrowingHistoryRepository();
     }
 
-    // --- Pagination Start ---
     public function fetchPaginatedBorrowingHistory()
     {
         header('Content-Type: application/json');
@@ -56,13 +55,11 @@ class StaffBorrowingHistoryController extends Controller
             $isOverdue = $isBorrowed && ($dueDate < $now);
             $statusText = ucfirst($record['status']);
             
-            // Default to gray, will be overridden by specific statuses
             $statusBgClass = 'bg-gray-100 text-gray-700'; 
 
             if ($record['status'] === 'returned') {
                  $statusBgClass = 'bg-green-100 text-green-700';
             } elseif ($isOverdue) {
-                // Keep status as 'Borrowed' but use destructive colors for overdue items
                 $statusText = 'Borrowed'; 
                  $statusBgClass = 'bg-red-100 text-red-700';
             } elseif ($isBorrowed) {
@@ -73,6 +70,7 @@ class StaffBorrowingHistoryController extends Controller
                 'id' => $record['item_id'],
                 'title' => $record['title'] ?? 'N/A',
                 'author' => $record['author'] ?? 'N/A',
+                'item_type' => $record['item_type'] ?? 'Book',
                 'borrowedDate' => $record['borrowed_at'] ? date('M d, Y', strtotime($record['borrowed_at'])) : 'N/A',
                 'dueDate' => $record['due_date'] ? date('M d, Y', $dueDate) : 'N/A',
                 'returnedDate' => $returnedDate ? date('M d, Y', $returnedDate) : 'Not returned',
@@ -83,9 +81,7 @@ class StaffBorrowingHistoryController extends Controller
             ];
         }, $history);
     }
-    // --- Pagination End ---
 
-    // --- Stats Start ---
     public function fetchStats()
     {
         header('Content-Type: application/json');
@@ -104,5 +100,4 @@ class StaffBorrowingHistoryController extends Controller
             'stats' => $stats
         ]);
     }
-    // --- Stats End ---
 }
