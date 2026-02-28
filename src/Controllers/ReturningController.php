@@ -9,10 +9,12 @@ use App\Services\MailService;
 class ReturningController extends Controller
 {
   private $returningRepo;
+  private $auditRepo;
 
   public function __construct()
   {
     $this->returningRepo = new ReturningRepository();
+    $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }
 
   private function sendJson(array $data, int $status = 200): void
@@ -66,6 +68,7 @@ class ReturningController extends Controller
     $success = $this->returningRepo->markAsReturned((int)$itemId);
 
     if ($success) {
+      $this->auditRepo->log($_SESSION['user_id'], 'RETURN', 'TRANSACTIONS', $itemId, "Item marked as returned.");
       $this->sendJson(['success' => true, 'message' => 'Book returned successfully!']);
     } else {
       $this->sendJson(['success' => false, 'message' => 'Failed to return book. It might be already returned or a database error occurred.']);

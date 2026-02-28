@@ -10,11 +10,13 @@ class QRScannerController extends Controller
 {
   protected $qrScannerRepository;
   protected $policyRepo;
+  protected $auditRepo;
 
   public function __construct()
   {
     $this->qrScannerRepository = new QRScannerRepository();
     $this->policyRepo = new LibraryPolicyRepository();
+    $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }
 
   private function processTicketLookup(string $transactionCode)
@@ -208,6 +210,7 @@ class QRScannerController extends Controller
 
     if ($success) {
       unset($_SESSION['last_scanned_ticket']);
+      $this->auditRepo->log($staffId, 'BORROW', 'TRANSACTIONS', $transactionCode, "QR-based borrow processed for {$transaction['first_name']} {$transaction['last_name']} ({$userType})");
       echo json_encode(['success' => true, 'message' => 'Borrow transaction successfully processed.']);
     } else {
       echo json_encode(['success' => false, 'message' => 'Failed to finalize borrow transaction.']);

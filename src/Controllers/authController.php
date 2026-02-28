@@ -13,12 +13,14 @@ class AuthController extends Controller
     private $AuthRepository;
     private $UserRepository;
     private $UserPermissionRepo;
+    private $auditRepo;
 
     public function __construct()
     {
-        $this->AuthRepository = new AuthRepository();
-        $this->UserRepository = new UserRepository();
-        $this->UserPermissionRepo = new UserPermissionModuleRepository();
+        $this->AuthRepository = new \App\Repositories\AuthRepository();
+        $this->UserRepository = new \App\Repositories\UserRepository();
+        $this->UserPermissionRepo = new \App\Repositories\UserPermissionModuleRepository();
+        $this->auditRepo = new \App\Repositories\AuditLogRepository();
     }
 
     public function showLogin()
@@ -102,6 +104,8 @@ class AuthController extends Controller
             $_SESSION[$key] = $value;
         }
 
+        $this->auditRepo->log($_SESSION['user_id'], 'LOGIN', 'AUTH', null, 'User logged in successfully.');
+
         $redirect = '';
         $userRole = $_SESSION['role'] ?? '';
         $finalPath = '';
@@ -129,6 +133,9 @@ class AuthController extends Controller
     public function logout()
     {
         session_start();
+        if (isset($_SESSION['user_id'])) {
+            $this->auditRepo->log($_SESSION['user_id'], 'LOGOUT', 'AUTH', null, 'User logged out.');
+        }
         $this->AuthRepository->logout();
         header("Location: " . BASE_URL . "/login");
     }

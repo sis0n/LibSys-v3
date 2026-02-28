@@ -269,7 +269,7 @@ $baseUrl = BASE_URL;
 
                 <div class="sidebar-dropdown" data-pages='["userManagement","bookManagement", "equipmentManagement"]'>
                     <button
-                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["userManagement", "bookManagement", "equipmentManagement"])) ? 'bg-orange-100 text-orange-900' : 'hover:bg-orange-100 text-orange-900' ?>">
+                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["userManagement", "bookManagement", "equipmentManagement"])) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
                         <span class="flex items-center gap-x-3">
                             <i class="ph ph-folders text-2xl"></i>
                             <span class="text-base">Management</span>
@@ -297,7 +297,7 @@ $baseUrl = BASE_URL;
 
                 <div class="sidebar-dropdown" data-pages='["qrScanner", "returning", "borrowingForm"]'>
                     <button
-                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["qrScanner", "returning", "borrowingForm"])) ? 'bg-orange-100 text-orange-900' : 'hover:bg-orange-100 text-orange-900' ?>">
+                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["qrScanner", "returning", "borrowingForm"])) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
                         <span class="flex items-center gap-x-3">
                             <i class="ph ph-swap text-2xl"></i>
                             <span class="text-base">QR & Returning</span>
@@ -323,9 +323,9 @@ $baseUrl = BASE_URL;
                     </div>
                 </div>
 
-                <div class="sidebar-dropdown" data-pages='["attendanceLogs", "topVisitor", "transactionHistory"]'>
+                <div class="sidebar-dropdown" data-pages='["attendanceLogs", "topVisitor", "transactionHistory", "auditLogs"]'>
                     <button
-                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["attendanceLogs", "topVisitor", "transactionHistory"])) ? 'bg-orange-100 text-orange-900' : 'hover:bg-orange-100 text-orange-900' ?>">
+                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["attendanceLogs", "topVisitor", "transactionHistory", "auditLogs"])) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
                         <span class="flex items-center gap-x-3">
                             <i class="ph ph-activity text-2xl"></i>
                             <span class="text-base">Activity & Logs</span>
@@ -348,12 +348,17 @@ $baseUrl = BASE_URL;
                             <i class="ph ph-arrows-left-right text-xl"></i>
                             <span class="text-base text-sm">Transaction History</span>
                         </a>
+                        <a href="<?= $baseUrl ?>/auditLogs"
+                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'auditLogs' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
+                            <i class="ph ph-shield-check text-xl"></i>
+                            <span class="text-base text-sm">Audit Trail</span>
+                        </a>
                     </div>
                 </div>
 
                 <div class="sidebar-dropdown" data-pages='["backup", "restoreBooks", "restoreUser"]'>
                     <button
-                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["backup", "restoreBooks", "restoreUser"])) ? 'bg-orange-100 text-orange-900' : 'hover:bg-orange-100 text-orange-900' ?>">
+                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["backup", "restoreBooks", "restoreUser"])) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
                         <span class="flex items-center gap-x-3">
                             <i class="ph ph-database text-2xl"></i>
                             <span class="text-base">Backup & Restore</span>
@@ -386,7 +391,7 @@ $baseUrl = BASE_URL;
                 </a>
 
                 <div class="sidebar-dropdown" data-pages='["myProfile", "changePassword"]'>
-                    <button class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["myProfile", "changePassword"])) ? 'bg-orange-100 text-orange-900' : 'hover:bg-orange-100 text-orange-900' ?>">
+                    <button class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["myProfile", "changePassword"])) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
                         <span class="flex items-center gap-x-3">
                             <i class="ph ph-user-gear text-2xl"></i>
                             <span class="text-base">Account Settings</span>

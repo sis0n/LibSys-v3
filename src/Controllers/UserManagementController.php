@@ -16,6 +16,7 @@ class UserManagementController extends Controller
   private UserPermissionModuleRepository $userPermissionRepo;
   private FacultyRepository $facultyRepo;
   private StaffRepository $staffRepo;
+  private \App\Repositories\AuditLogRepository $auditRepo;
 
   public function __construct()
   {
@@ -24,6 +25,7 @@ class UserManagementController extends Controller
     $this->userPermissionRepo = new UserPermissionModuleRepository();
     $this->facultyRepo = new FacultyRepository();
     $this->staffRepo = new StaffRepository();
+    $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }
 
   public function index()
@@ -146,6 +148,10 @@ class UserManagementController extends Controller
 
       $userId = $this->userRepo->insertUser($userData);
 
+      if ($userId) {
+          $this->auditRepo->log($_SESSION['user_id'], 'CREATE', 'USERS', $username, "Added new user: $first_name $last_name as " . ucfirst($role));
+      }
+
       // roles based
       switch ($role) {
         case 'student':
@@ -256,7 +262,12 @@ class UserManagementController extends Controller
         return;
       }
 
+      $user = $this->userRepo->getUserById($id);
       $deleted = $this->userRepo->deleteUserWithCascade((int)$id, $deletedBy);
+
+      if ($deleted && $user) {
+          $this->auditRepo->log($deletedBy, 'DELETE', 'USERS', $user['username'], "Deleted user: {$user['first_name']} {$user['last_name']}");
+      }
 
       echo json_encode([
         'success' => $deleted,
@@ -421,6 +432,8 @@ class UserManagementController extends Controller
       $updatedUser = $this->userRepo->getUserById((int)$id);
       $newStatus = $updatedUser['is_active'] ? 'Active' : 'Inactive';
 
+      $this->auditRepo->log($_SESSION['user_id'], 'TOGGLE_STATUS', 'USERS', $user['username'], "Set status of {$user['first_name']} {$user['last_name']} to $newStatus");
+
       echo json_encode([
         'success' => true,
         'message' => 'User status updated successfully.',
@@ -486,7 +499,7 @@ class UserManagementController extends Controller
       // --- END NG LOGIC ---
 
       if ($userUpdated || $modulesUpdated) {
-        // Mag-success kung may nagbago sa details O sa modules
+        $this->auditRepo->log($_SESSION['user_id'], 'UPDATE', 'USERS', $currentUser['username'], "Updated details/permissions for {$currentUser['first_name']} {$currentUser['last_name']}");
         echo json_encode([
           'success' => true,
           'message' => 'User updated successfully.'

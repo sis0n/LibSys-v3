@@ -9,10 +9,12 @@ use ZipArchive;
 class BackupController extends Controller
 {
   protected BackupRepository $backupRepo;
+  protected \App\Repositories\AuditLogRepository $auditRepo;
 
   public function __construct()
   {
     $this->backupRepo = new BackupRepository();
+    $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }
 
   private function getBackupDir(): string
@@ -61,6 +63,7 @@ class BackupController extends Controller
 
       $size = round(filesize($path) / 1024 / 1024, 2) . ' MB';
       $this->backupRepo->logBackup($filename, 'SQL', $_SESSION['user_name'] ?? 'Admin', $size);
+      $this->auditRepo->log($_SESSION['user_id'], 'BACKUP', 'SYSTEM', $filename, "Full database backup initiated ($size)");
 
       echo json_encode(['success' => true, 'filename' => $filename]);
     } catch (\Throwable $e) {
@@ -97,6 +100,7 @@ class BackupController extends Controller
       $zip->close();
 
       $this->backupRepo->logBackup($zipFilename, 'ZIP', $_SESSION['user_id']);
+      $this->auditRepo->log($_SESSION['user_id'], 'EXPORT', 'SYSTEM', $zipFilename, "Exported table data for: $tableName");
 
       echo json_encode(['success' => true, 'filename' => $zipFilename]);
     } catch (\Throwable $e) {

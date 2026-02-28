@@ -9,10 +9,12 @@ use Exception;
 class ManualBorrowingController extends Controller
 {
   private ManualBorrowingRepository $manualRepo;
+  private \App\Repositories\AuditLogRepository $auditRepo;
 
   public function __construct()
   {
     $this->manualRepo = new ManualBorrowingRepository();
+    $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }
 
   public function getEquipments(): void
@@ -151,6 +153,7 @@ class ManualBorrowingController extends Controller
       $insert = $this->manualRepo->createManualBorrow($borrowData);
 
       if ($insert['success']) {
+        $this->auditRepo->log($_SESSION['user_id'], 'BORROW', 'TRANSACTIONS', $insert['transaction_code'], "Manual borrow processed for {$data['first_name']} {$data['last_name']} ({$data['role']}) - Item: {$data['equipment_type']}");
         $this->sendJson([
           'success' => true,
           'message' => 'Borrow transaction created successfully',

@@ -223,6 +223,9 @@ class RouteConfig
     $router->get('api/superadmin/libraryPolicies/getAll', 'LibraryPolicyController@getAll', ['superadmin']);
     $router->post('api/superadmin/libraryPolicies/update', 'LibraryPolicyController@update', ['superadmin']);
 
+    $router->get('api/superadmin/auditLogs/fetch', 'AuditLogController@fetch', ['superadmin']);
+    $router->get('auditLogs', 'AuditLogController@index', ['superadmin']);
+
     $router->post('generate-report', 'DomPdfTemplateController@generateLibraryReport', ['superadmin']);
 
     $router->get('api/student/attendance/get', 'AttendanceController@getMyAttendance', ['student']);

@@ -8,10 +8,12 @@ use App\Core\Controller;
 class BookManagementController extends Controller
 {
     private $bookRepo;
+    private $auditRepo;
 
     public function __construct()
     {
         $this->bookRepo = new BookManagementRepository();
+        $this->auditRepo = new \App\Repositories\AuditLogRepository();
     }
 
     private function json($data, $statusCode = 200)
@@ -92,6 +94,7 @@ class BookManagementController extends Controller
         try {
             $success = $this->bookRepo->createBook($data);
             if ($success) {
+                $this->auditRepo->log($_SESSION['user_id'], 'CREATE', 'BOOKS', $data['accession_number'], "Added new book: {$data['title']}");
                 $this->json(['success' => true, 'message' => 'Book added successfully!']);
             } else {
                 $this->json(['success' => false, 'message' => 'Database error.'], 500);
@@ -134,6 +137,7 @@ class BookManagementController extends Controller
             $success = $this->bookRepo->updateBook($id, $data, $currentUserId);
 
             if ($success) {
+                $this->auditRepo->log($currentUserId, 'UPDATE', 'BOOKS', $data['accession_number'], "Updated book: {$data['title']}");
                 $this->json(['success' => true, 'message' => 'Book updated successfully!']);
             } else {
                 $this->json(['success' => false, 'message' => 'Failed to update or no changes made.'], 500);
@@ -167,6 +171,10 @@ class BookManagementController extends Controller
             }
 
             $result = $this->bookRepo->deleteBook($bookId, $deletedByUserId);
+
+            if ($result['success']) {
+                $this->auditRepo->log($deletedByUserId, 'DELETE', 'BOOKS', $book['accession_number'], "Deleted book: {$book['title']}");
+            }
 
             $status = $result['success'] ? 200 : 400;
 

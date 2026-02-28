@@ -8,6 +8,7 @@ use App\Repositories\LibraryPolicyRepository;
 class LibraryPolicyController extends Controller
 {
     private LibraryPolicyRepository $policyRepo;
+    private \App\Repositories\AuditLogRepository $auditRepo;
 
     public function __construct()
     {
@@ -15,6 +16,7 @@ class LibraryPolicyController extends Controller
             session_start();
         }
         $this->policyRepo = new LibraryPolicyRepository();
+        $this->auditRepo = new \App\Repositories\AuditLogRepository();
     }
 
     private function json($data, int $statusCode = 200)
@@ -70,6 +72,7 @@ class LibraryPolicyController extends Controller
         $success = $this->policyRepo->updatePolicy($role, $maxBooks, $durationDays);
 
         if ($success) {
+            $this->auditRepo->log($_SESSION['user_id'], 'UPDATE', 'POLICIES', $role, "Updated policy for $role: Max Books = $maxBooks, Duration = $durationDays days");
             $this->json(['success' => true, 'message' => 'Policy updated successfully']);
         } else {
             $this->json(['success' => false, 'message' => 'Failed to update policy'], 500);

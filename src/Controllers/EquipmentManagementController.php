@@ -9,10 +9,12 @@ use Exception;
 class EquipmentManagementController extends Controller
 {
     private $repo;
+    private $auditRepo;
 
     public function __construct()
     {
         $this->repo = new EquipmentManagementRepository();
+        $this->auditRepo = new \App\Repositories\AuditLogRepository();
     }
 
     public function fetch()
@@ -54,6 +56,7 @@ class EquipmentManagementController extends Controller
 
         try {
             if ($this->repo->store($data)) {
+                $this->auditRepo->log($_SESSION['user_id'], 'CREATE', 'EQUIPMENT', $data['asset_tag'] ?: $data['equipment_name'], "Added new equipment: {$data['equipment_name']}");
                 echo json_encode(['success' => true, 'message' => 'Equipment added successfully!']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Failed to add equipment.']);
@@ -94,6 +97,7 @@ class EquipmentManagementController extends Controller
 
         try {
             if ($this->repo->update($id, $data)) {
+                $this->auditRepo->log($_SESSION['user_id'], 'UPDATE', 'EQUIPMENT', $data['asset_tag'] ?: $data['equipment_name'], "Updated equipment: {$data['equipment_name']}");
                 echo json_encode(['success' => true, 'message' => 'Equipment updated successfully!']);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Failed to update equipment.']);
@@ -108,8 +112,10 @@ class EquipmentManagementController extends Controller
         header('Content-Type: application/json');
         $newStatus = (int)($_POST['is_active'] ?? 0);
         try {
+            $eq = $this->repo->getById($id);
             if ($this->repo->toggleActiveStatus($id, $newStatus)) {
                 $msg = $newStatus ? "Equipment activated." : "Equipment deactivated.";
+                $this->auditRepo->log($_SESSION['user_id'], 'TOGGLE_STATUS', 'EQUIPMENT', $eq['asset_tag'] ?: $eq['equipment_name'], "$msg Item: {$eq['equipment_name']}");
                 echo json_encode(['success' => true, 'message' => $msg]);
             } else {
                 echo json_encode(['success' => false, 'message' => 'Failed to change status.']);
