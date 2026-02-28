@@ -79,7 +79,7 @@ class ManualBorrowingController extends Controller
         'equipment_type'   => $_POST['equipment_type'] ?? null,
         'accession_number' => $_POST['accession_number'] ?? null,
         'equipment_name'   => $_POST['equipment_name'] ?? null,
-        'item_id'          => $_POST['item_id'] ?? null
+        'equipment_id'     => $_POST['equipment_id'] ?? null // Hidden ID from inventory
       ];
 
       // --- Required field validation ---
@@ -87,7 +87,7 @@ class ManualBorrowingController extends Controller
       if ($data['equipment_type'] === 'Book') {
         $required[] = 'accession_number';
       } else {
-        $required[] = 'equipment_name'; // Now using equipment_name from combobox
+        $required[] = 'equipment_name'; 
       }
 
       foreach ($required as $field) {
@@ -97,7 +97,7 @@ class ManualBorrowingController extends Controller
       }
 
       // --- Determine Item ID for repository ---
-      $itemId = null; // Will store either book_id (INT) or equipment_identifier (STRING from equipment_name)
+      $itemId = null; 
 
       if ($data['equipment_type'] === 'Book') {
         $book = $this->manualRepo->checkBook($data['accession_number']);
@@ -109,8 +109,9 @@ class ManualBorrowingController extends Controller
         }
         $itemId = $book['details']['book_id'];
       } else {
-        // For equipment, the 'itemId' for the repository is the equipment_name from the form
-        $itemId = $data['equipment_name']; 
+        // PRIORITIZE: If an equipment_id was selected from inventory, use it.
+        // Otherwise, use the text name (which might trigger auto-create).
+        $itemId = !empty($data['equipment_id']) ? $data['equipment_id'] : $data['equipment_name']; 
       }
 
       // --- Check if user exists ---

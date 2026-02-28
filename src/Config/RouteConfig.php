@@ -4,7 +4,7 @@ namespace App\Config;
 
 use App\Core\Router;
 use App\Controllers\ViewController;
-use App\Controllers\DomPdfTemplateController; // Added for PDF report generation
+use App\Controllers\DomPdfTemplateController; 
 
 class RouteConfig
 {
@@ -26,19 +26,15 @@ class RouteConfig
     $router->get('resetPassword', 'ForgotPasswordController@resetPasswordPage');
     $router->post('reset-password/submit', 'ForgotPasswordController@updatePassword');
 
-    // Auth API
     $router->post('login', 'AuthController@login');
     $router->post('logout', 'AuthController@logout');
     $router->post('api/change-password', 'AuthController@changePassword');
 
-    // Scanner API
     $router->post('api/scanner/scan', 'ScannerController@attendance', ['scanner']);
     $router->post('api/scanner/manual', 'ScannerController@manual', ['scanner']);
 
-    // Guest API
     $router->get('api/guest/fetchBooks', 'GuestController@fetchGuestBooks');
 
-    // --- FACULTY (AJAX/Data Routes) ---
     $router->get('api/faculty/attendance/get', 'AttendanceController@getMyAttendance', ['faculty']);
     $router->get('api/faculty/qrBorrowingTicket/checkStatus', 'FacultyTicketController@checkStatus');
     $router->get('api/faculty/bookCatalog/availableCount', 'FacultyBookCatalogController@getAvailableCount', ['faculty']);
@@ -56,7 +52,6 @@ class RouteConfig
     $router->get('api/faculty/borrowing-history/stats', 'FacultyBorrowingHistoryController@fetchStats', ['faculty']);
     $router->get('api/data/getColleges', 'DataController@getColleges', ['faculty']);
 
-    // --- STAFF (AJAX/Data Routes) ---
     $router->get('api/staff/attendance/get', 'AttendanceController@getMyAttendance', ['staff']);
     $router->get('api/staff/qrBorrowingTicket/checkStatus', 'StaffTicketController@checkStatus', ['staff']);
     $router->get('api/staff/bookCatalog/availableCount', 'StaffBookCatalogController@getAvailableCount', ['staff']);
@@ -73,11 +68,9 @@ class RouteConfig
     $router->get('api/staff/borrowing-history/pagination', 'StaffBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['staff']);
     $router->get('api/staff/borrowing-history/stats', 'StaffBorrowingHistoryController@fetchStats', ['staff']);
 
-    // --- LIBRARIAN (AJAX/Data Routes) ---
     $router->get('api/librarian/restoreBooks/fetch', 'RestoreBookController@getDeletedBooksJson', ['restore books']);
     $router->post('api/librarian/restoreBooks/restore', 'RestoreBookController@restore', ['restore books']);
     $router->post('api/librarian/restoreBooks/archive/{id}', 'RestoreBookController@archiveBookAction', ['restore books']);
-    // updated
     $router->get('api/librarian/booksmanagement/fetch', 'BookManagementController@fetch', ['book management']);
     $router->get('api/librarian/booksmanagement/get/{id}', 'BookManagementController@getDetails', ['book management']);
     $router->post('api/librarian/booksmanagement/store', 'BookManagementController@store', ['book management']);
@@ -86,7 +79,11 @@ class RouteConfig
     $router->post('api/librarian/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['book management']);
     $router->post('api/librarian/booksmanagement/bulkImport', 'BookManagementController@bulkImport', ['book management']);
     $router->get('api/librarian/booksmanagement/history/{id}', 'BookManagementController@getBorrowingHistory', ['book management']);
-    // --end
+    $router->get('api/librarian/equipmentManagement/fetch', 'EquipmentManagementController@fetch', ['equipment management']);
+    $router->get('api/librarian/equipmentManagement/get/{id}', 'EquipmentManagementController@get', ['equipment management']);
+    $router->post('api/librarian/equipmentManagement/store', 'EquipmentManagementController@store', ['equipment management']);
+    $router->post('api/librarian/equipmentManagement/update/{id}', 'EquipmentManagementController@update', ['equipment management']);
+    $router->post('api/librarian/equipmentManagement/toggleActive/{id}', 'EquipmentManagementController@toggleActive', ['equipment management']);
     $router->post('api/librarian/qrScanner/scanTicket', 'QRScannerController@scan', ['qr scanner']);
     $router->post('api/librarian/qrScanner/borrowTransaction', 'QRScannerController@borrowTransaction', ['qr scanner']);
     $router->get('api/librarian/returning/getTableData', 'ReturningController@getOverdue', ['returning']);
@@ -96,32 +93,23 @@ class RouteConfig
     $router->post('api/librarian/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['returning']);
     $router->get('api/librarian/transactionHistory/json', 'TransactionHistoryController@getTransactionsJson', ['transaction history']);
     $router->get('api/librarian/reports/circulated-books', 'ReportController@getCirculatedBooksReport', ['reports']);
-    //updated
     $router->get('api/librarian/reports/circulated-equipments', 'ReportController@getCirculatedEquipmentsReport', ['reports']);
-    //--end 
     $router->get('api/librarian/reports/top-visitors', 'ReportController@getTopVisitors', ['reports']);
     $router->get('api/librarian/reports/deleted-books', 'ReportController@getDeletedBooks', ['reports']);
     $router->get('api/librarian/reports/library-visits-department', 'ReportController@getLibraryVisitsByDepartment', ['reports']);
     $router->get('api/librarian/reports/getGraphData', 'ReportController@getReportGraphData', ['reports']);
-    // $router->get('api/librarian/transactionHistory/json', 'TransactionHistoryController@getTransactionsJson', ['borrowing form']);
     $router->get('api/librarian/borrowingForm/manualBorrow', 'ManualBorrowingController@manualBorrow', ['borrowing form']);
     $router->post('api/librarian/borrowingForm/checkUser', 'ManualBorrowingController@checkUser', ['borrowing form']);
     $router->post('api/librarian/borrowingForm/create', 'ManualBorrowingController@create', ['borrowing form']);
     $router->get('api/librarian/borrowingForm/getEquipments', 'ManualBorrowingController@getEquipments', ['borrowing form']);
     $router->get('api/librarian/borrowingForm/getCollaterals', 'ManualBorrowingController@getCollaterals', ['borrowing form']);
-    // PDF Report Generation Route
     $router->post('api/librarian/reports/generate-report', 'DomPdfTemplateController@generateLibraryReport', ['reports']);
-    //report dashboard
     $router->get('api/librarian/dashboard/getData', 'DashboardController@getData', ['reports']);
 
 
-
-
-    // --- ADMIN (AJAX/Data Routes) ---
     $router->get('api/admin/restoreBooks/fetch', 'RestoreBookController@getDeletedBooksJson', ['restore books']);
     $router->post('api/admin/restoreBooks/restore', 'RestoreBookController@restore', ['restore books']);
     $router->post('api/admin/restoreBooks/archive/{id}', 'RestoreBookController@archiveBookAction', ['restore books']);
-    // -- updated
     $router->get('api/admin/bookManagement/fetch', 'BookManagementController@fetch', ['book management']);
     $router->get('api/admin/bookManagement/get/{id}', 'BookManagementController@getDetails', ['book management']);
     $router->post('api/admin/bookManagement/store', 'BookManagementController@store', ['book management']);
@@ -130,7 +118,11 @@ class RouteConfig
     $router->post('api/admin/bookManagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['book management']);
     $router->post('api/admin/bookManagement/bulkImport', 'BookManagementController@bulkImport', ['book management']);
     $router->get('api/admin/bookManagement/history/{id}', 'BookManagementController@getBorrowingHistory', ['book management']);
-    // --end
+    $router->get('api/admin/equipmentManagement/fetch', 'EquipmentManagementController@fetch', ['equipment management']);
+    $router->get('api/admin/equipmentManagement/get/{id}', 'EquipmentManagementController@get', ['equipment management']);
+    $router->post('api/admin/equipmentManagement/store', 'EquipmentManagementController@store', ['equipment management']);
+    $router->post('api/admin/equipmentManagement/update/{id}', 'EquipmentManagementController@update', ['equipment management']);
+    $router->post('api/admin/equipmentManagement/toggleActive/{id}', 'EquipmentManagementController@toggleActive', ['equipment management']);
     $router->post('api/admin/qrScanner/scanTicket', 'QRScannerController@scan', ['qr scanner']);
     $router->post('api/admin/qrScanner/borrowTransaction', 'QRScannerController@borrowTransaction', ['qr scanner']);
     $router->get('api/admin/transactionHistory/json', 'TransactionHistoryController@getTransactionsJson', ['transaction history']);
@@ -145,22 +137,18 @@ class RouteConfig
     $router->post('api/admin/returning/extend', 'ReturningController@extendDueDate', ['returning']);
     $router->post('api/admin/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['returning']);
     $router->get('api/admin/reports/circulated-books', 'ReportController@getCirculatedBooksReport', ['reports']);
-    // updated
     $router->get('api/admin/reports/circulated-equipments', 'ReportController@getCirculatedEquipmentsReport', ['reports']);
-    // end
     $router->get('api/admin/reports/top-visitors', 'ReportController@getTopVisitors', ['reports']);
     $router->get('api/admin/reports/deleted-books', 'ReportController@getDeletedBooks', ['reports']);
     $router->get('api/admin/reports/library-visits-department', 'ReportController@getLibraryVisitsByDepartment', ['reports']);
     $router->get('api/admin/reports/getGraphData', 'ReportController@getReportGraphData', ['reports']);
-    // $router->get('api/admin/transactionHistory/json', 'TransactionHistoryController@getTransactionsJson', ['borrowing form']);
-    $router->get('api/admin/userManagement/pagination', 'UserManagementController@fetchPaginatedUsers', ['user management']); // Pagination Route
+    $router->get('api/admin/userManagement/pagination', 'UserManagementController@fetchPaginatedUsers', ['user management']); 
     $router->get('api/admin/userManagement/get/{id}', 'UserManagementController@getUserById', ['user management']);
     $router->get('api/admin/userManagement/search', 'UserManagementController@search', ['user management']);
     $router->post('api/admin/userManagement/add', 'UserManagementController@addUser', ['user management']);
     $router->post('api/admin/userManagement/update/{id}', 'UserManagementController@updateUser', ['user management']);
     $router->post('api/admin/userManagement/delete/{id}', 'UserManagementController@deleteUser', ['user management']);
     $router->post('api/admin/userManagement/deleteMultiple', 'UserManagementController@deleteMultipleUsers', ['user management']);
-    $router->post('api/admin/userManagement/allowMultipleEdit', 'UserManagementController@allowMultipleEdit', ['user management']);
     $router->post('api/admin/userManagement/toggleStatus/{id}', 'UserManagementController@toggleStatus', ['user management']);
     $router->post('api/admin/userManagement/allowEdit/{id}', 'UserManagementController@allowEdit', ['user management']);
     $router->post('api/admin/userManagement/bulkImport', 'UserManagementController@bulkImport', ['user management']);
@@ -169,39 +157,33 @@ class RouteConfig
     $router->get('api/admin/restoreUser/fetch', 'RestoreUserController@getDeletedUsersJson', ['restore users']);
     $router->post('api/admin/restoreUser/restore', 'RestoreUserController@restore', ['restore users']);
     $router->post('api/admin/restoreUser/delete/{id}', 'RestoreUserController@archive', ['restore users']);
-    //report dashboard
     $router->get('api/admin/dashboard/getData', 'DashboardController@getData', ['reports']);
-
-
-    // PDF Report Generation Route
     $router->post('api/admin/reports/generate-report', 'DomPdfTemplateController@generateLibraryReport', ['reports']);
 
-    // --- SUPERADMIN (AJAX/Data Routes) ---
-    $router->get('api/superadmin/userManagement/pagination', 'UserManagementController@fetchPaginatedUsers', ['superadmin']); // Pagination Route
+    $router->get('api/superadmin/userManagement/pagination', 'UserManagementController@fetchPaginatedUsers', ['superadmin']); 
     $router->get('api/superadmin/userManagement/get/{id}', 'UserManagementController@getUserById', ['superadmin']);
     $router->get('api/superadmin/userManagement/search', 'UserManagementController@search', ['superadmin']);
     $router->post('api/superadmin/userManagement/add', 'UserManagementController@addUser', ['superadmin']);
-    //date update --
     $router->post('api/superadmin/userManagement/update/{id}', 'UserManagementController@updateUser', ['superadmin']);
     $router->post('api/superadmin/userManagement/delete/{id}', 'UserManagementController@deleteUser', ['superadmin']);
     $router->post('api/superadmin/userManagement/deleteMultiple', 'UserManagementController@deleteMultipleUsers');
-    $router->post('api/superadmin/userManagement/allowMultipleEdit', 'UserManagementController@allowMultipleEdit');
     $router->post('api/superadmin/userManagement/toggleStatus/{id}', 'UserManagementController@toggleStatus');
-    $router->post('api/superadmin/userManagement/update/{id}', 'UserManagementController@updateUser');
     $router->post('api/superadmin/userManagement/allowEdit/{id}', 'UserManagementController@allowEdit', ['superadmin']);
-    // -- end
     $router->post('api/superadmin/userManagement/bulkImport', 'UserManagementController@bulkImport');
     $router->get('api/superadmin/userManagement/getAllCourses', 'DataController@getAllCourses', ['superadmin']);
     $router->get('api/superadmin/userManagement/getColleges', 'DataController@getColleges', ['superadmin']);
     $router->get('api/superadmin/booksmanagement/fetch', 'BookManagementController@fetch', ['superadmin']);
-    //updated
     $router->get('api/superadmin/booksmanagement/get/{id}', 'BookManagementController@getDetails', ['superadmin']);
     $router->post('api/superadmin/booksmanagement/store', 'BookManagementController@store', ['superadmin']);
     $router->post('api/superadmin/booksmanagement/update/{id}', 'BookManagementController@update', ['superadmin']);
     $router->post('api/superadmin/booksmanagement/delete/{id}', 'BookManagementController@destroy', ['superadmin']);
     $router->post('api/superadmin/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['superadmin']);
     $router->get('api/superadmin/booksmanagement/history/{id}', 'BookManagementController@getBorrowingHistory', ['superadmin']);
-    //-- end
+    $router->get('api/superadmin/equipmentManagement/fetch', 'EquipmentManagementController@fetch', ['superadmin']);
+    $router->get('api/superadmin/equipmentManagement/get/{id}', 'EquipmentManagementController@get', ['superadmin']);
+    $router->post('api/superadmin/equipmentManagement/store', 'EquipmentManagementController@store', ['superadmin']);
+    $router->post('api/superadmin/equipmentManagement/update/{id}', 'EquipmentManagementController@update', ['superadmin']);
+    $router->post('api/superadmin/equipmentManagement/toggleActive/{id}', 'EquipmentManagementController@toggleActive', ['superadmin']);
     $router->post('api/superadmin/booksmanagement/bulkImport', 'BookManagementController@bulkImport', ['superadmin']);
     $router->post('api/superadmin/qrScanner/scanTicket', 'QRScannerController@scan', ['superadmin']);
     $router->post('api/superadmin/qrScanner/borrowTransaction', 'QRScannerController@borrowTransaction', ['superadmin']);
@@ -232,8 +214,8 @@ class RouteConfig
     $router->post('api/superadmin/borrowingForm/create', 'ManualBorrowingController@create');
     $router->get('api/superadmin/reports/circulated-books', 'ReportController@getCirculatedBooksReport', ['superadmin']);
     $router->get('api/superadmin/reports/circulated-equipments', 'ReportController@getCirculatedEquipmentsReport', ['superadmin']);
-    $router->get('api/superadmin/reports/top-visitors', 'ReportController@getTopVisitors', ['superadmin']);
-    $router->get('api/superadmin/reports/deleted-books', 'ReportController@getDeletedBooks', ['superadmin']);
+    $router->get('api/superadmin/reports/top-visitors', 'ReportController@getTopVisitors', ['reports']);
+    $router->get('api/superadmin/reports/deleted-books', 'ReportController@getDeletedBooks', ['reports']);
     $router->get('api/superadmin/reports/library-visits-department', 'ReportController@getLibraryVisitsByDepartment', ['superadmin']);
     $router->get('api/superadmin/myProfile/get', 'SuperAdminProfileController@getProfile', ['superadmin']);
     $router->post('api/superadmin/myProfile/update', 'SuperAdminProfileController@updateProfile', ['superadmin']);
@@ -241,10 +223,8 @@ class RouteConfig
     $router->get('api/superadmin/libraryPolicies/getAll', 'LibraryPolicyController@getAll', ['superadmin']);
     $router->post('api/superadmin/libraryPolicies/update', 'LibraryPolicyController@update', ['superadmin']);
 
-    // PDF Report Generation Route
     $router->post('generate-report', 'DomPdfTemplateController@generateLibraryReport', ['superadmin']);
 
-    // --- STUDENT (AJAX/Data Routes) ---
     $router->get('api/student/attendance/get', 'AttendanceController@getMyAttendance', ['student']);
     $router->get('api/student/cart', 'CartController@index', ['student']);
     $router->get('api/student/cart/add/{id}', 'CartController@add', ['student']);
@@ -256,30 +236,18 @@ class RouteConfig
     $router->get('api/student/bookCatalog/availableCount', 'BookCatalogController@getAvailableCount', ['student']);
     $router->get('api/student/bookCatalog/fetch', 'BookCatalogController@fetch', ['student']);
     $router->get('api/student/borrowingHistory/fetch', 'StudentBorrowingHistoryController@fetchHistory', ['student']);
-    $router->get('api/student/borrowing-history/stats', 'StudentBorrowingHistoryController@fetchStats', ['student']); // Stats Route
-    $router->get('api/student/borrowing-history/pagination', 'StudentBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['student']); // Pagination Route
+    $router->get('api/student/borrowing-history/stats', 'StudentBorrowingHistoryController@fetchStats', ['student']); 
+    $router->get('api/student/borrowing-history/pagination', 'StudentBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['student']); 
     $router->get('api/student/myprofile/get', 'StudentProfileController@getProfile', ['student']);
     $router->post('api/student/myprofile/update', 'StudentProfileController@updateProfile', ['student']);
     $router->get('api/data/getAllCourses', 'DataController@getAllCourses', ['student']);
 
-    // General AJAX routes
     $router->get('api/attendance/logs/ajax', 'AttendanceController@fetchLogsAjax', ['attendance logs', 'superadmin']);
 
-
-    // ----------------------------------------------------------------------
-    // --- BAGONG GENERIC VIEW ROUTES (Fully Generic Plan) ---
-    // ----------------------------------------------------------------------
-
-    // 1. GENERIC DASHBOARD ROUTE (Para sa login redirect)
     $router->get('dashboard', 'ViewController@handleDashboard');
 
-    // 2. DYNAMIC VIEW ROUTES (Pumapalit sa lahat ng SidebarController)
-    // Hahawakan nito ang /myProfile, /bookManagement, atbp.
     $router->get('{action}', 'ViewController@handleGenericPage');
     $router->get('{action}/{id}', 'ViewController@handleGenericPage');
-
-    // (Magdagdag ng POST kung kailangan mong mag-submit ng form papunta sa view)
-    // $router->post('{action}', 'ViewController@handleGenericPage');
 
     return $router;
   }

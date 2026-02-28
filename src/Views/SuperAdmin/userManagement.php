@@ -304,6 +304,7 @@
                         <?php
                         $modules = [
                             'book management',
+                            'equipment management',
                             'qr scanner',
                             'returning',
                             'borrowing form',
@@ -311,6 +312,7 @@
                             'reports',
                             'transaction history',
                             'restore books',
+                            'restore equipment',
                             'user management',
                             'restore users'
                         ];
@@ -520,6 +522,7 @@
                     <?php
                     $modules = [
                         'book management',
+                        'equipment management',
                         'qr scanner',
                         'returning',
                         'borrowing form',
@@ -527,6 +530,7 @@
                         'reports',
                         'transaction history',
                         'restore books',
+                        'restore equipment',
                         'user management',
                         'restore users'
                     ];

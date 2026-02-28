@@ -1,9 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  // --- SweetAlert Helper Functions (Galing sa Book Catalog Design) ---
-  // 1. SUCCESS/ADD/UPDATE Toast (Green Theme)
+  // --- SweetAlert Helper Functions ---
   function showSuccessToast(title, body = "") {
-    if (typeof Swal === "undefined") return alert(title);
+    if (typeof Swal == "undefined") return alert(title);
     Swal.fire({
       toast: true,
       position: "bottom-end",
@@ -25,14 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `,
       customClass: {
-        popup: "!rounded-xl !shadow-md !border-2 !border-green-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#f0fff5] shadow-[0_0_8px_#22c55e70]"
-      }
+        popup: "!rounded-xl !shadow-md !border-2 !border-green-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#f0fff5] shadow-[0_0_8px_#22c55e70]",
+      },
     });
   }
 
-  // 2. ERROR/VALIDATION Toast (Red Theme)
   function showErrorToast(title, body = "An error occurred during processing.") {
-    if (typeof Swal === "undefined") return alert(title);
+    if (typeof Swal == "undefined") return alert(title);
     Swal.fire({
       toast: true,
       position: "bottom-end",
@@ -54,14 +52,13 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `,
       customClass: {
-        popup: "!rounded-xl !shadow-md !border-2 !border-red-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ff6b6b70]"
-      }
+        popup: "!rounded-xl !shadow-md !border-2 !border-red-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ff6b6b70]",
+      },
     });
   }
 
-  // 3. LOADING Modal (Orange Theme) - bigger version for SUBMITTING
   function showLoadingModal(message = "Processing request...", subMessage = "Please wait.") {
-    if (typeof Swal === "undefined") return;
+    if (typeof Swal == "undefined") return;
     Swal.fire({
       background: "transparent",
       html: `
@@ -74,14 +71,13 @@ document.addEventListener('DOMContentLoaded', () => {
       allowOutsideClick: false,
       showConfirmButton: false,
       customClass: {
-        popup: "!w-64 !rounded-xl !shadow-md !border-2 !border-orange-400 !p-7 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_9px_#ffb34770]"
-      }
+        popup: "!w-64 !rounded-xl !shadow-md !border-2 !border-orange-400 !p-7 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_9px_#ffb34770]",
+      },
     });
   }
 
-  // 4. CONFIRMATION Modal (Orange Theme)
   async function showConfirmationModal(title, text, confirmText = "Confirm") {
-    if (typeof Swal === "undefined") return confirm(title);
+    if (typeof Swal == "undefined") return confirm(title);
     const result = await Swal.fire({
       background: "transparent",
       html: `
@@ -101,13 +97,11 @@ document.addEventListener('DOMContentLoaded', () => {
       customClass: {
         popup: "!rounded-xl !shadow-md !p-6 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] !border-2 !border-orange-400 shadow-[0_0_8px_#ffb34770]",
         confirmButton: "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700",
-        cancelButton: "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300"
-      }
+        cancelButton: "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300",
+      },
     });
     return result.isConfirmed;
   }
-
-  // --- End SweetAlert Helper Functions ---
 
   const setupDropdown = (btnId, menuId, valueId, inputId, itemClass, callback) => {
     const dropdownBtn = document.getElementById(btnId);
@@ -116,78 +110,73 @@ document.addEventListener('DOMContentLoaded', () => {
     const hiddenInput = document.getElementById(inputId);
     if (!dropdownBtn || !dropdownMenu || !dropdownValue || !hiddenInput) return;
 
-    dropdownBtn.addEventListener("click", (e) => {
+    dropdownBtn.addEventListener('click', (e) => {
       e.preventDefault();
-      document.querySelectorAll(".absolute.z-10, .absolute.z-20").forEach(menu => {
-        if (menu.id !== menuId) menu.classList.add("hidden");
+      document.querySelectorAll('.absolute.z-10, .absolute.z-20').forEach(menu => {
+        if (menu.id !== menuId) menu.classList.add('hidden');
       });
-      dropdownMenu.classList.toggle("hidden");
+      dropdownMenu.classList.toggle('hidden');
     });
 
-    dropdownMenu.addEventListener("click", (e) => {
+    dropdownMenu.addEventListener('click', (e) => {
       const target = e.target.closest(`.${itemClass}`);
       if (target) {
         const val = target.dataset.value;
         dropdownValue.textContent = val;
         hiddenInput.value = val;
-        dropdownMenu.classList.add("hidden");
+        dropdownMenu.classList.add('hidden');
         if (callback) callback(val);
       }
     });
   };
 
-  const itemIcon = document.getElementById("item_icon");
-  const itemIdWrapper = document.getElementById("item_id_wrapper");
-  const itemNameWrapper = document.getElementById("item_name_wrapper");
-  const accessionWrapper = document.getElementById("accession_number_wrapper");
-  const bookTitleWrapper = document.getElementById("book_title_wrapper");
+  const itemIcon = document.getElementById('item_icon');
+  const itemNameWrapper = document.getElementById('item_name_wrapper');
+  const accessionWrapper = document.getElementById('accession_number_wrapper');
+  const bookTitleWrapper = document.getElementById('book_title_wrapper');
 
   const handleItemTypeChange = (type) => {
     if (!itemIcon) return;
 
-    if (type === "Book") {
-      itemIcon.className = "ph ph-book-open text-3xl text-emerald-600";
-      if (itemIdWrapper) itemIdWrapper.style.display = "none";
-      if (itemNameWrapper) itemNameWrapper.style.display = "none";
-      if (accessionWrapper) accessionWrapper.style.display = "block";
-      if (bookTitleWrapper) bookTitleWrapper.style.display = "block";
+    if (type === 'Book') {
+      itemIcon.className = 'ph ph-book-open text-3xl text-emerald-600';
+      if (itemNameWrapper) itemNameWrapper.style.display = 'none';
+      if (accessionWrapper) accessionWrapper.style.display = 'block';
+      if (bookTitleWrapper) bookTitleWrapper.style.display = 'block';
     } else {
-      itemIcon.className = "ph ph-desktop text-3xl text-emerald-600";
-      if (itemIdWrapper) itemIdWrapper.style.display = "block";
-      if (itemNameWrapper) itemNameWrapper.style.display = "block";
-      if (accessionWrapper) accessionWrapper.style.display = "none";
-      if (bookTitleWrapper) bookTitleWrapper.style.display = "none";
-      document.getElementById("accession_number").value = "";
-      document.getElementById("book_title").value = "";
+      itemIcon.className = 'ph ph-desktop text-3xl text-emerald-600';
+      if (itemNameWrapper) itemNameWrapper.style.display = 'block';
+      if (accessionWrapper) accessionWrapper.style.display = 'none';
+      if (bookTitleWrapper) bookTitleWrapper.style.display = 'none';
+      document.getElementById('accession_number').value = '';
+      document.getElementById('book_title').value = '';
     }
   };
 
-  setupDropdown("itemTypeDropdownBtn", "itemTypeDropdownMenu", "itemTypeDropdownValue", "item_type", "item-type-item", handleItemTypeChange);
-  setupDropdown("roleDropdownBtn", "roleDropdownMenu", "roleDropdownValue", "role", "role-item");
+  setupDropdown('itemTypeDropdownBtn', 'itemTypeDropdownMenu', 'itemTypeDropdownValue', 'item_type', 'item-type-item', handleItemTypeChange);
+  setupDropdown('roleDropdownBtn', 'roleDropdownMenu', 'roleDropdownValue', 'role', 'role-item');
 
-  document.getElementById("clear-btn").addEventListener("click", () => {
-    const form = document.getElementById("main-borrow-form");
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    const form = document.getElementById('main-borrow-form');
     form.reset();
-    document.getElementById("roleDropdownValue").textContent = "Select Role";
-    document.getElementById("itemTypeDropdownValue").textContent = "Equipment";
-    document.getElementById("role").value = "";
-    document.getElementById("item_type").value = "Equipment";
-    handleItemTypeChange("Equipment");
-    showSuccessToast("Form Cleared", "Borrower and Item fields have been reset.");
+    document.getElementById('roleDropdownValue').textContent = 'Select Role';
+    document.getElementById('itemTypeDropdownValue').textContent = 'Equipment';
+    document.getElementById('role').value = '';
+    document.getElementById('item_type').value = 'Equipment';
+    handleItemTypeChange('Equipment');
+    showSuccessToast('Form Cleared', 'Borrower and Item fields have been reset.');
   });
 
-  // check user button
-  document.getElementById("check-btn").addEventListener("click", async () => {
-    const userId = document.getElementById("input_user_id").value.trim();
+  document.getElementById('check-btn').addEventListener('click', async () => {
+    const userId = document.getElementById('input_user_id').value.trim();
+    if (!userId) return showErrorToast('Input Required', 'Please enter a **User ID**.');
 
-    if (!userId) return showErrorToast("Input Required", "Please enter a **User ID**.");
-
-    showLoadingModal("Checking User...", "Verifying User ID in the database.");
+    showLoadingModal('Checking User...', 'Verifying User ID in the database.');
 
     try {
       const res = await fetch(`api/librarian/borrowingForm/checkUser`, {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ input_user_id: userId })
       });
       const data = await res.json();
@@ -196,54 +185,46 @@ document.addEventListener('DOMContentLoaded', () => {
       Swal.close();
 
       if (data.exists) {
-        const fill = await showConfirmationModal(
-          "User ID Exists",
-          "This User ID already exists. Do you want to **fill the remaining input fields** with existing data?",
-          "Yes, Fill Fields"
-        );
-
+        const fill = await showConfirmationModal('User ID Exists', 'Do you want to **fill the remaining input fields** with existing data?');
         if (fill) {
           document.querySelector('input[name="first_name"]').value = data.data.first_name;
-          document.querySelector('input[name="middle_name"]').value = data.data.middle_name || "";
+          document.querySelector('input[name="middle_name"]').value = data.data.middle_name || '';
           document.querySelector('input[name="last_name"]').value = data.data.last_name;
-          document.querySelector('input[name="suffix"]').value = data.data.suffix || "";
-          document.querySelector('input[name="email"]').value = data.data.email || "";
-          document.querySelector('input[name="contact"]').value = data.data.contact || "";
+          document.querySelector('input[name="suffix"]').value = data.data.suffix || '';
+          document.querySelector('input[name="email"]').value = data.data.email || '';
+          document.querySelector('input[name="contact"]').value = data.data.contact || '';
 
-          const roleDropdown = document.getElementById("roleDropdownValue");
-          const roleHiddenInput = document.getElementById("role");
+          const roleDropdown = document.getElementById('roleDropdownValue');
+          const roleHiddenInput = document.getElementById('role');
           if (roleDropdown && roleHiddenInput) {
             const displayRole = data.data.role.charAt(0).toUpperCase() + data.data.role.slice(1);
             roleDropdown.textContent = displayRole;
             roleHiddenInput.value = displayRole;
           }
-
-          showSuccessToast("Fields Auto-Filled", "User data loaded successfully.");
+          showSuccessToast('Fields Auto-Filled', 'User data loaded successfully.');
         }
       } else {
-        showErrorToast("User Not Found", "User ID not found. Please fill the form manually (Guest Mode).");
+        showErrorToast('User Not Found', 'User ID not found. Please fill the form manually.');
       }
     } catch (err) {
       Swal.close();
-      console.error(err);
-      showErrorToast("Connection Failed", "An unexpected error occurred while checking the user.");
+      showErrorToast('Connection Failed', 'An unexpected error occurred.');
     }
   });
 
-  // submit (TADO!)
-  document.getElementById("main-borrow-form").addEventListener("submit", async (e) => {
+  document.getElementById('main-borrow-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const form = e.target;
     const formData = new FormData(form);
 
-    showLoadingModal("Submitting Form...", "Processing borrowing transaction.");
+    showLoadingModal('Submitting Form...', 'Processing borrowing transaction.');
 
-    if (!formData.get("role")) formData.set("role", "");
-    if (!formData.get("equipment_type")) formData.set("equipment_type", formData.get("item_type"));
+    if (!formData.get('role')) formData.set('role', '');
+    if (!formData.get('equipment_type')) formData.set('equipment_type', formData.get('item_type'));
 
     try {
       const res = await fetch(`api/librarian/borrowingForm/create`, {
-        method: "POST",
+        method: 'POST',
         body: formData
       });
       const data = await res.json();
@@ -252,30 +233,26 @@ document.addEventListener('DOMContentLoaded', () => {
       Swal.close();
 
       if (data.success) {
-        showSuccessToast("Transaction Successful!", data.message || "Item successfully borrowed.");
+        showSuccessToast('Transaction Successful!', data.message || 'Item successfully borrowed.');
         form.reset();
+        document.getElementById('equipment_id_hidden').value = '';
       } else {
-        showErrorToast("Submission Failed", data.message || "Please check all required fields.");
+        showErrorToast('Submission Failed', data.message);
       }
     } catch (err) {
       Swal.close();
-      console.error(err);
-      showErrorToast("Connection Failed", "An error occurred while submitting the form.");
+      showErrorToast('Connection Failed', 'An error occurred.');
     }
   });
 
-  document.addEventListener("click", (e) => {
-    document.querySelectorAll(".absolute.z-10, .absolute.z-20").forEach(menu => {
-      const btn = document.getElementById(menu.id.replace("Menu", "Btn"));
-      if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
-        menu.classList.add("hidden");
-      }
-    });
-  });
+  // --- Flexible Combobox Logic ---
+  const hiddenEquipmentIdInput = document.createElement('input');
+  hiddenEquipmentIdInput.type = 'hidden';
+  hiddenEquipmentIdInput.id = 'equipment_id_hidden';
+  hiddenEquipmentIdInput.name = 'equipment_id';
+  document.getElementById('main-borrow-form').appendChild(hiddenEquipmentIdInput);
 
-  handleItemTypeChange("Equipment");
-
-  const setupCombobox = (inputId, suggestionsId, listId, arrowId, fetchUrl, fallbackData = [], highlightClass, hoverClass) => {
+  const setupCombobox = (inputId, suggestionsId, listId, arrowId, fetchUrl, highlightClass, hoverClass) => {
     const input = document.getElementById(inputId);
     const suggestionsContainer = document.getElementById(suggestionsId);
     const suggestionsList = document.getElementById(listId);
@@ -283,148 +260,70 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!input || !suggestionsContainer || !suggestionsList || !dropdownArrow) return;
 
-    let suggestions = [];
+    let itemsData = [];
     let highlightedIndex = -1;
     let wasPointerDownOnInput = false;
 
-    const fetchSuggestionsData = async () => {
+    const fetchItemsData = async () => {
       try {
         const response = await fetch(fetchUrl);
-        if (response.ok) {
-          suggestions = await response.json();
-        } else {
-          console.error(`Failed to fetch suggestions from ${fetchUrl}. Using fallback data.`);
-          suggestions = fallbackData;
-        }
-      } catch (error) {
-        console.error(`Error fetching suggestions from ${fetchUrl}:`, error);
-        suggestions = fallbackData;
+        if (response.ok) itemsData = await response.json();
+      } catch {
+        itemsData = [];
       }
     };
 
-    if (fetchUrl) fetchSuggestionsData();
-    else suggestions = fallbackData;
-
-    const updateHighlight = () => {
-      const items = suggestionsList.querySelectorAll("li");
-      items.forEach(item => item.classList.remove(highlightClass));
-      if (items[highlightedIndex]) items[highlightedIndex].classList.add(highlightClass);
-    };
+    fetchItemsData();
 
     const showSuggestions = (filter = true) => {
       const value = input.value.toLowerCase();
-      suggestionsList.innerHTML = "";
-      highlightedIndex = -1;
+      suggestionsList.innerHTML = '';
+      let filtered = itemsData;
 
-      let filtered = suggestions;
-      if (filter && value.trim() !== "") filtered = suggestions.filter(s => s.toLowerCase().includes(value));
-
-      if (filtered.length === 0 && value.trim() !== "") {
-        suggestionsContainer.classList.add("hidden");
-        return;
+      if (filter && value.trim() !== '') {
+        filtered = itemsData.filter(item => {
+            const itemName = typeof item === 'string' ? item : item.equipment_name;
+            return itemName.toLowerCase().includes(value);
+        });
       }
+      
+      if (filtered.length === 0 && value.trim() !== '') return suggestionsContainer.classList.add('hidden');
 
-      filtered.forEach(suggestion => {
-        const li = document.createElement("li");
+      filtered.forEach(item => {
+        const li = document.createElement('li');
         li.className = `px-4 py-2 text-sm cursor-pointer ${hoverClass}`;
-        li.textContent = suggestion;
-        li.addEventListener("mousedown", e => {
+        const itemName = typeof item === 'string' ? item : item.equipment_name;
+        li.textContent = itemName;
+
+        li.addEventListener('mousedown', e => {
           e.preventDefault();
-          input.value = suggestion;
-          hideSuggestions();
+          input.value = itemName;
+          if (typeof item !== 'string') hiddenEquipmentIdInput.value = item.equipment_id;
+          suggestionsContainer.classList.add('hidden');
         });
         suggestionsList.appendChild(li);
       });
-
-      suggestionsContainer.classList.remove("hidden");
+      suggestionsContainer.classList.remove('hidden');
     };
 
-    const hideSuggestions = () => {
-      suggestionsContainer.classList.add("hidden");
-      highlightedIndex = -1;
-      wasPointerDownOnInput = false;
-    };
-
-    input.addEventListener("pointerdown", () => {
-      wasPointerDownOnInput = true;
+    input.addEventListener('pointerdown', () => wasPointerDownOnInput = true);
+    input.addEventListener('focus', () => { if (wasPointerDownOnInput) showSuggestions(false); });
+    input.addEventListener('input', () => { 
+        if (inputId === 'item_name') hiddenEquipmentIdInput.value = '';
+        showSuggestions(true); 
+    });
+    dropdownArrow.addEventListener('click', e => { 
+        e.preventDefault(); 
+        suggestionsContainer.classList.contains('hidden') ? showSuggestions(false) && input.focus() : suggestionsContainer.classList.add('hidden'); 
     });
 
-    input.addEventListener("focus", () => {
-      if (wasPointerDownOnInput) showSuggestions(false);
-    });
-
-    input.addEventListener("input", () => showSuggestions(true));
-
-    dropdownArrow.addEventListener("pointerdown", () => {
-      wasPointerDownOnInput = true;
-    });
-
-    dropdownArrow.addEventListener("click", e => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (suggestionsContainer.classList.contains("hidden")) {
-        showSuggestions(false);
-        input.focus();
-      } else {
-        hideSuggestions();
-      }
-    });
-
-    input.addEventListener("keydown", e => {
-      const items = suggestionsList.querySelectorAll("li");
-      if (items.length === 0) return;
-
-      switch (e.key) {
-        case "ArrowDown":
-          e.preventDefault();
-          highlightedIndex = (highlightedIndex + 1) % items.length;
-          updateHighlight();
-          break;
-        case "ArrowUp":
-          e.preventDefault();
-          highlightedIndex = (highlightedIndex - 1 + items.length) % items.length;
-          updateHighlight();
-          break;
-        case "Enter":
-          e.preventDefault();
-          if (highlightedIndex > -1) {
-            input.value = items[highlightedIndex].textContent;
-            hideSuggestions();
-          }
-          break;
-        case "Escape":
-          hideSuggestions();
-          break;
-      }
-    });
-
-    document.addEventListener("click", e => {
-      if (!input.contains(e.target) && !dropdownArrow.contains(e.target) && !suggestionsContainer.contains(e.target)) {
-        hideSuggestions();
-      }
+    document.addEventListener('click', e => {
+      if (!input.contains(e.target) && !dropdownArrow.contains(e.target) && !suggestionsContainer.contains(e.target)) suggestionsContainer.classList.add('hidden');
     });
   };
 
-  setupCombobox(
-    "item_name",
-    "item_name_suggestions",
-    "item_name_suggestions_list",
-    "item_name_dropdown_arrow",
-    "api/librarian/borrowingForm/getEquipments",
-    ["Computer", "Table", "Extension Cord", "Whiteboard", "HDMI Cable", "Chess", "Scrabble", "Domino", "Connect 4"],
-    "bg-emerald-100",
-    "hover:bg-emerald-50"
-  );
+  setupCombobox('item_name', 'item_name_suggestions', 'item_name_suggestions_list', 'item_name_dropdown_arrow', 'api/librarian/borrowingForm/getEquipments', 'bg-emerald-100', 'hover:bg-emerald-50');
+  setupCombobox('collateral_id', 'collateral_id_suggestions', 'collateral_id_suggestions_list', 'collateral_id_dropdown_arrow', 'api/librarian/borrowingForm/getCollaterals', 'bg-amber-100', 'hover:bg-amber-50');
 
-  setupCombobox(
-    "collateral_id",
-    "collateral_id_suggestions",
-    "collateral_id_suggestions_list",
-    "collateral_id_dropdown_arrow",
-    "api/librarian/borrowingForm/getCollaterals",
-    ["School ID", "Library ID", "Valid ID"],
-    "bg-amber-100",
-    "hover:bg-amber-50"
-  );
-
+  handleItemTypeChange('Equipment');
 });

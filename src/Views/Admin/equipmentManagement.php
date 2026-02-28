@@ -161,4 +161,4 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="<?= BASE_URL ?>/js/librarian/equipmentManagement.js" defer></script>
+<script src="<?= BASE_URL ?>/js/admin/equipmentManagement.js" defer></script>

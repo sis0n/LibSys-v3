@@ -321,7 +321,10 @@ document.addEventListener('DOMContentLoaded', () => {
       let filtered = itemsData;
 
       if (filter && value.trim() !== '') {
-        filtered = itemsData.filter(item => item.equipment_name.toLowerCase().includes(value));
+        filtered = itemsData.filter(item => {
+            const itemName = typeof item === 'string' ? item : item.equipment_name;
+            return itemName.toLowerCase().includes(value);
+        });
       }
       
       if (filtered.length === 0 && value.trim() !== '') {
@@ -332,13 +335,20 @@ document.addEventListener('DOMContentLoaded', () => {
       filtered.forEach(item => {
         const li = document.createElement('li');
         li.className = `px-4 py-2 text-sm cursor-pointer ${hoverClass}`;
-        li.textContent = item.equipment_name;
-        li.dataset.equipmentId = item.equipment_id; // Store ID in dataset
-        li.dataset.equipmentName = item.equipment_name; // Store name in dataset
+        
+        const itemName = typeof item === 'string' ? item : item.equipment_name;
+        li.textContent = itemName;
+
+        if (typeof item !== 'string') {
+            li.dataset.equipmentId = item.equipment_id;
+        }
+
         li.addEventListener('mousedown', e => {
           e.preventDefault();
-          input.value = item.equipment_name;
-          hiddenEquipmentIdInput.value = item.equipment_id; // Set hidden ID
+          input.value = itemName;
+          if (typeof item !== 'string') {
+              hiddenEquipmentIdInput.value = item.equipment_id;
+          }
           hideSuggestions();
         });
         suggestionsList.appendChild(li);

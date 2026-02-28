@@ -15,10 +15,8 @@ class ManualBorrowingRepository
     $this->db = Database::getInstance()->getConnection();
   }
 
-  // --- Check if user exists and return type ---
   public function checkIfUserExists(string $input_user_id): ?string
   {
-    // Students
     $stmt = $this->db->prepare("
             SELECT s.student_id
             FROM students s
@@ -28,7 +26,6 @@ class ManualBorrowingRepository
     $stmt->execute([$input_user_id]);
     if ($stmt->fetch(PDO::FETCH_ASSOC)) return 'student';
 
-    // Faculty
     $stmt = $this->db->prepare("
             SELECT f.faculty_id
             FROM faculty f
@@ -38,7 +35,6 @@ class ManualBorrowingRepository
     $stmt->execute([$input_user_id]);
     if ($stmt->fetch(PDO::FETCH_ASSOC)) return 'faculty';
 
-    // Staff
     $stmt = $this->db->prepare("
             SELECT st.staff_id
             FROM staff st
@@ -51,10 +47,8 @@ class ManualBorrowingRepository
     return null;
   }
 
-  // --- Get user info (includes email & contact for autofill) ---
   public function getUserInfo(string $input_user_id): ?array
   {
-    // Students
     $stmt = $this->db->prepare("
             SELECT u.first_name, u.middle_name, u.last_name, u.suffix, u.email, s.contact, 'student' AS role
             FROM students s
@@ -64,7 +58,6 @@ class ManualBorrowingRepository
     $stmt->execute([$input_user_id]);
     if ($data = $stmt->fetch(PDO::FETCH_ASSOC)) return $data;
 
-    // Faculty
     $stmt = $this->db->prepare("
             SELECT u.first_name, u.middle_name, u.last_name, u.suffix, u.email, f.contact, 'faculty' AS role
             FROM faculty f
@@ -74,7 +67,6 @@ class ManualBorrowingRepository
     $stmt->execute([$input_user_id]);
     if ($data = $stmt->fetch(PDO::FETCH_ASSOC)) return $data;
 
-    // Staff
     $stmt = $this->db->prepare("
             SELECT u.first_name, u.middle_name, u.last_name, u.suffix, u.email, st.contact, 'staff' AS role
             FROM staff st
@@ -87,7 +79,6 @@ class ManualBorrowingRepository
     return null;
   }
 
-  // --- Create guest record ---
   public function createGuest(array $guestData): int
   {
     $stmt = $this->db->prepare("
@@ -104,15 +95,13 @@ class ManualBorrowingRepository
     return $this->db->lastInsertId();
   }
 
-  // --- Get all equipment names ---
   public function getEquipments(): array
   {
-    $stmt = $this->db->prepare("SELECT equipment_id, equipment_name, asset_tag FROM equipments WHERE status = 'available' ORDER BY equipment_name ASC");
+    $stmt = $this->db->prepare("SELECT equipment_id, equipment_name, asset_tag FROM equipments WHERE status = 'available' AND is_active = 1 ORDER BY equipment_name ASC");
     $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC); // Fetch as associative array
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
 
-  // --- Get all collateral names ---
   public function getCollaterals(): array
   {
     $stmt = $this->db->prepare("SELECT name FROM collaterals ORDER BY name ASC");
@@ -120,9 +109,6 @@ class ManualBorrowingRepository
     return $stmt->fetchAll(PDO::FETCH_COLUMN);
   }
 
-
-
-  // --- Check book availability ---
   public function checkBook(string $accession_number): array
   {
     $stmt = $this->db->prepare("SELECT * FROM books WHERE accession_number = :acc LIMIT 1");
@@ -140,7 +126,6 @@ class ManualBorrowingRepository
     return ['exists' => false];
   }
 
-  // --- Mark book as borrowed ---
   public function markBookAsBorrowed(string $accessionNumber): bool
   {
     try {
@@ -154,17 +139,14 @@ class ManualBorrowingRepository
     }
   }
 
-  // --- Create manual borrowing (transaction + item) ---
   public function createManualBorrow(array $borrowData): array
   {
     try {
       $this->db->beginTransaction();
 
       $transactionCode = strtoupper(bin2hex(random_bytes(4)));
-
       $studentId = $facultyId = $staffId = $guestId = null;
 
-      // --- Resolve borrower ID based on type ---
       switch ($borrowData['borrower_type']) {
         case 'student':
           $stmt = $this->db->prepare("SELECT student_id FROM students WHERE student_number = ? AND deleted_at IS NULL");
@@ -195,7 +177,17 @@ class ManualBorrowingRepository
           throw new Exception("Invalid borrower type.");
       }
 
-      // --- Insert into borrow_transactions ---
+      $collateralName = trim($borrowData['collateral_id'] ?? '');
+      if (!empty($collateralName)) {
+          $stmtCheckCollateral = $this->db->prepare("SELECT name FROM collaterals WHERE LOWER(name) = LOWER(?)");
+          $stmtCheckCollateral->execute([$collateralName]);
+          
+          if (!$stmtCheckCollateral->fetch()) {
+              $stmtInsertCollateral = $this->db->prepare("INSERT INTO collaterals (name) VALUES (?)");
+              $stmtInsertCollateral->execute([$collateralName]);
+          }
+      }
+
       $stmt = $this->db->prepare("
             INSERT INTO borrow_transactions
             (student_id, staff_id, faculty_id, guest_id, transaction_code, borrowed_at, due_date, status, method, collateral_id, librarian_id)
@@ -208,13 +200,12 @@ class ManualBorrowingRepository
         ':faculty_id' => $facultyId,
         ':guest_id' => $guestId,
         ':transaction_code' => $transactionCode,
-        ':collateral_id' => $borrowData['collateral_id'] ?? null,
+        ':collateral_id' => $collateralName,
         ':librarian_id' => $borrowData['librarian_id'] ?? null
       ]);
 
       $transactionId = $this->db->lastInsertId();
 
-      // --- Handle book and/or equipment ---
       $isBook = !empty($borrowData['book_id']);
       $isEquipment = !empty($borrowData['equipment_id']);
 
@@ -223,14 +214,12 @@ class ManualBorrowingRepository
       }
 
       if ($isBook) {
-        // Validate book exists
         $stmt = $this->db->prepare("SELECT book_id FROM books WHERE book_id = ? AND deleted_at IS NULL");
         $stmt->execute([$borrowData['book_id']]);
         if (!$stmt->fetchColumn()) {
           throw new Exception("Book not found.");
         }
 
-        // Insert into borrow_transaction_items
         $stmt = $this->db->prepare("
                 INSERT INTO borrow_transaction_items (transaction_id, book_id, status)
                 VALUES (:transaction_id, :book_id, 'borrowed')
@@ -240,52 +229,60 @@ class ManualBorrowingRepository
           ':book_id' => $borrowData['book_id']
         ]);
 
-        // Update book availability
         $stmt = $this->db->prepare("UPDATE books SET availability = 'borrowed', updated_at = NOW() WHERE book_id = ?");
         $stmt->execute([$borrowData['book_id']]);
       }
 
       if ($isEquipment) {
-        $equipmentId = $borrowData['equipment_id']; // This is actually the name/asset_tag from frontend
+        $identifier = $borrowData['equipment_id'];
+        $actualEquipmentId = null;
 
-        // Try to find existing equipment by asset_tag or equipment_name
-        $stmtFindEquipment = $this->db->prepare("
-          SELECT equipment_id, status FROM equipments 
-          WHERE asset_tag = :identifier OR equipment_name = :identifier
-          LIMIT 1
-        ");
-        $stmtFindEquipment->execute([':identifier' => $equipmentId]);
-        $existingEquipment = $stmtFindEquipment->fetch(PDO::FETCH_ASSOC);
+        if (is_numeric($identifier)) {
+          $stmtCheck = $this->db->prepare("SELECT equipment_id, status FROM equipments WHERE equipment_id = ? AND is_active = 1");
+          $stmtCheck->execute([$identifier]);
+          $eq = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
-        if ($existingEquipment) {
-          if ($existingEquipment['status'] !== 'available') {
-            throw new Exception("Equipment '{$equipmentId}' is currently not available.");
-          }
-          $actualEquipmentId = $existingEquipment['equipment_id'];
+          if (!$eq) throw new Exception("Equipment record not found or inactive.");
+          if ($eq['status'] !== 'available') throw new Exception("This item is currently {$eq['status']}.");
+          
+          $actualEquipmentId = $eq['equipment_id'];
         } else {
-          // If not found, create a new equipment entry
-          $stmtCreateEquipment = $this->db->prepare("
-            INSERT INTO equipments (equipment_name, asset_tag, status, created_at)
-            VALUES (:equipment_name, :asset_tag, 'borrowed', NOW())
+          $stmtFindEquipment = $this->db->prepare("
+            SELECT equipment_id, status FROM equipments 
+            WHERE (asset_tag = :identifier OR equipment_name = :identifier)
+            AND is_active = 1
+            LIMIT 1
           ");
-          $stmtCreateEquipment->execute([
-            ':equipment_name' => $equipmentId, // Using the identifier as name for new entry
-            ':asset_tag' => $equipmentId, // Using the identifier as asset tag for new entry
-          ]);
-          $actualEquipmentId = $this->db->lastInsertId();
+          $stmtFindEquipment->execute([':identifier' => $identifier]);
+          $existingEquipment = $stmtFindEquipment->fetch(PDO::FETCH_ASSOC);
+
+          if ($existingEquipment) {
+            if ($existingEquipment['status'] !== 'available') {
+              throw new Exception("Equipment '{$identifier}' is currently {$existingEquipment['status']}.");
+            }
+            $actualEquipmentId = $existingEquipment['equipment_id'];
+          } else {
+            $stmtCreateEquipment = $this->db->prepare("
+              INSERT INTO equipments (equipment_name, asset_tag, status, is_active, created_at)
+              VALUES (:equipment_name, :asset_tag, 'borrowed', 1, NOW())
+            ");
+            $stmtCreateEquipment->execute([
+              ':equipment_name' => $identifier,
+              ':asset_tag' => $identifier,
+            ]);
+            $actualEquipmentId = $this->db->lastInsertId();
+          }
         }
 
-        // Insert into borrow_transaction_items
         $stmt = $this->db->prepare("
                 INSERT INTO borrow_transaction_items (transaction_id, equipment_id, status)
                 VALUES (:transaction_id, :equipment_id, 'borrowed')
             ");
         $stmt->execute([
           ':transaction_id' => $transactionId,
-          ':equipment_id' => $actualEquipmentId // Use the actual equipment_id (INT)
+          ':equipment_id' => $actualEquipmentId
         ]);
 
-        // Update equipment status in the equipments table
         $stmtUpdateEquipment = $this->db->prepare("
           UPDATE equipments SET status = 'borrowed', updated_at = NOW() 
           WHERE equipment_id = :equipment_id

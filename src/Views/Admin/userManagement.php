@@ -301,6 +301,7 @@
                         <?php
                         $modules = [
                             'book management',
+                            'equipment management',
                             'user management',
                             'qr scanner',
                             'returning',
@@ -309,6 +310,7 @@
                             'reports',
                             'transaction history',
                             'restore books',
+                            'restore equipment',
                         ];
 
                         foreach ($modules as $module):
@@ -513,6 +515,7 @@
                     <?php
                     $modules = [
                         'book management',
+                        'equipment management',
                         'user management',
                         'qr scanner',
                         'returning',
@@ -521,6 +524,7 @@
                         'reports',
                         'transaction history',
                         'restore books',
+                        'restore equipment',
                     ];
 
                     foreach ($modules as $module):

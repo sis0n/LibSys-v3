@@ -267,9 +267,9 @@ $baseUrl = BASE_URL;
                     <span>Dashboard</span>
                 </a>
 
-                <div class="sidebar-dropdown" data-pages='["userManagement","bookManagement"]'>
+                <div class="sidebar-dropdown" data-pages='["userManagement","bookManagement", "equipmentManagement"]'>
                     <button
-                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["userManagement", "bookManagement"])) ? 'bg-orange-100 text-orange-900' : 'hover:bg-orange-100 text-orange-900' ?>">
+                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["userManagement", "bookManagement", "equipmentManagement"])) ? 'bg-orange-100 text-orange-900' : 'hover:bg-orange-100 text-orange-900' ?>">
                         <span class="flex items-center gap-x-3">
                             <i class="ph ph-folders text-2xl"></i>
                             <span class="text-base">Management</span>
@@ -286,6 +286,11 @@ $baseUrl = BASE_URL;
                             class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'bookManagement' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
                             <i class="ph ph-book-open text-xl"></i>
                             <span class="text-base text-sm">Book Management</span>
+                        </a>
+                        <a href="<?= $baseUrl ?>/equipmentManagement"
+                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'equipmentManagement' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
+                            <i class="ph ph-desktop text-xl"></i>
+                            <span class="text-base text-sm">Equipment Management</span>
                         </a>
                     </div>
                 </div>
@@ -414,6 +419,14 @@ $baseUrl = BASE_URL;
                         class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'bookManagement' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
                         <i class="ph ph-book-open text-2xl"></i>
                         <span class="text-base">Book Management</span>
+                    </a>
+                <?php endif; ?>
+
+                <?php if ($hasPermission('equipment management')): ?>
+                    <a href="<?= $baseUrl ?>/equipmentManagement"
+                        class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'equipmentManagement' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
+                        <i class="ph ph-desktop text-2xl"></i>
+                        <span class="text-base">Equipment Management</span>
                     </a>
                 <?php endif; ?>
 

@@ -42,6 +42,7 @@ class ViewController extends Controller
       case 'librarian':
         $privilege_to_page = [
           'book management' => 'bookManagement',
+          'equipment management' => 'equipmentManagement',
           'qr scanner' => 'qrScanner',
           'returning' => 'returning',
           'borrowing form' => 'borrowingForm',
@@ -49,6 +50,7 @@ class ViewController extends Controller
           'reports' => 'topVisitor',
           'transaction history' => 'transactionHistory',
           'restore books' => 'restoreBooks',
+          'restore equipment' => 'restoreEquipment',
           'user management' => 'userManagement',
           'restore users' => 'restoreUser'
         ];
@@ -86,6 +88,7 @@ class ViewController extends Controller
 
     $protectedModules = [
       'bookManagement' => 'book management',
+      'equipmentManagement' => 'equipment management',
       'qrScanner' => 'qr scanner',
       'returning' => 'returning',
       'borrowingForm' => 'borrowing form',
@@ -94,6 +97,7 @@ class ViewController extends Controller
       'transactionHistory' => 'transaction history',
       'backup' => 'backup',
       'restoreBooks' => 'restore books',
+      'restoreEquipment' => 'restore equipment',
       'restoreUser' => 'restore users',
       'userManagement' => 'user management',
       'libraryPolicies' => 'superadmin'
