@@ -75,12 +75,11 @@ class QRScannerController extends Controller
     $profilePicUrl = null;
 
     if ($profilePicPath) {
-      $baseUrlCleaned = rtrim(BASE_URL, '/');
       $uploadsPosition = strpos($profilePicPath, 'uploads/');
 
       if ($uploadsPosition !== false) {
         $finalRelativePath = substr($profilePicPath, $uploadsPosition);
-        $profilePicUrl = $baseUrlCleaned . '/' . $finalRelativePath;
+        $profilePicUrl = STORAGE_URL . '/' . $finalRelativePath;
       }
     }
 
@@ -98,11 +97,10 @@ class QRScannerController extends Controller
       $regFormPath = $transaction['registration_form'] ?? null;
       $regFormUrl = null;
       if ($regFormPath) {
-        $baseUrlCleaned = rtrim(BASE_URL, '/');
         $uploadsPosition = strpos($regFormPath, 'uploads/');
         if ($uploadsPosition !== false) {
           $finalRelativePath = substr($regFormPath, $uploadsPosition);
-          $regFormUrl = $baseUrlCleaned . '/' . $finalRelativePath;
+          $regFormUrl = STORAGE_URL . '/' . $finalRelativePath;
         }
       }
       $userInfo['registrationFormUrl'] = $regFormUrl;

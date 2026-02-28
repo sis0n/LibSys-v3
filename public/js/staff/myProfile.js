@@ -278,7 +278,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (data.profile.profile_picture) {
           const cleanPath = data.profile.profile_picture.replace(/^\//, "");
-          const finalUrl = window.LARAVEL_URL + 'storage/' + cleanPath;
+          const finalUrl = window.STORAGE_URL + '/' + cleanPath;
 
           profilePreview.src = finalUrl;
           profilePreview.classList.remove("hidden");

@@ -5,7 +5,6 @@ $role = $userData['role'] ?? 'guest';
 $fullname = $userData['fullname'] ?? 'Guest User';
 $username = $userData['username'] ?? '0000';
 $profilePic = $userData['profile_picture'] ?? null;
-$laravel_url = "http://127.0.0.1:8000/";
 
 switch ($role) {
     case 'admin':
@@ -52,7 +51,7 @@ switch ($role) {
                         $cleanPath = ltrim($profilePic, '/');
                     ?>
                         <img id="headerProfilePic"
-                            src="<?php echo $laravel_url . $cleanPath; ?>"
+                            src="<?php echo STORAGE_URL . '/' . $cleanPath; ?>"
                             alt="Profile"
                             class="w-full h-full object-cover">
                     <?php else: ?>

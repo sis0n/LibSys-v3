@@ -25,6 +25,12 @@ if (!defined('BASE_URL')) {
     define('BASE_URL', rtrim($appUrl, '/')); 
 }
 
+// I-define ang STORAGE_URL (Laravel Storage)
+if (!defined('STORAGE_URL')) {
+    $storageUrl = $_ENV['STORAGE_URL'] ?? 'http://127.0.0.1:8000/storage';
+    define('STORAGE_URL', rtrim($storageUrl, '/')); 
+}
+
 // ---------------------------------------------------------------------
 // --- FRONT CONTROLLER LOGIC: Mas Matibay na URI Calculation ---
 // ---------------------------------------------------------------------

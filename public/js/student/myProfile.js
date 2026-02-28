@@ -347,8 +347,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (data.profile.profile_picture) {
           const cleanPath = data.profile.profile_picture.replace(/^\//, "");
-          // Construct URL pointing to Laravel's symlinked storage
-          const finalUrl = window.LARAVEL_URL + 'storage/' + cleanPath;
+          const finalUrl = window.STORAGE_URL + '/' + cleanPath;
 
           profilePreview.src = finalUrl;
           profilePreview.classList.remove("hidden");
@@ -362,7 +361,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (profile.registration_form) {
           const cleanRegFormPath = profile.registration_form.replace(/^\//, "");
-          viewRegForm.href = window.LARAVEL_URL + 'storage/' + cleanRegFormPath;
+          viewRegForm.href = window.STORAGE_URL + '/' + cleanRegFormPath;
           viewRegForm.classList.remove("hidden");
           uploadBtn.classList.add("hidden");
           if (!isEditing && removeRegForm) removeRegForm.classList.add("hidden");
@@ -438,7 +437,7 @@ document.addEventListener("DOMContentLoaded", () => {
         uploadBtn.classList.add("hidden");
         // Construct URL for existing registration form
         const cleanRegFormPath = originalProfileData.registration_form.replace(/^\//, "");
-        viewRegForm.href = window.LARAVEL_URL + 'storage/' + cleanRegFormPath;
+        viewRegForm.href = window.STORAGE_URL + '/' + cleanRegFormPath;
       } else {
         viewRegForm.classList.add("hidden");
         if (removeRegForm) removeRegForm.classList.add("hidden");
@@ -764,7 +763,8 @@ document.addEventListener("DOMContentLoaded", () => {
   removeRegForm?.addEventListener("click", () => {
     regFormUpload.value = "";
     if (originalProfileData.registration_form && !isEditing) {
-      viewRegForm.href = originalProfileData.registration_form;
+      const cleanPath = originalProfileData.registration_form.replace(/^\//, "");
+      viewRegForm.href = window.STORAGE_URL + '/' + cleanPath;
       viewRegForm.classList.remove("hidden");
       uploadBtn.classList.add("hidden");
       removeRegForm.classList.add("hidden");

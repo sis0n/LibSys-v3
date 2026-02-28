@@ -1,6 +1,7 @@
-<?php
-$laravel_url = "http://localhost:8000/";
-?>
+<script>
+    window.BASE_URL = "<?= BASE_URL ?>";
+    window.STORAGE_URL = "<?= STORAGE_URL ?>";
+</script>
 <div class="min-h-screen">
     <div class="mb-6">
         <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
@@ -172,7 +173,5 @@ $laravel_url = "http://localhost:8000/";
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 
-<script>
-    window.LARAVEL_URL = "<?= $laravel_url ?>";
-</script>
+
 <script src="<?= BASE_URL ?>/js/staff/myProfile.js" defer></script>
