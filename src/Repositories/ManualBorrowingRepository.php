@@ -79,22 +79,6 @@ class ManualBorrowingRepository
     return null;
   }
 
-  public function createGuest(array $guestData): int
-  {
-    $stmt = $this->db->prepare("
-            INSERT INTO guests (first_name, last_name, email, contact, created_at)
-            VALUES (:first_name, :last_name, :email, :contact, NOW())
-        ");
-    $stmt->execute([
-      ':first_name' => $guestData['first_name'],
-      ':last_name'  => $guestData['last_name'],
-      ':email'      => $guestData['email'] ?? null,
-      ':contact'    => $guestData['contact'] ?? null,
-    ]);
-
-    return $this->db->lastInsertId();
-  }
-
   public function getEquipments(): array
   {
     $stmt = $this->db->prepare("SELECT equipment_id, equipment_name, asset_tag FROM equipments WHERE status = 'available' AND is_active = 1 ORDER BY equipment_name ASC");
@@ -145,7 +129,7 @@ class ManualBorrowingRepository
       $this->db->beginTransaction();
 
       $transactionCode = strtoupper(bin2hex(random_bytes(4)));
-      $studentId = $facultyId = $staffId = $guestId = null;
+      $studentId = $facultyId = $staffId = null;
 
       switch ($borrowData['borrower_type']) {
         case 'student':
@@ -169,12 +153,28 @@ class ManualBorrowingRepository
           if (!$staffId) throw new Exception("Staff not found.");
           break;
 
-        case 'guest':
-          $guestId = $borrowData['borrower_id'];
-          break;
-
         default:
           throw new Exception("Invalid borrower type.");
+      }
+
+      $isBook = !empty($borrowData['book_id']);
+      $isEquipment = !empty($borrowData['equipment_id']);
+
+      if (!$isBook && !$isEquipment) {
+        throw new Exception("Either book_id or equipment_id must be provided.");
+      }
+
+      $dueDays = 0;
+      if ($isBook) {
+          $role = $borrowData['borrower_type'];
+          $stmtPolicy = $this->db->prepare("SELECT borrow_duration_days FROM library_policies WHERE role = ? LIMIT 1");
+          $stmtPolicy->execute([$role]);
+          $policyDays = $stmtPolicy->fetchColumn();
+          $dueDays = ($policyDays !== false) ? (int)$policyDays : 7;
+      }
+
+      if ($isEquipment) {
+          $dueDays = 0;
       }
 
       $collateralName = trim($borrowData['collateral_id'] ?? '');
@@ -190,28 +190,21 @@ class ManualBorrowingRepository
 
       $stmt = $this->db->prepare("
             INSERT INTO borrow_transactions
-            (student_id, staff_id, faculty_id, guest_id, transaction_code, borrowed_at, due_date, status, method, collateral_id, librarian_id)
+            (student_id, staff_id, faculty_id, transaction_code, borrowed_at, due_date, status, method, collateral_id, librarian_id)
             VALUES
-            (:student_id, :staff_id, :faculty_id, :guest_id, :transaction_code, NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY), 'borrowed', 'manual', :collateral_id, :librarian_id)
+            (:student_id, :staff_id, :faculty_id, :transaction_code, NOW(), DATE_ADD(NOW(), INTERVAL :due_days DAY), 'borrowed', 'manual', :collateral_id, :librarian_id)
         ");
       $stmt->execute([
         ':student_id' => $studentId,
         ':staff_id' => $staffId,
         ':faculty_id' => $facultyId,
-        ':guest_id' => $guestId,
         ':transaction_code' => $transactionCode,
+        ':due_days' => $dueDays,
         ':collateral_id' => $collateralName,
         ':librarian_id' => $borrowData['librarian_id'] ?? null
       ]);
 
       $transactionId = $this->db->lastInsertId();
-
-      $isBook = !empty($borrowData['book_id']);
-      $isEquipment = !empty($borrowData['equipment_id']);
-
-      if (!$isBook && !$isEquipment) {
-        throw new Exception("Either book_id or equipment_id must be provided.");
-      }
 
       if ($isBook) {
         $stmt = $this->db->prepare("SELECT book_id FROM books WHERE book_id = ? AND deleted_at IS NULL");
