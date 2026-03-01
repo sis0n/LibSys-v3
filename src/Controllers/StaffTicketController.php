@@ -17,12 +17,14 @@ class StaffTicketController extends Controller
   protected StaffTicketRepository $ticketRepo;
   protected StaffProfileRepository $staffProfileRepo;
   protected LibraryPolicyRepository $policyRepo;
+  private $auditRepo;
 
   public function __construct()
   {
     $this->ticketRepo = new StaffTicketRepository();
     $this->staffProfileRepo = new StaffProfileRepository();
     $this->policyRepo = new LibraryPolicyRepository();
+    $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }
 
   private function generateQr(string $transactionCode): string
@@ -164,6 +166,9 @@ class StaffTicketController extends Controller
       if (!empty($cartItemIdsToRemove)) {
         $this->ticketRepo->removeStaffCartItemsByIds($staffId, $cartItemIdsToRemove);
       }
+
+      $itemTitles = implode(', ', array_column($cartItems, 'title'));
+      $this->auditRepo->log($userId, 'TICKET_CREATED', 'TRANSACTIONS', $transactionCode, "Staff generated borrowing ticket for: $itemTitles");
 
       $_SESSION['last_ticket_code'] = $transactionCode;
       $qrPath = $this->generateQr($transactionCode);
@@ -366,33 +371,28 @@ class StaffTicketController extends Controller
 
       $items = $this->ticketRepo->getTransactionItems((int)$pendingTransaction['transaction_id']);
 
-      $response['status'] = $status;
-      $response['transaction_code'] = $pendingTransaction['transaction_code'];
-      $response['generated_at'] = $pendingTransaction['generated_at'];
-      $response['expires_at'] = $pendingTransaction['expires_at'];
-      $response['items'] = $items;
-      $response['books_count'] = count($items);
-
-      echo json_encode($response);
+      echo json_encode([
+        'success' => true,
+        'status' => $status,
+        'transaction_code' => $pendingTransaction['transaction_code'],
+        'generated_at' => $pendingTransaction['generated_at'],
+        'expires_at' => $pendingTransaction['expires_at'],
+        'books' => $items,
+        'student' => [
+          'student_number' => $staffData['employee_id'] ?? 'N/A',
+          'name' => $staffData['staff_name'] ?? 'N/A',
+          'year_level' => 'Staff',
+          'section' => '',
+          'course' => $staffData['position'] ?? 'N/A'
+        ]
+      ]);
       exit;
     }
 
-    $borrowedTransaction = $this->ticketRepo->getBorrowedTransactionByStaffId($staffId);
-    if ($borrowedTransaction) {
-      $items = $this->ticketRepo->getTransactionItems((int)$borrowedTransaction['transaction_id']);
-
-      $response['status'] = 'borrowed';
-      $response['transaction_code'] = $borrowedTransaction['transaction_code'];
-      $response['generated_at'] = $borrowedTransaction['generated_at'] ?? null;
-      $response['expires_at'] = $borrowedTransaction['expires_at'] ?? null;
-      $response['items'] = $items;
-      $response['books_count'] = count($items);
-
-      echo json_encode($response);
-      exit;
-    }
-
-    echo json_encode($response);
+    echo json_encode([
+      'success' => true,
+      'status' => 'none'
+    ]);
     exit;
   }
 }

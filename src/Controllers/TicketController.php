@@ -16,17 +16,21 @@ class TicketController extends Controller
 {
   protected TicketRepository $ticketRepo;
   protected LibraryPolicyRepository $policyRepo;
+  private $auditRepo;
 
   public function __construct()
   {
     $this->ticketRepo = new TicketRepository();
     $this->policyRepo = new LibraryPolicyRepository();
+    $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }
 
   private function generateQr(string $transactionCode): string
   {
-    $qrDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'qrcodes';
-    $qrPath = $qrDir . DIRECTORY_SEPARATOR . $transactionCode . '.png';
+    // Relative path patungo sa Laravel folder (Assuming 'backend' ang folder name)
+    $qrDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'backend' . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'qrcodes';
+    $fileName = $transactionCode . '.svg';
+    $qrPath = $qrDir . DIRECTORY_SEPARATOR . $fileName;
 
     if (!is_dir($qrDir)) {
       mkdir($qrDir, 0777, true);
@@ -34,7 +38,7 @@ class TicketController extends Controller
 
     try {
       $builder = new Builder(
-        writer: new PngWriter(),
+        writer: new \Endroid\QrCode\Writer\SvgWriter(),
         data: $transactionCode,
         encoding: new Encoding('UTF-8'),
         errorCorrectionLevel: ErrorCorrectionLevel::High,
@@ -46,15 +50,9 @@ class TicketController extends Controller
       $result = $builder->build();
       $result->saveToFile($qrPath);
 
-      return BASE_URL . "/qrcodes/{$transactionCode}.png";
+      return STORAGE_URL . "/uploads/qrcodes/" . $fileName;
     } catch (\Exception $e) {
-      header('Content-Type: application/json');
-      echo json_encode([
-        "success" => false,
-        "error_from_qr" => $e->getMessage(),
-        "checked_path" => $qrPath
-      ]);
-      exit;
+      return '';
     }
   }
 
@@ -153,6 +151,9 @@ class TicketController extends Controller
       if (!empty($cartItemIdsToRemove)) {
         $this->ticketRepo->removeCartItemsByIds((int)$userId, $cartItemIdsToRemove);
       }
+
+      $itemTitles = implode(', ', array_column($cartItems, 'title'));
+      $this->auditRepo->log($userId, 'TICKET_CREATED', 'TRANSACTIONS', $transactionCode, "Student generated borrowing ticket for: $itemTitles");
 
       $_SESSION['last_ticket_code'] = $transactionCode;
       $qrPath = $this->generateQr($transactionCode);
@@ -261,8 +262,9 @@ class TicketController extends Controller
       $viewError = "An unexpected error occurred while loading your ticket details. Please try again later.";
     }
 
+    $isBorrowed = ($transactionData && strtolower($transactionData['status'] ?? '') === 'borrowed');
     $isExpired = false;
-    if ($transactionData && strtolower($transactionData['status']) === 'expired') {
+    if ($transactionData && strtolower($transactionData['status'] ?? '') === 'expired') {
       $isExpired = true;
 
       unset($_SESSION['last_ticket_code']);
@@ -299,7 +301,8 @@ class TicketController extends Controller
       "expires_at" => $transactionData['expires_at'] ?? null,
       "message" => $viewMessage,
       "error_message" => $viewError,
-      "isExpired" => $isExpired
+      "isExpired" => $isExpired,
+      "isBorrowed" => $isBorrowed
     ];
 
     $this->view("student/qrBorrowingTicket", $viewData);
@@ -325,9 +328,12 @@ class TicketController extends Controller
     $this->ticketRepo->expireOldPendingTransactions();
 
     $pending = $this->ticketRepo->getPendingTransactionByStudentId($studentId);
+
     if ($pending) {
-      $student = $this->ticketRepo->getStudentDetailsById($studentId);
+      $details = $this->ticketRepo->getStudentDetailsById($studentId);
       $books = $this->ticketRepo->getBooksByTransactionCode($pending['transaction_code']);
+
+      $fullName = trim(($details['first_name'] ?? '') . ' ' . ($details['middle_name'] ?? '') . ' ' . ($details['last_name'] ?? ''));
 
       echo json_encode([
         'success' => true,
@@ -336,43 +342,17 @@ class TicketController extends Controller
         'generated_at' => $pending['generated_at'],
         'expires_at' => $pending['expires_at'] ?? null,
         'student' => [
-          'student_number' => $student['student_number'] ?? 'N/A',
-          'name' => trim(($student['first_name'] ?? '') . ' ' . ($student['middle_name'][0] ?? '') . '. ' . ($student['last_name'] ?? '')),
-          'year_level' => $student['year_level'] ?? '',
-          'section' => $student['section'] ?? '',
-          'course' => $student['course'] ?? 'N/A'
+          'student_number' => $details['student_number'] ?? 'N/A',
+          'name' => !empty($fullName) ? $fullName : 'N/A',
+          'year_level' => $details['year_level'] ?? '',
+          'section' => $details['section'] ?? '',
+          'course' => $details['course'] ?? 'N/A'
         ],
         'books' => $books ?? []
       ]);
       exit;
     }
 
-    $borrowed = $this->ticketRepo->getBorrowedTransactionByStudentId($studentId);
-    if ($borrowed) {
-      $student = $this->ticketRepo->getStudentDetailsById($studentId);
-      $books = $this->ticketRepo->getBooksByTransactionCode($borrowed['transaction_code']);
-
-      echo json_encode([
-        'success' => true,
-        'status' => 'borrowed',
-        'transaction_code' => $borrowed['transaction_code'],
-        'due_date' => $borrowed['due_date'],
-        'student' => [
-          'student_number' => $student['student_number'] ?? 'N/A',
-          'name' => trim(($student['first_name'] ?? '') . ' ' . ($student['middle_name'][0] ?? '') . '. ' . ($student['last_name'] ?? '')),
-          'year_level' => $student['year_level'] ?? '',
-          'section' => $student['section'] ?? '',
-          'course' => $student['course'] ?? 'N/A'
-        ],
-        'books' => $books ?? []
-      ]);
-      exit;
-    }
-
-    echo json_encode([
-      'success' => true,
-      'status' => 'none',
-      // 'message' => 'You have no active borrowing tickets.'
-    ]);
+    echo json_encode(['success' => true, 'status' => 'none']);
   }
 }

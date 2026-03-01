@@ -396,8 +396,8 @@ class TicketRepository
   {
     $stmt = $this->db->prepare("
         INSERT INTO borrow_transactions 
-        (student_id, transaction_code, due_date, generated_at, expires_at)
-        VALUES (:sid, :tcode, :due_date, NOW(), DATE_ADD(NOW(), INTERVAL :minutes MINUTE))
+        (student_id, transaction_code, due_date, status, generated_at, expires_at)
+        VALUES (:sid, :tcode, :due_date, 'pending', NOW(), DATE_ADD(NOW(), INTERVAL :minutes MINUTE))
     ");
     $stmt->execute([
       'sid' => $studentId,

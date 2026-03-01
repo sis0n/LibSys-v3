@@ -17,27 +17,30 @@ class FacultyTicketController extends Controller
   protected FacultyTicketRepository $ticketRepo;
   protected FacultyProfileRepository $facultyProfileRepo;
   protected LibraryPolicyRepository $policyRepo;
+  private $auditRepo;
 
   public function __construct()
   {
     $this->ticketRepo = new FacultyTicketRepository();
     $this->facultyProfileRepo = new FacultyProfileRepository();
     $this->policyRepo = new LibraryPolicyRepository();
+    $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }
 
   private function generateQr(string $transactionCode): string
   {
-    $qrDir = __DIR__ . "/../../public/qrcodes";
-    $qrPath = $qrDir . "/{$transactionCode}.png";
+    // Relative path patungo sa Laravel folder
+    $qrDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'backend' . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'qrcodes';
+    $fileName = 'qr_' . $transactionCode . '.svg';
+    $qrPath = $qrDir . DIRECTORY_SEPARATOR . $fileName;
 
-    if (!is_dir($qrDir) && !mkdir($qrDir, 0777, true) && !is_dir($qrDir)) {
-      error_log("Failed to create directory: " . $qrDir);
-      return '';
+    if (!is_dir($qrDir)) {
+      mkdir($qrDir, 0777, true);
     }
 
     try {
       $builder = new Builder(
-        writer: new PngWriter(),
+        writer: new \Endroid\QrCode\Writer\SvgWriter(),
         data: $transactionCode,
         encoding: new Encoding('UTF-8'),
         errorCorrectionLevel: ErrorCorrectionLevel::High,
@@ -49,9 +52,8 @@ class FacultyTicketController extends Controller
       $result = $builder->build();
       $result->saveToFile($qrPath);
 
-      return BASE_URL . "/qrcodes/{$transactionCode}.png";
+      return STORAGE_URL . "/uploads/qrcodes/" . $fileName;
     } catch (\Exception $e) {
-      error_log("QR Code Generation Error for code '$transactionCode': " . $e->getMessage());
       return '';
     }
   }
@@ -164,6 +166,9 @@ class FacultyTicketController extends Controller
       if (!empty($cartItemIdsToRemove)) {
         $this->ticketRepo->removeFacultyCartItemsByIds($facultyId, $cartItemIdsToRemove);
       }
+
+      $itemTitles = implode(', ', array_column($cartItems, 'title'));
+      $this->auditRepo->log($userId, 'TICKET_CREATED', 'TRANSACTIONS', $transactionCode, "Faculty generated borrowing ticket for: $itemTitles");
 
       $_SESSION['last_ticket_code'] = $transactionCode;
       $qrPath = $this->generateQr($transactionCode);
@@ -341,7 +346,6 @@ class FacultyTicketController extends Controller
       'contact' => $facultyDetails['contact'] ?? null
     ];
 
-    // Check for pending transaction
     $pendingTransaction = $this->ticketRepo->getPendingTransactionByFacultyId($facultyId);
 
     if ($pendingTransaction) {
@@ -358,32 +362,21 @@ class FacultyTicketController extends Controller
         'transaction_code' => $pendingTransaction['transaction_code'],
         'generated_at' => $pendingTransaction['generated_at'],
         'expires_at' => $pendingTransaction['expires_at'],
-        'items' => $items,
-        'faculty' => $facultyInfo
-      ]);
-      exit;
-    }
-
-    // Check for borrowed transaction if no pending
-    $borrowedTransaction = $this->ticketRepo->getBorrowedTransactionByFacultyId($facultyId);
-    if ($borrowedTransaction) {
-      $items = $this->ticketRepo->getTransactionItems((int)$borrowedTransaction['transaction_id']);
-      echo json_encode([
-        'success' => true,
-        'status' => 'borrowed',
-        'transaction_code' => $borrowedTransaction['transaction_code'],
-        'due_date' => $borrowedTransaction['due_date'],
-        'items' => $items,
-        'faculty' => $facultyInfo
+        'books' => $items,
+        'student' => [
+          'student_number' => $facultyDetails['unique_faculty_id'] ?? 'N/A',
+          'name' => $this->getFullName($facultyDetails),
+          'year_level' => 'Faculty',
+          'section' => '',
+          'course' => $facultyDetails['college_name'] ?? 'N/A'
+        ]
       ]);
       exit;
     }
 
     echo json_encode([
       'success' => true,
-      'status' => 'none',
-      'items' => [],
-      'faculty' => $facultyInfo
+      'status' => 'none'
     ]);
   }
 }

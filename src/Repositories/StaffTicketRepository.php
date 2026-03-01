@@ -224,21 +224,20 @@ class StaffTicketRepository
     // Transactions
     public function createPendingTransactionForStaff(int $staffId, string $transactionCode, string $dueDate, int $expiryMinutes = 15): int
     {
-        $stmt = $this->db->prepare("
-            INSERT INTO borrow_transactions 
-            (staff_id, transaction_code, due_date, generated_at, expires_at)
-            VALUES (:sid, :tcode, :due_date, NOW(), DATE_ADD(NOW(), INTERVAL :minutes MINUTE))
-        ");
-        $stmt->execute([
-            'sid' => $staffId,
-            'tcode' => $transactionCode,
-            'due_date' => $dueDate,
-            'minutes' => $expiryMinutes
-        ]);
+      $stmt = $this->db->prepare("
+              INSERT INTO borrow_transactions 
+              (staff_id, transaction_code, due_date, status, generated_at, expires_at)
+              VALUES (:sid, :tcode, :due_date, 'pending', NOW(), DATE_ADD(NOW(), INTERVAL :minutes MINUTE))
+          ");
+      $stmt->execute([
+        'sid' => $staffId,
+        'tcode' => $transactionCode,
+        'due_date' => $dueDate,
+        'minutes' => $expiryMinutes
+      ]);
 
-        return (int) $this->db->lastInsertId();
+      return (int) $this->db->lastInsertId();
     }
-
     public function getPendingTransactionByStaffId(int $staffId): ?array
     {
         $stmt = $this->db->prepare("
