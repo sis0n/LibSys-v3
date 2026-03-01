@@ -189,16 +189,17 @@ class FacultyTicketRepository
   }
 
   // Transactions
-  public function createPendingTransactionForFaculty(int $facultyId, string $transactionCode, string $dueDate, int $expiryMinutes = 15): int
+  public function createPendingTransactionForFaculty(int $facultyId, string $transactionCode, string $dueDate, string $qrPath, int $expiryMinutes = 15): int
   {
     $stmt = $this->db->prepare("
             INSERT INTO borrow_transactions 
-            (faculty_id, transaction_code, due_date, status, generated_at, expires_at)
-            VALUES (:fid, :tcode, :due_date, 'pending', NOW(), DATE_ADD(NOW(), INTERVAL :minutes MINUTE))
+            (faculty_id, transaction_code, qrcode, due_date, status, generated_at, expires_at)
+            VALUES (:fid, :tcode, :qr, :due_date, 'pending', NOW(), DATE_ADD(NOW(), INTERVAL :minutes MINUTE))
         ");
     $stmt->execute([
       'fid' => $facultyId,
       'tcode' => $transactionCode,
+      'qr' => $qrPath,
       'due_date' => $dueDate,
       'minutes' => $expiryMinutes
     ]);

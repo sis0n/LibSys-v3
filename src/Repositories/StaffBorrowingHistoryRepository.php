@@ -25,7 +25,7 @@ class StaffBorrowingHistoryRepository
             JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
             JOIN staff s ON bt.staff_id = s.staff_id
             WHERE s.user_id = :user_id
-            AND bt.status != 'pending'
+            AND bt.status NOT IN ('pending', 'expired')
         ");
     $stmt->execute(['user_id' => $userId]);
     $stats = $stmt->fetch(\PDO::FETCH_ASSOC);
@@ -67,7 +67,7 @@ class StaffBorrowingHistoryRepository
             LEFT JOIN users librarian 
                 ON bt.librarian_id = librarian.user_id
             WHERE s.user_id = :uid
-            AND bt.status != 'pending'
+            AND bt.status NOT IN ('pending', 'expired')
             ORDER BY bt.borrowed_at DESC
         ");
     $stmt->execute(['uid' => $userId]);
@@ -96,7 +96,7 @@ class StaffBorrowingHistoryRepository
         JOIN staff s ON bt.staff_id = s.staff_id
         LEFT JOIN users librarian ON bt.librarian_id = librarian.user_id
         WHERE s.user_id = :user_id
-        AND bt.status != 'pending'
+        AND bt.status NOT IN ('pending', 'expired')
         ORDER BY bt.borrowed_at DESC
         LIMIT :limit OFFSET :offset
     ");
@@ -115,7 +115,7 @@ class StaffBorrowingHistoryRepository
         FROM borrow_transactions bt
         JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
         JOIN staff s ON bt.staff_id = s.staff_id
-        WHERE s.user_id = :user_id AND bt.status != 'pending'
+        WHERE s.user_id = :user_id AND bt.status NOT IN ('pending', 'expired')
     ");
     $stmt->execute(['user_id' => $userId]);
     return (int)$stmt->fetchColumn();

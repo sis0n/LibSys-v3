@@ -27,65 +27,65 @@ class FacultyProfileController extends Controller
     exit;
   }
 
-  private function handleFileUpload($file, $uploadSubDir)
+  /**
+   * BRIDGE: Nag-uupload ng file sa Laravel Backend via Universal API
+   */
+  private function uploadToBackendAPI($file, $folder)
   {
     if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
       return null;
     }
 
-    $possiblePaths = [
-      realpath(__DIR__ . '/../../../../backend/storage/app/public/'),
-      realpath($_SERVER['DOCUMENT_ROOT'] . '/backend/storage/app/public/'),
-      realpath($_SERVER['DOCUMENT_ROOT'] . '/../backend/storage/app/public/'),
-      'C:/xampp/htdocs/backend/storage/app/public/',
-      'C:/Users/adria/Desktop/backend/storage/app/public/'
-    ];
+    $apiUrl = str_replace('/storage', '/api/upload-file', STORAGE_URL);
+    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    
+    // Gagamit ng Random Unique ID para sa security at privacy
+    $uniqueId = uniqid();
+    $prefix = (strpos($folder, 'profile') !== false) ? 'profile_' : 'file_';
+    $fileName = "{$prefix}{$uniqueId}.{$extension}";
 
-    $laravelStoragePath = null;
-    foreach ($possiblePaths as $path) {
-      if ($path && file_exists($path)) {
-        $laravelStoragePath = $path;
-        break;
+    $fileData = base64_encode(file_get_contents($file['tmp_name']));
+
+    try {
+      $ch = curl_init($apiUrl);
+      $postData = json_encode([
+        'filename' => $fileName,
+        'folder' => $folder,
+        'file' => $fileData
+      ]);
+
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_POST, true);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+      curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Accept: application/json'
+      ]);
+
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+      curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+
+      $response = curl_exec($ch);
+      $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      curl_close($ch);
+
+      if ($httpCode === 200) {
+          return "uploads/" . trim($folder, '/') . "/" . $fileName;
       }
-    }
-
-    if (!$laravelStoragePath) {
-      error_log("Upload Error: Could not dynamically locate Laravel storage path.");
+      return null;
+    } catch (\Exception $e) {
+      error_log("API Upload Error (Faculty): " . $e->getMessage());
       return null;
     }
-
-    $uploadSubDir = trim($uploadSubDir, '/\\');
-    $subDirClean = (strpos($uploadSubDir, 'uploads') === 0) ? substr($uploadSubDir, 7) : $uploadSubDir;
-    $subDirClean = trim($subDirClean, '/\\');
-
-    $fullTargetDir = $laravelStoragePath . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . $subDirClean;
-
-    if (!file_exists($fullTargetDir)) {
-      if (!mkdir($fullTargetDir, 0777, true)) {
-        return null;
-      }
-    }
-
-    $prefix = (strpos($uploadSubDir, 'profile') !== false) ? 'profile_' : 'file_';
-    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    $fileName = $prefix . ($_SESSION['user_id'] ?? 'user') . '_' . time() . '.' . $extension;
-
-    $targetFile = $fullTargetDir . DIRECTORY_SEPARATOR . $fileName;
-
-    if (move_uploaded_file($file['tmp_name'], $targetFile)) {
-      return 'uploads/' . $subDirClean . '/' . $fileName;
-    }
-
-    return null;
   }
 
   private function validateImageUpload($file)
   {
-    $maxSize = 1 * 1024 * 1024; // 1MB
+    $maxSize = 2 * 1024 * 1024; // 2MB
     $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
 
     if ($file['error'] !== UPLOAD_ERR_OK) return "Upload error.";
-    if ($file['size'] > $maxSize) return "Image must be less than 1MB.";
+    if ($file['size'] > $maxSize) return "Image must be less than 2MB.";
 
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mime = finfo_file($finfo, $file['tmp_name']);
@@ -169,9 +169,10 @@ class FacultyProfileController extends Controller
       if ($isNewFileUploaded) {
         $validation = $this->validateImageUpload($_FILES['profile_image']);
         if ($validation !== true) return $this->json(['success' => false, 'message' => $validation], 400);
-        $imagePath = $this->handleFileUpload($_FILES['profile_image'], "profile_images");
-        if ($imagePath === null) {
-          return $this->json(['success' => false, 'message' => 'Failed to move file.'], 500);
+        
+        $imagePath = $this->uploadToBackendAPI($_FILES['profile_image'], "profile_images");
+        if (!$imagePath) {
+          return $this->json(['success' => false, 'message' => 'Failed to upload profile picture to mobile storage.'], 500);
         }
         $finalProfilePicPath = $imagePath;
       }

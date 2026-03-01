@@ -10,7 +10,7 @@ use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\RoundBlockSizeMode;
-use Endroid\QrCode\Writer\PngWriter;
+use Endroid\QrCode\Writer\SvgWriter;
 
 class FacultyTicketController extends Controller
 {
@@ -27,34 +27,40 @@ class FacultyTicketController extends Controller
     $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }
 
-  private function generateQr(string $transactionCode): string
+  /**
+   * Nag-uupload ng QR code data sa Laravel Backend via API
+   */
+  private function uploadQrToBackend(string $transactionCode, string $svgData): bool
   {
-    // Relative path patungo sa Laravel folder
-    $qrDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'backend' . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'qrcodes';
-    $fileName = 'qr_' . $transactionCode . '.svg';
-    $qrPath = $qrDir . DIRECTORY_SEPARATOR . $fileName;
-
-    if (!is_dir($qrDir)) {
-      mkdir($qrDir, 0777, true);
-    }
+    $apiUrl = str_replace('/storage', '/api/upload-qr', STORAGE_URL);
+    $fileName = $transactionCode . '.svg';
 
     try {
-      $builder = new Builder(
-        writer: new \Endroid\QrCode\Writer\SvgWriter(),
-        data: $transactionCode,
-        encoding: new Encoding('UTF-8'),
-        errorCorrectionLevel: ErrorCorrectionLevel::High,
-        size: 300,
-        margin: 10,
-        roundBlockSizeMode: RoundBlockSizeMode::Margin
-      );
+      $ch = curl_init($apiUrl);
+      $postData = json_encode([
+        'filename' => $fileName,
+        'image' => base64_encode($svgData)
+      ]);
 
-      $result = $builder->build();
-      $result->saveToFile($qrPath);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_POST, true);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+      curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Accept: application/json'
+      ]);
 
-      return STORAGE_URL . "/uploads/qrcodes/" . $fileName;
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+      curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+      $response = curl_exec($ch);
+      $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      curl_close($ch);
+
+      return ($httpCode === 200);
     } catch (\Exception $e) {
-      return '';
+      error_log("Faculty Upload failed: " . $e->getMessage());
+      return false;
     }
   }
 
@@ -63,10 +69,7 @@ class FacultyTicketController extends Controller
     $firstName = $details['first_name'] ?? '';
     $lastName = $details['last_name'] ?? '';
     $middleName = $details['middle_name'] ?? '';
-
-    $middleInitial = !empty($middleName) ? substr($middleName, 0, 1) . '.' : '';
-
-    return trim("{$firstName} {$middleInitial} {$lastName}");
+    return trim("{$firstName} {$middleName} {$lastName}");
   }
 
   public function checkout()
@@ -75,8 +78,9 @@ class FacultyTicketController extends Controller
     header('Content-Type: application/json');
 
     $userId = $_SESSION['user_id'] ?? null;
+    $role = $_SESSION['role'] ?? 'faculty';
 
-    $policy = $this->policyRepo->getPolicyByRole('faculty');
+    $policy = $this->policyRepo->getPolicyByRole($role);
     $MAX_BOOKS = $policy ? (int)$policy['max_books'] : 10;
     $DURATION_DAYS = $policy ? (int)$policy['borrow_duration_days'] : 14;
 
@@ -86,26 +90,15 @@ class FacultyTicketController extends Controller
       exit;
     }
 
-    $profile = $this->facultyProfileRepo->getProfileByUserId((int)$userId);
-    if (!$profile || !$profile['is_qualified']) {
-      http_response_code(400);
-      echo json_encode([
-        "success" => false,
-        "message" => "Profile details are incomplete. Please complete your profile before checking out."
-      ]);
-      exit;
-    }
-
     $facultyId = $this->ticketRepo->getFacultyIdByUserId((int)$userId);
     if (!$facultyId) {
       http_response_code(403);
-      echo json_encode(['success' => false, 'message' => 'No faculty record found for this user.']);
+      echo json_encode(['success' => false, 'message' => 'No faculty record found.']);
       exit;
     }
 
     $input = json_decode(file_get_contents('php://input'), true);
     $selectedIds = $input['cart_ids'] ?? [];
-    if (!is_array($selectedIds)) $selectedIds = [];
 
     try {
       $this->ticketRepo->beginTransaction();
@@ -117,205 +110,55 @@ class FacultyTicketController extends Controller
 
       if (empty($cartItems)) {
         $this->ticketRepo->rollback();
-        echo json_encode(['success' => false, 'message' => 'Cart is empty or selected items not found.']);
+        echo json_encode(['success' => false, 'message' => 'Cart is empty.']);
         exit;
       }
 
-      $bookIds = array_column($cartItems, 'book_id');
-      $unavailableBooks = $this->ticketRepo->areBooksAvailable($bookIds);
-      if (!empty($unavailableBooks)) {
-        $titles = implode(', ', array_column($unavailableBooks, 'title'));
-        $this->ticketRepo->rollback();
-        http_response_code(400);
-        echo json_encode([
-          'success' => false,
-          'message' => "The following book(s) are already checked out or pending: $titles"
-        ]);
-        exit;
+      $transactionCode = strtoupper(uniqid());
+      $dueDate = date("Y-m-d H:i:s", strtotime("+{$DURATION_DAYS} days"));
+      
+      // 1. Generate QR SVG in memory
+      $builder = new Builder(
+        writer: new SvgWriter(),
+        data: $transactionCode,
+        encoding: new Encoding('UTF-8'),
+        errorCorrectionLevel: ErrorCorrectionLevel::High,
+        size: 300,
+        margin: 10,
+        roundBlockSizeMode: RoundBlockSizeMode::Margin
+      );
+      $result = $builder->build();
+      $svgData = $result->getString();
+
+      // 2. Upload to Laravel API
+      if (!$this->uploadQrToBackend($transactionCode, $svgData)) {
+          throw new \Exception("Failed to bridge QR code to mobile storage.");
       }
 
-      $borrowedThisPeriod = $this->ticketRepo->countFacultyBorrowedBooks($facultyId);
-      $newItemsCount = count($cartItems);
-      if ($borrowedThisPeriod + $newItemsCount > $MAX_BOOKS) {
-        $this->ticketRepo->rollback();
-        http_response_code(400);
-        echo json_encode([
-          'success' => false,
-          'message' => "You can only borrow a maximum of {$MAX_BOOKS} books. Current: {$borrowedThisPeriod}, Trying to add: {$newItemsCount}"
-        ]);
-        exit;
-      }
-
-      $existingTransaction = $this->ticketRepo->getPendingTransactionByFacultyId($facultyId);
-
-      if ($existingTransaction) {
-        $transactionId = (int)$existingTransaction['transaction_id'];
-        $transactionCode = $existingTransaction['transaction_code'];
-        $message = 'Checkout successful! Items added to your pending ticket.';
-      } else {
-        $transactionCode = strtoupper(uniqid());
-        $dueDate = date("Y-m-d H:i:s", strtotime("+{$DURATION_DAYS} days"));
-        $transactionId = $this->ticketRepo->createPendingTransactionForFaculty($facultyId, $transactionCode, $dueDate, 15);
-
-        $message = 'Checkout successful! A new Borrowing Ticket has been created.';
-      }
+      // 3. Save to DB
+      $dbPath = "uploads/qrcodes/" . $transactionCode . ".svg";
+      $transactionId = $this->ticketRepo->createPendingTransactionForFaculty($facultyId, $transactionCode, $dueDate, $dbPath, 15);
 
       $this->ticketRepo->addTransactionItems($transactionId, $cartItems);
-
-      $cartItemIdsToRemove = array_column($cartItems, 'cart_id');
-      if (!empty($cartItemIdsToRemove)) {
-        $this->ticketRepo->removeFacultyCartItemsByIds($facultyId, $cartItemIdsToRemove);
-      }
-
+      
       $itemTitles = implode(', ', array_column($cartItems, 'title'));
       $this->auditRepo->log($userId, 'TICKET_CREATED', 'TRANSACTIONS', $transactionCode, "Faculty generated borrowing ticket for: $itemTitles");
 
+      $this->ticketRepo->removeFacultyCartItemsByIds($facultyId, array_column($cartItems, 'cart_id'));
+      
       $_SESSION['last_ticket_code'] = $transactionCode;
-      $qrPath = $this->generateQr($transactionCode);
-
       $this->ticketRepo->commit();
 
       echo json_encode([
         'success' => true,
-        'message' => $message,
+        'message' => 'Checkout successful!',
         'ticket_code' => $transactionCode,
-        'qrPath' => $qrPath
+        'qrPath' => STORAGE_URL . '/' . $dbPath
       ]);
-      exit;
     } catch (\Throwable $e) {
       $this->ticketRepo->rollback();
-      error_log("Checkout Error (Faculty): " . $e->getMessage() . "\nTrace: " . $e->getTraceAsString());
-      http_response_code(500);
-      echo json_encode([
-        'success' => false,
-        'message' => 'Checkout failed: ' . $e->getMessage()
-      ]);
-      exit;
+      echo json_encode(['success' => false, 'message' => $e->getMessage()]);
     }
-  }
-
-  public function show(string $transactionCode = null)
-  {
-    if (session_status() === PHP_SESSION_NONE) session_start();
-    $userId = $_SESSION['user_id'] ?? null;
-    if (!$userId) {
-      header("Location: " . BASE_URL . "/login");
-      exit;
-    }
-
-    $facultyId = $this->ticketRepo->getFacultyIdByUserId((int)$userId);
-    if (!$facultyId) {
-      $this->view("errors/no_faculty_record", ["title" => "Error: No Faculty Record"], false);
-      exit;
-    }
-
-    $this->ticketRepo->expireOldPendingTransactionsFaculty();
-
-    $facultyDetails = $this->ticketRepo->getFacultyInfo($facultyId);
-
-    $facultyInfo = [
-      'faculty_id' => $facultyDetails['faculty_id'] ?? null,
-      'name' => $this->getFullName($facultyDetails),
-      'department' => $facultyDetails['department'] ?? 'N/A'
-    ];
-
-    $transactionData = null;
-    $items = [];
-    $qrPath = null;
-    $viewMessage = null;
-    $viewError = null;
-    $isExpired = false;
-    $isBorrowed = false;
-
-    try {
-      if (empty($transactionCode)) {
-        $transactionCode = $_SESSION['last_ticket_code'] ?? null;
-      }
-
-      if (empty($transactionCode)) {
-        $latestTransaction = $this->ticketRepo->getLatestTransactionByFacultyId($facultyId);
-        if ($latestTransaction) {
-          $transactionCode = $latestTransaction['transaction_code'] ?? null;
-        }
-      }
-
-      if ($transactionCode) {
-        $transaction = $this->ticketRepo->getTransactionByCode($transactionCode);
-
-        if ($transaction && isset($transaction['faculty_id']) && $transaction['faculty_id'] == $facultyId) {
-          $transactionData = $transaction;
-          $items = $this->ticketRepo->getTransactionItems($transactionData['transaction_id']); // FIX 2b: Use $items
-
-          $status = strtolower($transactionData['status']);
-          if ($status === 'expired') {
-            $isExpired = true;
-          } elseif ($status === 'borrowed') {
-            $isBorrowed = true;
-          }
-
-          if ($status === 'pending' && strtotime($transactionData['expires_at'] ?? '9999-01-01') <= time()) {
-            $isExpired = true;
-          }
-
-          $facultyDetails = $this->ticketRepo->getFacultyInfo($transactionData['faculty_id']);
-
-          if ($facultyDetails) {
-            $facultyInfo['name'] = $this->getFullName($facultyDetails);
-            $facultyInfo['department'] = $facultyDetails['department'] ?? 'N/A';
-          }
-
-          if (!$isExpired && !$isBorrowed) {
-            $qrPath = $this->generateQr($transactionData['transaction_code']);
-            if (empty($qrPath)) {
-              $viewError = "Could not generate the QR code image for this ticket.";
-            }
-          }
-
-          if ($isExpired || $isBorrowed) {
-            unset($_SESSION['last_ticket_code']);
-            $qrFile = __DIR__ . "/../../public/qrcodes/{$transactionCode}.png";
-            if (file_exists($qrFile)) unlink($qrFile);
-            $qrPath = null;
-          }
-        } else {
-          unset($_SESSION['last_ticket_code']);
-          $viewError = "The requested borrowing ticket was not found or is invalid.";
-        }
-      } else {
-        $viewMessage = "You do not currently have an active borrowing ticket.";
-      }
-    } catch (\Throwable $e) {
-      error_log("ERROR in FacultyTicketController show(): " . $e->getMessage() . "\nTrace: " . $e->getTraceAsString());
-      $viewError = "An unexpected error occurred while loading your ticket details.";
-    }
-
-    if ($isExpired) {
-      $viewMessage = "Your borrowing ticket has expired.";
-    } elseif ($isBorrowed) {
-      $viewMessage = "This ticket has been successfully processed.";
-    }
-
-    if ($isExpired || $isBorrowed) {
-      $transactionData['transaction_code'] = null;
-    }
-
-    $viewData = [
-      "title" => "Faculty QR Borrowing Ticket",
-      "currentPage" => "qrBorrowingTicket",
-      "transaction_id" => $transactionData['transaction_id'] ?? null,
-      "transaction_code" => $transactionData['transaction_code'] ?? null,
-      "items" => $items,
-      "qrPath" => $qrPath,
-      "faculty" => $facultyInfo,
-      "generated_at" => $transactionData['generated_at'] ?? null,
-      "expires_at" => $transactionData['expires_at'] ?? null,
-      "message" => $viewMessage,
-      "error_message" => $viewError,
-      "isExpired" => $isExpired,
-      "isBorrowed" => $isBorrowed,
-    ];
-
-    $this->view("faculty/qrBorrowingTicket", $viewData);
   }
 
   public function checkStatus()
@@ -324,59 +167,84 @@ class FacultyTicketController extends Controller
     header('Content-Type: application/json');
 
     $userId = $_SESSION['user_id'] ?? null;
-    if (!$userId) {
-      echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-      exit;
-    }
-
     $facultyId = $this->ticketRepo->getFacultyIdByUserId((int)$userId);
-    if (!$facultyId) {
-      echo json_encode(['success' => false, 'message' => 'No faculty record found.']);
-      exit;
-    }
-
     $this->ticketRepo->expireOldPendingTransactionsFaculty();
 
-    $facultyDetails = $this->ticketRepo->getFacultyFullInfo($facultyId);
+    $pending = $this->ticketRepo->getPendingTransactionByFacultyId($facultyId);
 
-    $facultyInfo = [
-      'faculty_id' => $facultyDetails['unique_faculty_id'] ?? null,
-      'name' => $this->getFullName($facultyDetails),
-      'college' => $facultyDetails['college_name'] ?? 'N/A',
-      'contact' => $facultyDetails['contact'] ?? null
-    ];
-
-    $pendingTransaction = $this->ticketRepo->getPendingTransactionByFacultyId($facultyId);
-
-    if ($pendingTransaction) {
-      $status = $pendingTransaction['status'];
-      if ($status === 'pending' && strtotime($pendingTransaction['expires_at'] ?? '9999-01-01') <= time()) {
-        $status = 'expired';
-      }
-
-      $items = $this->ticketRepo->getTransactionItems((int)$pendingTransaction['transaction_id']);
+    if ($pending) {
+      $details = $this->ticketRepo->getFacultyFullInfo($facultyId);
+      $books = $this->ticketRepo->getTransactionItems((int)$pending['transaction_id']);
 
       echo json_encode([
         'success' => true,
-        'status' => $status,
-        'transaction_code' => $pendingTransaction['transaction_code'],
-        'generated_at' => $pendingTransaction['generated_at'],
-        'expires_at' => $pendingTransaction['expires_at'],
-        'books' => $items,
+        'status' => 'pending',
+        'transaction_code' => $pending['transaction_code'],
+        'generated_at' => $pending['generated_at'],
+        'expires_at' => $pending['expires_at'] ?? null,
         'student' => [
-          'student_number' => $facultyDetails['unique_faculty_id'] ?? 'N/A',
-          'name' => $this->getFullName($facultyDetails),
+          'student_number' => $details['unique_faculty_id'] ?? 'N/A',
+          'name' => $this->getFullName($details),
           'year_level' => 'Faculty',
           'section' => '',
-          'course' => $facultyDetails['college_name'] ?? 'N/A'
-        ]
+          'course' => $details['college_name'] ?? 'N/A'
+        ],
+        'books' => $books ?? []
       ]);
       exit;
     }
 
-    echo json_encode([
-      'success' => true,
-      'status' => 'none'
+    echo json_encode(['success' => true, 'status' => 'none']);
+  }
+
+  public function show(string $transactionCode = null)
+  {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    $userId = $_SESSION['user_id'] ?? null;
+    $facultyId = $this->ticketRepo->getFacultyIdByUserId((int)$userId);
+    $this->ticketRepo->expireOldPendingTransactionsFaculty();
+
+    $transactionData = null;
+    $items = [];
+    $facultyInfo = ['faculty_id' => 'N/A', 'name' => 'Faculty Name', 'college' => 'N/A'];
+    $qrPath = null;
+
+    if (empty($transactionCode)) {
+      $transactionCode = $_SESSION['last_ticket_code'] ?? null;
+    }
+
+    if ($transactionCode) {
+      $transaction = $this->ticketRepo->getTransactionByCode($transactionCode);
+      if ($transaction && $transaction['faculty_id'] == $facultyId) {
+        $transactionData = $transaction;
+        $items = $this->ticketRepo->getTransactionItems($transactionData['transaction_id']);
+        $details = $this->ticketRepo->getFacultyFullInfo($facultyId);
+        
+        if ($details) {
+          $facultyInfo = [
+            'faculty_id' => $details['unique_faculty_id'],
+            'name' => $this->getFullName($details),
+            'college' => $details['college_name']
+          ];
+        }
+        
+        if (strtolower($transactionData['status']) === 'pending') {
+          $qrPath = STORAGE_URL . "/" . ($transactionData['qrcode'] ?: "uploads/qrcodes/" . $transactionCode . ".svg");
+        }
+      }
+    }
+
+    $this->view("faculty/qrBorrowingTicket", [
+      "title" => "Faculty QR Borrowing Ticket",
+      "currentPage" => "qrBorrowingTicket",
+      "transaction_code" => $transactionCode,
+      "items" => $items,
+      "qrPath" => $qrPath,
+      "faculty" => $facultyInfo,
+      "generated_at" => $transactionData['generated_at'] ?? null,
+      "expires_at" => $transactionData['expires_at'] ?? null,
+      "isBorrowed" => ($transactionData && strtolower($transactionData['status']) === 'borrowed'),
+      "isExpired" => ($transactionData && strtolower($transactionData['status']) === 'expired')
     ]);
   }
 }

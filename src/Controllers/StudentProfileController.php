@@ -28,87 +28,84 @@ class StudentProfileController extends Controller
     exit;
   }
 
-  private function handleFileUpload($file, $uploadSubDir)
+  /**
+   * BRIDGE: Nag-uupload ng file sa Laravel Backend via Universal API
+   */
+  private function uploadToBackendAPI($file, $folder, $lastName = 'file')
   {
     if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
       return null;
     }
 
-    $possiblePaths = [
-      realpath(__DIR__ . '/../../../../backend/storage/app/public/'),
-      realpath($_SERVER['DOCUMENT_ROOT'] . '/backend/storage/app/public/'),
-      realpath($_SERVER['DOCUMENT_ROOT'] . '/../backend/storage/app/public/'),
-      'C:/xampp/htdocs/backend/storage/app/public/',
-      'C:/Users/adria/Desktop/backend/storage/app/public/'
-    ];
+    $apiUrl = str_replace('/storage', '/api/upload-file', STORAGE_URL);
+    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
-    $laravelStoragePath = null;
-    foreach ($possiblePaths as $path) {
-      if ($path && file_exists($path)) {
-        $laravelStoragePath = $path;
-        break;
-      }
+    // Gagamit ng Random Unique ID para sa security at privacy
+    $uniqueId = uniqid();
+
+    if (strpos($folder, 'profile') !== false) {
+        $fileName = "profile_{$uniqueId}.{$extension}";
+    } else {
+        $fileName = "rf_{$uniqueId}.{$extension}";
     }
 
-    if (!$laravelStoragePath) {
-      error_log("Upload Error: Could not dynamically locate Laravel storage path.");
+    $fileData = base64_encode(file_get_contents($file['tmp_name']));
+
+    try {
+      $ch = curl_init($apiUrl);
+      $postData = json_encode([
+        'filename' => $fileName,
+        'folder' => $folder,
+        'file' => $fileData
+      ]);
+
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_POST, true);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+      curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Accept: application/json'
+      ]);
+
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+      curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+
+      $response = curl_exec($ch);
+      $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      curl_close($ch);
+
+      if ($httpCode === 200) {
+          return "uploads/" . trim($folder, '/') . "/" . $fileName;
+      }
+      return null;
+    } catch (\Exception $e) {
+      error_log("API Upload Error: " . $e->getMessage());
       return null;
     }
-
-    $uploadSubDir = trim($uploadSubDir, '/\\');
-    $subDirClean = (strpos($uploadSubDir, 'uploads') === 0) ? substr($uploadSubDir, 7) : $uploadSubDir;
-    $subDirClean = trim($subDirClean, '/\\');
-
-    $fullTargetDir = $laravelStoragePath . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . $subDirClean;
-
-    if (!file_exists($fullTargetDir)) {
-      if (!mkdir($fullTargetDir, 0777, true)) {
-        return null;
-      }
-    }
-
-    $prefix = (strpos($uploadSubDir, 'profile') !== false) ? 'profile_' : 'reg_';
-    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    $fileName = $prefix . ($_SESSION['user_id'] ?? 'user') . '_' . time() . '.' . $extension;
-
-    $targetFile = $fullTargetDir . DIRECTORY_SEPARATOR . $fileName;
-
-    if (move_uploaded_file($file['tmp_name'], $targetFile)) {
-      return 'uploads/' . $subDirClean . '/' . $fileName;
-    }
-
-    return null;
   }
 
   private function validateImageUpload($file)
   {
-    $maxSize = 1 * 1024 * 1024;
+    $maxSize = 2 * 1024 * 1024;
     $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-
     if ($file['error'] !== UPLOAD_ERR_OK) return "Upload error.";
-    if ($file['size'] > $maxSize) return "Image must be less than 1MB.";
-
+    if ($file['size'] > $maxSize) return "Image must be less than 2MB.";
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mime = finfo_file($finfo, $file['tmp_name']);
     finfo_close($finfo);
-
     if (!in_array($mime, $allowedTypes)) return "Invalid image type. Only JPG, PNG, GIF allowed.";
     return true;
   }
 
   private function validatePDFUpload($file)
   {
-    $maxSize = 5 * 1024 * 1024; // 5MB
-    $allowedTypes = ['application/pdf'];
-
+    $maxSize = 5 * 1024 * 1024;
     if ($file['error'] !== UPLOAD_ERR_OK) return "Upload error.";
     if ($file['size'] > $maxSize) return "PDF must be less than 5MB.";
-
     $finfo = finfo_open(FILEINFO_MIME_TYPE);
     $mime = finfo_file($finfo, $file['tmp_name']);
     finfo_close($finfo);
-
-    if (!in_array($mime, $allowedTypes)) return "Invalid file type. Only PDF allowed.";
+    if ($mime !== 'application/pdf') return "Invalid file type. Only PDF allowed.";
     return true;
   }
 
@@ -116,19 +113,11 @@ class StudentProfileController extends Controller
   {
     try {
       $currentUserId = $_SESSION['user_id'] ?? null;
-      if (!$currentUserId) {
-        return $this->json(['success' => false, 'message' => 'Unauthorized'], 401);
-      }
-
+      if (!$currentUserId) return $this->json(['success' => false, 'message' => 'Unauthorized'], 401);
       $profile = $this->studentRepo->getProfileByUserId($currentUserId);
-      if (!$profile) {
-        return $this->json(['success' => false, 'message' => 'Profile not found.'], 404);
-      }
-
-      $profile['allow_edit'] = $profile['can_edit_profile'] ?? 0;
+      if (!$profile) return $this->json(['success' => false, 'message' => 'Profile not found.'], 404);
       $this->json(['success' => true, 'profile' => $profile], 200);
     } catch (\Exception $e) {
-      error_log("getProfile Exception: " . $e->getMessage());
       $this->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
   }
@@ -137,134 +126,71 @@ class StudentProfileController extends Controller
   {
     try {
       $currentUserId = $_SESSION['user_id'] ?? null;
-      if (!$currentUserId) {
-        return $this->json(['success' => false, 'message' => 'Unauthorized'], 401);
-      }
+      if (!$currentUserId) return $this->json(['success' => false, 'message' => 'Unauthorized'], 401);
 
       $data = $_POST;
       $profile = $this->studentRepo->getProfileByUserId($currentUserId);
-
-      $requiredFields = ['first_name', 'last_name', 'course_id', 'year_level', 'section', 'email', 'contact'];
-      $missingFields = [];
-      foreach ($requiredFields as $field) {
-        if (!isset($data[$field]) || trim($data[$field]) === '' || ($field === 'course_id' && (!is_numeric($data[$field]) || (int)$data[$field] === 0))) {
-          $missingFields[] = $field;
-        }
-      }
-      if (!empty($missingFields)) {
-        return $this->json([
-          'success' => false,
-          'message' => 'Please fill in all required fields. (Missing: ' . implode(', ', $missingFields) . ')'
-        ], 400);
-      }
-
-      $courseId = filter_var($data['course_id'], FILTER_VALIDATE_INT);
-      if (!$courseId) {
-        return $this->json(['success' => false, 'message' => 'Invalid course selection.'], 400);
-      }
-
-      if (!preg_match('/^\d{11}$/', $data['contact'])) {
-        return $this->json(['success' => false, 'message' => 'Contact number must be numeric and 11 digits.'], 400);
-      }
-
-      if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-        return $this->json(['success' => false, 'message' => 'Please enter a valid email address.'], 400);
-      }
+      $submittedLastName = $data['last_name'] ?? 'file';
 
       if ($profile && $profile['profile_updated'] == 1 && $profile['can_edit_profile'] == 0) {
-        return $this->json([
-          'success' => false,
-          'message' => 'Profile is locked. Please contact admin to unlock it.'
-        ], 403);
+        return $this->json(['success' => false, 'message' => 'Profile is locked.'], 403);
       }
 
       $isNewProfilePicUploaded = (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === 0);
       $isNewRegFormUploaded = (isset($_FILES['reg_form']) && $_FILES['reg_form']['error'] === 0);
 
-      if (empty($profile['profile_picture']) && !$isNewProfilePicUploaded) {
-        return $this->json(['success' => false, 'message' => 'Profile picture is required.'], 400);
-      }
-      if (empty($profile['registration_form']) && !$isNewRegFormUploaded) {
-        return $this->json(['success' => false, 'message' => 'Registration form is required.'], 400);
-      }
-
-      $fullName = trim(implode(' ', array_filter([
-        $data['first_name'],
-        $data['middle_name'] ?? null,
-        $data['last_name'],
-        $data['suffix'] ?? null
-      ])));
-
-      $userData = [
-        'first_name' => $data['first_name'],
-        'middle_name' => $data['middle_name'] ?? null,
-        'last_name' => $data['last_name'],
-        'suffix' => $data['suffix'] ?? null,
-        'full_name' => $fullName,
-        'email' => $data['email']
-      ];
-
+      // 1. Profile Picture
       $finalProfilePicPath = $profile['profile_picture'];
       if ($isNewProfilePicUploaded) {
         $validation = $this->validateImageUpload($_FILES['profile_image']);
         if ($validation !== true) return $this->json(['success' => false, 'message' => $validation], 400);
 
-        $imagePath = $this->handleFileUpload($_FILES['profile_image'], "profile_images");
-
-        if ($imagePath === null) {
-          return $this->json([
-            'success' => false,
-            'message' => 'Failed to move file. Check if the folder exists and is writable.'
-          ], 500);
-        }
+        $imagePath = $this->uploadToBackendAPI($_FILES['profile_image'], "profile_images", $submittedLastName);
+        if (!$imagePath) return $this->json(['success' => false, 'message' => 'Failed to upload picture.'], 500);
         $finalProfilePicPath = $imagePath;
       }
-      $userData['profile_picture'] = $finalProfilePicPath;
 
-      $this->userRepo->updateUser($currentUserId, $userData);
-
-      $studentData = [
-        'course_id' => $courseId,
-        'year_level' => $data['year_level'],
-        'section' => $data['section'],
-        'contact' => $data['contact'],
-        'profile_updated' => 1,
-      ];
-
-      if (!empty($profile['can_edit_profile']) && $profile['can_edit_profile'] == 1) {
-        $studentData['can_edit_profile'] = 0;
-      }
-
+      // 2. Reg Form
       $finalRegFormPath = $profile['registration_form'];
       if ($isNewRegFormUploaded) {
         $validation = $this->validatePDFUpload($_FILES['reg_form']);
         if ($validation !== true) return $this->json(['success' => false, 'message' => $validation], 400);
 
-        $pdfPath = $this->handleFileUpload($_FILES['reg_form'], "reg_forms");
-
-        if ($pdfPath === null) {
-          return $this->json([
-            'success' => false,
-            'message' => 'Failed to move registration form. Check if the folder exists and is writable.'
-          ], 500);
-        }
+        $pdfPath = $this->uploadToBackendAPI($_FILES['reg_form'], "reg_forms", $submittedLastName);
+        if (!$pdfPath) return $this->json(['success' => false, 'message' => 'Failed to upload PDF.'], 500);
         $finalRegFormPath = $pdfPath;
       }
-      $studentData['registration_form'] = $finalRegFormPath;
 
-      $this->studentRepo->updateStudentProfile($currentUserId, $studentData);
+      // 3. Update DB
+      $fullName = trim($data['first_name'] . ' ' . $data['last_name']);
+      
+      $this->userRepo->updateUser($currentUserId, [
+        'first_name' => $data['first_name'],
+        'middle_name' => $data['middle_name'] ?? null,
+        'last_name' => $data['last_name'],
+        'suffix' => $data['suffix'] ?? null,
+        'email' => $data['email'],
+        'profile_picture' => $finalProfilePicPath
+      ]);
+
+      $this->studentRepo->updateStudentProfile($currentUserId, [
+        'course_id' => $data['course_id'],
+        'year_level' => $data['year_level'],
+        'section' => $data['section'],
+        'contact' => $data['contact'],
+        'registration_form' => $finalRegFormPath,
+        'profile_updated' => 1,
+        'can_edit_profile' => 0 
+      ]);
 
       if (isset($_SESSION['user_data'])) {
         $_SESSION['user_data']['fullname'] = $fullName;
-        if ($finalProfilePicPath) {
-          $_SESSION['user_data']['profile_picture'] = $finalProfilePicPath;
-        }
+        $_SESSION['user_data']['profile_picture'] = $finalProfilePicPath;
       }
 
       $this->json(['success' => true, 'message' => 'Profile updated successfully!'], 200);
     } catch (\Exception $e) {
-      error_log("updateProfile Exception: " . $e->getMessage());
-      $this->json(['success' => false, 'message' => 'Error updating profile: ' . $e->getMessage()], 500);
+      $this->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
   }
 }

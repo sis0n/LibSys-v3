@@ -9,8 +9,7 @@ use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\ErrorCorrectionLevel;
 use Endroid\QrCode\RoundBlockSizeMode;
-use Endroid\QrCode\Writer\PngWriter;
-
+use Endroid\QrCode\Writer\SvgWriter;
 
 class TicketController extends Controller
 {
@@ -25,34 +24,49 @@ class TicketController extends Controller
     $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }
 
-  private function generateQr(string $transactionCode): string
+  /**
+   * Nag-uupload ng QR code data sa Laravel Backend via API
+   */
+  private function uploadQrToBackend(string $transactionCode, string $svgData): bool
   {
-    // Relative path patungo sa Laravel folder (Assuming 'backend' ang folder name)
-    $qrDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'backend' . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'uploads' . DIRECTORY_SEPARATOR . 'qrcodes';
+    // STORAGE_URL = http://127.0.0.1:8000/storage
+    // API_URL = http://127.0.0.1:8000/api/upload-qr
+    $apiUrl = str_replace('/storage', '/api/upload-qr', STORAGE_URL);
     $fileName = $transactionCode . '.svg';
-    $qrPath = $qrDir . DIRECTORY_SEPARATOR . $fileName;
-
-    if (!is_dir($qrDir)) {
-      mkdir($qrDir, 0777, true);
-    }
 
     try {
-      $builder = new Builder(
-        writer: new \Endroid\QrCode\Writer\SvgWriter(),
-        data: $transactionCode,
-        encoding: new Encoding('UTF-8'),
-        errorCorrectionLevel: ErrorCorrectionLevel::High,
-        size: 300,
-        margin: 10,
-        roundBlockSizeMode: RoundBlockSizeMode::Margin
-      );
+      $ch = curl_init($apiUrl);
+      $postData = json_encode([
+        'filename' => $fileName,
+        'image' => base64_encode($svgData)
+      ]);
 
-      $result = $builder->build();
-      $result->saveToFile($qrPath);
+      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+      curl_setopt($ch, CURLOPT_POST, true);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+      curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Accept: application/json'
+      ]);
 
-      return STORAGE_URL . "/uploads/qrcodes/" . $fileName;
+      // Timeout safety
+      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+      curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+      $response = curl_exec($ch);
+      $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      
+      if (curl_errno($ch)) {
+        error_log("cURL Error: " . curl_error($ch));
+        curl_close($ch);
+        return false;
+      }
+
+      curl_close($ch);
+      return ($httpCode === 200);
     } catch (\Exception $e) {
-      return '';
+      error_log("Upload failed: " . $e->getMessage());
+      return false;
     }
   }
 
@@ -62,258 +76,11 @@ class TicketController extends Controller
     header('Content-Type: application/json');
 
     $userId = $_SESSION['user_id'] ?? null;
+    $role = $_SESSION['role'] ?? 'student';
 
-    $policy = $this->policyRepo->getPolicyByRole('student');
-    $MAX_BOOKS_PER_WEEK = $policy ? (int)$policy['max_books'] : 5;
+    $policy = $this->policyRepo->getPolicyByRole($role);
     $DURATION_DAYS = $policy ? (int)$policy['borrow_duration_days'] : 7;
 
-    if (!$userId) {
-      http_response_code(403);
-      echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-      exit;
-    }
-
-    $studentId = $this->ticketRepo->getStudentIdByUserId((int)$userId);
-    if (!$studentId) {
-      http_response_code(403);
-      echo json_encode(['success' => false, 'message' => 'No student record found for this user.']);
-      exit;
-    }
-
-    $profileCheck = $this->ticketRepo->checkProfileCompletion($studentId);
-    if (!$profileCheck['complete']) {
-      http_response_code(400);
-      echo json_encode(["success" => false, "message" => $profileCheck['message']]);
-      exit;
-    }
-
-    $input = json_decode(file_get_contents('php://input'), true);
-    $selectedIds = $input['cart_ids'] ?? [];
-    if (!is_array($selectedIds)) $selectedIds = [];
-
-    try {
-      $this->ticketRepo->beginTransaction();
-
-      $this->ticketRepo->expireOldPendingTransactions();
-
-      $cartItems = !empty($selectedIds)
-        ? $this->ticketRepo->getCartItemsByIds((int)$userId, $selectedIds)
-        : $this->ticketRepo->getCartItems((int)$userId);
-
-      if (empty($cartItems)) {
-        $this->ticketRepo->rollback();
-        echo json_encode(['success' => false, 'message' => 'Cart is empty or selected items not found.']);
-        exit;
-      }
-
-      $bookIds = array_column($cartItems, 'book_id');
-      $unavailableBooks = $this->ticketRepo->areBooksAvailable($bookIds);
-      if (!empty($unavailableBooks)) {
-        $titles = implode(', ', array_column($unavailableBooks, 'title'));
-        $this->ticketRepo->rollback();
-        http_response_code(400);
-        echo json_encode([
-          'success' => false,
-          'message' => "The following book(s) are already checked out or pending: $titles"
-        ]);
-        exit;
-      }
-
-      $borrowedThisWeek = $this->ticketRepo->countBorrowedBooksThisWeek($studentId);
-      $newItemsCount = count($cartItems);
-      if ($borrowedThisWeek + $newItemsCount > $MAX_BOOKS_PER_WEEK) {
-        $this->ticketRepo->rollback();
-        http_response_code(400);
-        echo json_encode([
-          'success' => false,
-          'message' => "You can only borrow a maximum of {$MAX_BOOKS_PER_WEEK} books per week. Current: {$borrowedThisWeek}, Trying to add: {$newItemsCount}"
-        ]);
-        exit;
-      }
-
-      $existingTransaction = $this->ticketRepo->getPendingTransactionByStudentId($studentId);
-
-      if ($existingTransaction) {
-        $transactionId = (int)$existingTransaction['transaction_id'];
-        $transactionCode = $existingTransaction['transaction_code'];
-        $message = 'Checkout successful! Items added to your pending ticket.';
-      } else {
-        $transactionCode = strtoupper(uniqid());
-        $dueDate = date("Y-m-d H:i:s", strtotime("+{$DURATION_DAYS} days"));
-        $transactionId = $this->ticketRepo->createPendingTransaction($studentId, $transactionCode, $dueDate, 15);
-
-        $message = 'Checkout successful! A new Borrowing Ticket has been created.';
-      }
-
-      $this->ticketRepo->addTransactionItems($transactionId, $cartItems);
-
-      $cartItemIdsToRemove = array_column($cartItems, 'cart_id');
-      if (!empty($cartItemIdsToRemove)) {
-        $this->ticketRepo->removeCartItemsByIds((int)$userId, $cartItemIdsToRemove);
-      }
-
-      $itemTitles = implode(', ', array_column($cartItems, 'title'));
-      $this->auditRepo->log($userId, 'TICKET_CREATED', 'TRANSACTIONS', $transactionCode, "Student generated borrowing ticket for: $itemTitles");
-
-      $_SESSION['last_ticket_code'] = $transactionCode;
-      $qrPath = $this->generateQr($transactionCode);
-
-      $this->ticketRepo->commit();
-
-      echo json_encode([
-        'success' => true,
-        'message' => $message,
-        'ticket_code' => $transactionCode,
-        'qrPath' => $qrPath
-      ]);
-      exit;
-    } catch (\Throwable $e) {
-      $this->ticketRepo->rollback();
-      error_log("Checkout Error: " . $e->getMessage() . "\nTrace: " . $e->getTraceAsString());
-      http_response_code(500);
-      echo json_encode([
-        'success' => false,
-        'message' => 'Checkout failed: ' . $e->getMessage()
-      ]);
-      exit;
-    }
-  }
-
-  public function show(string $transactionCode = null)
-  {
-    $userId = $_SESSION['user_id'] ?? null;
-    if (!$userId) {
-      $_SESSION['error_message'] = "Please login to view your ticket.";
-      header("Location: " . BASE_URL . "/login");
-      exit;
-    }
-
-    $studentId = $this->ticketRepo->getStudentIdByUserId((int)$userId);
-    if (!$studentId) {
-      error_log("User ID $userId logged in but has no associated student record.");
-      $this->view("errors/no_student_record", ["title" => "Error: No Student Record"], false);
-      exit;
-    }
-
-    $this->ticketRepo->expireOldPendingTransactions();
-
-    $transactionData = null;
-    $books = [];
-    $studentInfo = [
-      'student_number' => 'N/A',
-      'name' => 'Student Name',
-      'year_level' => 'N/A',
-      'course' => 'N/A'
-    ];
-    $qrPath = null;
-    $viewMessage = null;
-    $viewError = null;
-
-    try {
-      if (empty($transactionCode)) {
-        $transactionCode = $_SESSION['last_ticket_code'] ?? null;
-      }
-      if (empty($transactionCode)) {
-        $latestTransaction = $this->ticketRepo->getLatestTransactionByStudentId($studentId);
-        if ($latestTransaction) {
-          $transactionCode = $latestTransaction['transaction_code'] ?? null;
-        }
-      }
-
-      if ($transactionCode) {
-        $transaction = $this->ticketRepo->getTransactionByCode($transactionCode);
-
-        if ($transaction && isset($transaction['student_id']) && $transaction['student_id'] == $studentId) {
-          $transactionData = $transaction;
-          $books = $this->ticketRepo->getTransactionItems($transactionData['transaction_id']);
-          $studentDetails = $this->ticketRepo->getStudentInfo($transactionData['student_id']);
-
-          if ($studentDetails) {
-            $fullName = implode(' ', array_filter([
-              $studentDetails['first_name'] ?? '',
-              $studentDetails['middle_name'] ?? '',
-              $studentDetails['last_name'] ?? ''
-            ]));
-
-            $studentInfo['student_number'] = $studentDetails['student_number'] ?? 'N/A';
-            $studentInfo['name'] = !empty(trim($fullName)) ? trim($fullName) : 'Student Name';
-            $studentInfo['year_level'] = $studentDetails['year_level'] ?? 'N/A';
-            $studentInfo['course'] = $studentDetails['course'] ?? 'N/A';
-          } else {
-            error_log("Could not retrieve student details for student_id: " . $transactionData['student_id']);
-          }
-
-          $qrPath = $this->generateQr($transactionData['transaction_code']);
-          if (empty($qrPath)) {
-            error_log("Failed to generate QR code image for transaction view: " . $transactionCode);
-            $viewError = "Could not generate the QR code image for this ticket.";
-          }
-        } else {
-          error_log("Attempt to access invalid/unauthorized transaction code '$transactionCode' by student ID $studentId (User ID $userId).");
-          unset($_SESSION['last_ticket_code']);
-          $transactionCode = null;
-          $viewError = "The requested borrowing ticket was not found or is invalid.";
-        }
-      } else {
-        $viewMessage = "You do not currently have an active borrowing ticket.";
-      }
-    } catch (\Throwable $e) {
-      error_log("ERROR in TicketController show(): " . $e->getMessage() . "\nTrace: " . $e->getTraceAsString());
-      $viewError = "An unexpected error occurred while loading your ticket details. Please try again later.";
-    }
-
-    $isBorrowed = ($transactionData && strtolower($transactionData['status'] ?? '') === 'borrowed');
-    $isExpired = false;
-    if ($transactionData && strtolower($transactionData['status'] ?? '') === 'expired') {
-      $isExpired = true;
-
-      unset($_SESSION['last_ticket_code']);
-
-      $qrFile = __DIR__ . "/../../public/qrcodes/{$transactionCode}.png";
-      if (file_exists($qrFile)) {
-        unlink($qrFile);
-      }
-
-      $qrPath = null;
-      $books = [];
-      $studentInfo = [
-        'student_number' => 'N/A',
-        'name' => 'Student Name',
-        'year_level' => 'N/A',
-        'course' => 'N/A'
-      ];
-      $transactionData['transaction_code'] = null;
-      $transactionData['borrowed_at'] = null;
-      $transactionData['due_date'] = null;
-
-      $viewMessage = "Your borrowing ticket has expired.";
-    }
-
-    $viewData = [
-      "title" => "QR Borrowing Ticket",
-      "currentPage" => "qrBorrowingTicket",
-      "transaction_id" => $transactionData['transaction_id'] ?? null,
-      "transaction_code" => $transactionData['transaction_code'] ?? null,
-      "books" => $books,
-      "qrPath" => $qrPath,
-      "student" => $studentInfo,
-      "generated_at" => $transactionData['generated_at'] ?? null,
-      "expires_at" => $transactionData['expires_at'] ?? null,
-      "message" => $viewMessage,
-      "error_message" => $viewError,
-      "isExpired" => $isExpired,
-      "isBorrowed" => $isBorrowed
-    ];
-
-    $this->view("student/qrBorrowingTicket", $viewData);
-  }
-
-  public function checkStatus()
-  {
-    if (session_status() === PHP_SESSION_NONE) session_start();
-    header('Content-Type: application/json');
-
-    $userId = $_SESSION['user_id'] ?? null;
     if (!$userId) {
       echo json_encode(['success' => false, 'message' => 'Unauthorized']);
       exit;
@@ -325,6 +92,78 @@ class TicketController extends Controller
       exit;
     }
 
+    $input = json_decode(file_get_contents('php://input'), true);
+    $selectedIds = $input['cart_ids'] ?? [];
+
+    try {
+      $this->ticketRepo->beginTransaction();
+      $this->ticketRepo->expireOldPendingTransactions();
+
+      $cartItems = !empty($selectedIds)
+        ? $this->ticketRepo->getCartItemsByIds((int)$userId, $selectedIds)
+        : $this->ticketRepo->getCartItems((int)$userId);
+
+      if (empty($cartItems)) {
+        $this->ticketRepo->rollback();
+        echo json_encode(['success' => false, 'message' => 'Cart is empty.']);
+        exit;
+      }
+
+      $transactionCode = strtoupper(uniqid());
+      $dueDate = date("Y-m-d H:i:s", strtotime("+{$DURATION_DAYS} days"));
+      
+      // 1. Generate QR SVG in memory (as string)
+      $builder = new Builder(
+        writer: new SvgWriter(),
+        data: $transactionCode,
+        encoding: new Encoding('UTF-8'),
+        errorCorrectionLevel: ErrorCorrectionLevel::High,
+        size: 300,
+        margin: 10,
+        roundBlockSizeMode: RoundBlockSizeMode::Margin
+      );
+      $result = $builder->build();
+      $svgData = $result->getString();
+
+      // 2. Upload to Laravel Backend API
+      if (!$this->uploadQrToBackend($transactionCode, $svgData)) {
+          throw new \Exception("Failed to bridge QR code to mobile storage. Ensure Laravel server is running.");
+      }
+
+      // 3. Save relative path to DB
+      $dbPath = "uploads/qrcodes/" . $transactionCode . ".svg";
+      $transactionId = $this->ticketRepo->createPendingTransaction($studentId, $transactionCode, $dueDate, $dbPath, 15);
+
+      $this->ticketRepo->addTransactionItems($transactionId, $cartItems);
+      
+      $itemTitles = implode(', ', array_column($cartItems, 'title'));
+      $this->auditRepo->log($userId, 'TICKET_CREATED', 'TRANSACTIONS', $transactionCode, "Student generated borrowing ticket for: $itemTitles");
+
+      $this->ticketRepo->removeCartItemsByIds((int)$userId, array_column($cartItems, 'cart_id'));
+      
+      $_SESSION['last_ticket_code'] = $transactionCode;
+      $this->ticketRepo->commit();
+
+      echo json_encode([
+        'success' => true,
+        'message' => 'Checkout successful! QR code available on mobile.',
+        'ticket_code' => $transactionCode,
+        'qrPath' => STORAGE_URL . '/' . $dbPath
+      ]);
+    } catch (\Throwable $e) {
+      if (isset($this->ticketRepo)) $this->ticketRepo->rollback();
+      error_log("Checkout Error: " . $e->getMessage());
+      echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    }
+  }
+
+  public function checkStatus()
+  {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    header('Content-Type: application/json');
+
+    $userId = $_SESSION['user_id'] ?? null;
+    $studentId = $this->ticketRepo->getStudentIdByUserId((int)$userId);
     $this->ticketRepo->expireOldPendingTransactions();
 
     $pending = $this->ticketRepo->getPendingTransactionByStudentId($studentId);
@@ -332,8 +171,7 @@ class TicketController extends Controller
     if ($pending) {
       $details = $this->ticketRepo->getStudentDetailsById($studentId);
       $books = $this->ticketRepo->getBooksByTransactionCode($pending['transaction_code']);
-
-      $fullName = trim(($details['first_name'] ?? '') . ' ' . ($details['middle_name'] ?? '') . ' ' . ($details['last_name'] ?? ''));
+      $fullName = trim(($details['first_name'] ?? '') . ' ' . ($details['last_name'] ?? ''));
 
       echo json_encode([
         'success' => true,
@@ -343,7 +181,7 @@ class TicketController extends Controller
         'expires_at' => $pending['expires_at'] ?? null,
         'student' => [
           'student_number' => $details['student_number'] ?? 'N/A',
-          'name' => !empty($fullName) ? $fullName : 'N/A',
+          'name' => $fullName,
           'year_level' => $details['year_level'] ?? '',
           'section' => $details['section'] ?? '',
           'course' => $details['course'] ?? 'N/A'
@@ -354,5 +192,60 @@ class TicketController extends Controller
     }
 
     echo json_encode(['success' => true, 'status' => 'none']);
+  }
+
+  public function show(string $transactionCode = null)
+  {
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    $userId = $_SESSION['user_id'] ?? null;
+    $studentId = $this->ticketRepo->getStudentIdByUserId((int)$userId);
+    $this->ticketRepo->expireOldPendingTransactions();
+
+    $transactionData = null;
+    $books = [];
+    $studentInfo = ['student_number' => 'N/A', 'name' => 'Student Name', 'year_level' => 'N/A', 'course' => 'N/A'];
+    $qrPath = null;
+
+    if (empty($transactionCode)) {
+      $transactionCode = $_SESSION['last_ticket_code'] ?? null;
+    }
+
+    if ($transactionCode) {
+      $transaction = $this->ticketRepo->getTransactionByCode($transactionCode);
+      if ($transaction && $transaction['student_id'] == $studentId) {
+        $transactionData = $transaction;
+        $books = $this->ticketRepo->getTransactionItems($transactionData['transaction_id']);
+        $studentDetails = $this->ticketRepo->getStudentInfo($transactionData['student_id']);
+        
+        if ($studentDetails) {
+          $fullName = trim(($studentDetails['first_name'] ?? '') . ' ' . ($studentDetails['last_name'] ?? ''));
+          $studentInfo = [
+            'student_number' => $studentDetails['student_number'],
+            'name' => $fullName,
+            'year_level' => $studentDetails['year_level'],
+            'section' => $studentDetails['section'] ?? '',
+            'course' => $studentDetails['course']
+          ];
+        }
+        
+        if (strtolower($transactionData['status']) === 'pending') {
+          // Gagamit ng STORAGE_URL + DB field 'qrcode'
+          $qrPath = STORAGE_URL . "/" . ($transactionData['qrcode'] ?: "uploads/qrcodes/" . $transactionCode . ".svg");
+        }
+      }
+    }
+
+    $this->view("student/qrBorrowingTicket", [
+      "title" => "QR Borrowing Ticket",
+      "currentPage" => "qrBorrowingTicket",
+      "transaction_code" => $transactionCode,
+      "books" => $books,
+      "qrPath" => $qrPath,
+      "student" => $studentInfo,
+      "generated_at" => $transactionData['generated_at'] ?? null,
+      "expires_at" => $transactionData['expires_at'] ?? null,
+      "isBorrowed" => ($transactionData && strtolower($transactionData['status'] ?? '') === 'borrowed'),
+      "isExpired" => ($transactionData && strtolower($transactionData['status'] ?? '') === 'expired')
+    ]);
   }
 }
