@@ -14,7 +14,6 @@ class FacultyBorrowingHistoryController extends Controller
         $this->repo = new FacultyBorrowingHistoryRepository();
     }
 
-    // --- Pagination Start ---
     public function fetchPaginatedBorrowingHistory()
     {
         header('Content-Type: application/json');
@@ -52,20 +51,18 @@ class FacultyBorrowingHistoryController extends Controller
             $returnedDate = $record['returned_at'] ? strtotime($record['returned_at']) : null;
             $now = time();
 
-            $isBorrowed = $record['status'] === 'borrowed';
-            $isOverdue = $isBorrowed && ($dueDate < $now);
-            $statusText = ucfirst($record['status']);
+            $status = $record['status'];
+            $isOverdue = ($status === 'overdue') || ($status === 'borrowed' && ($dueDate < $now));
             
-            // Default to gray, will be overridden by specific statuses
+            $statusText = ucfirst($status);
             $statusBgClass = 'bg-gray-100 text-gray-700';
 
-            if ($record['status'] === 'returned') {
+            if ($status === 'returned') {
                  $statusBgClass = 'bg-green-100 text-green-700';
             } elseif ($isOverdue) {
-                // Keep status as 'Borrowed' but use destructive colors for overdue items
-                $statusText = 'Borrowed'; 
+                $statusText = ($status === 'overdue') ? 'Overdue' : 'Borrowed'; 
                  $statusBgClass = 'bg-red-100 text-red-700';
-            } elseif ($isBorrowed) {
+            } elseif ($status === 'borrowed') {
                 $statusBgClass = 'bg-amber-100 text-amber-700';
             }
 
@@ -84,9 +81,7 @@ class FacultyBorrowingHistoryController extends Controller
             ];
         }, $history);
     }
-    // --- Pagination End ---
 
-    // --- Stats Start ---
     public function fetchStats()
     {
         header('Content-Type: application/json');
@@ -105,5 +100,4 @@ class FacultyBorrowingHistoryController extends Controller
             'stats' => $stats
         ]);
     }
-    // --- Stats End ---
 }

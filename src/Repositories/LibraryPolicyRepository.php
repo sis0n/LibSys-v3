@@ -41,4 +41,23 @@ class LibraryPolicyRepository
             'duration' => $durationDays
         ]);
     }
+
+    public function syncActiveTransactionsDueDate(string $role, int $durationDays): bool
+    {
+        $idColumn = '';
+        $roleValue = strtolower($role);
+        
+        if ($roleValue === 'student') $idColumn = 'student_id';
+        elseif ($roleValue === 'faculty') $idColumn = 'faculty_id';
+        elseif ($roleValue === 'staff') $idColumn = 'staff_id';
+        else return false;
+
+        $sql = "UPDATE borrow_transactions 
+                SET due_date = DATE_ADD(borrowed_at, INTERVAL :duration DAY) 
+                WHERE status IN ('borrowed', 'overdue') 
+                AND $idColumn IS NOT NULL";
+        
+        $stmt = $this->db->prepare($sql);
+        return $stmt->execute(['duration' => $durationDays]);
+    }
 }

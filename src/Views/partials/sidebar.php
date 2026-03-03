@@ -328,9 +328,9 @@ $baseUrl = BASE_URL;
                     </div>
                 </div>
 
-                <div class="sidebar-dropdown" data-pages='["attendanceLogs", "topVisitor", "transactionHistory", "auditLogs"]'>
+                <div class="sidebar-dropdown" data-pages='["attendanceLogs", "topVisitor", "transactionHistory", "auditLogs", "overdue"]'>
                     <button
-                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["attendanceLogs", "topVisitor", "transactionHistory", "auditLogs"])) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
+                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["attendanceLogs", "topVisitor", "transactionHistory", "auditLogs", "overdue"])) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
                         <span class="flex items-center gap-x-3">
                             <i class="ph ph-activity text-2xl"></i>
                             <span class="text-base">Activity & Logs</span>
@@ -342,6 +342,11 @@ $baseUrl = BASE_URL;
                             class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'attendanceLogs' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
                             <i class="ph ph-calendar-check text-xl"></i>
                             <span class="text-base text-sm">Attendance Logs</span>
+                        </a>
+                        <a href="<?= $baseUrl ?>/overdue"
+                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'overdue' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
+                            <i class="ph ph-warning text-xl"></i>
+                            <span class="text-base text-sm">Overdue Tracking</span>
                         </a>
                         <a href="<?= $baseUrl ?>/topVisitor"
                             class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'topVisitor' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">

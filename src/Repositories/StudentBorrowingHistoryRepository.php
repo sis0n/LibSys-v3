@@ -18,9 +18,9 @@ class StudentBorrowingHistoryRepository
     $stmt = $this->db->prepare("
         SELECT 
             COUNT(bti.item_id) AS total_borrowed,
-            SUM(CASE WHEN bti.status = 'borrowed' THEN 1 ELSE 0 END) AS currently_borrowed,
+            SUM(CASE WHEN bti.status IN ('borrowed', 'overdue') THEN 1 ELSE 0 END) AS currently_borrowed,
             SUM(CASE WHEN bti.status = 'returned' THEN 1 ELSE 0 END) AS total_returned,
-            SUM(CASE WHEN bti.status = 'borrowed' AND bt.due_date < NOW() THEN 1 ELSE 0 END) AS total_overdue
+            SUM(CASE WHEN bti.status = 'overdue' OR (bti.status = 'borrowed' AND bt.due_date < NOW()) THEN 1 ELSE 0 END) AS total_overdue
         FROM borrow_transactions bt
         JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
         JOIN students s ON bt.student_id = s.student_id

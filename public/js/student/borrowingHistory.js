@@ -1,17 +1,13 @@
-// --- DOM Elements ---
 const recordsContainer = document.getElementById('recordsContainer');
 const loadingIndicator = document.getElementById('loadingIndicator');
 const paginationContainer = document.getElementById('paginationContainer');
 
-// --- Stats Elements ---
 const statTotal = document.getElementById('statTotal');
 const statCurrent = document.getElementById('statCurrent');
 const statOverdue = document.getElementById('statOverdue');
 const statReturned = document.getElementById('statReturned');
 
-// --- Pagination State ---
 let currentPage = 1;
-// --- Page Memory ---
 try {
     const savedPage = sessionStorage.getItem('studentBorrowingHistoryPage');
     if (savedPage) {
@@ -28,10 +24,12 @@ try {
 }
 const limit = 5;
 
-// --- Render Functions ---
 function renderBorrowingTable(records) {
-  // Filter out records with 'Expired' status
-  const filteredRecords = records.filter(record => record.statusText === 'Borrowed' || record.statusText === 'Returned');
+  const filteredRecords = records.filter(record => 
+    record.statusText === 'Borrowed' || 
+    record.statusText === 'Returned' || 
+    record.statusText === 'Overdue'
+  );
 
   if (!filteredRecords || filteredRecords.length === 0) {
     recordsContainer.innerHTML = `<div class="text-center py-10 text-gray-500">No borrowing records found.</div>`;
@@ -91,25 +89,21 @@ function renderPagination(totalPages, currentPage) {
     </button>
   `;
 
-  // Logic for visible page numbers
   let startPage = Math.max(1, currentPage - 1);
   let endPage = Math.min(totalPages, currentPage + 1);
 
   if (currentPage <= 2) endPage = Math.min(3, totalPages);
   if (currentPage >= totalPages - 1) startPage = Math.max(totalPages - 2, 1);
 
-  // Always show first page
   if (startPage > 1) {
     paginationHTML += createPageButton(1, currentPage === 1);
     if (startPage > 2) paginationHTML += `<span class="px-2 text-gray-400">...</span>`;
   }
 
-  // Middle pages
   for (let i = startPage; i <= endPage; i++) {
     paginationHTML += createPageButton(i, i === currentPage);
   }
 
-  // Always show last page
   if (endPage < totalPages) {
     if (endPage < totalPages - 1) paginationHTML += `<span class="px-2 text-gray-400">...</span>`;
     paginationHTML += createPageButton(totalPages, currentPage === totalPages);
@@ -126,14 +120,9 @@ function renderPagination(totalPages, currentPage) {
   paginationContainer.innerHTML = paginationHTML;
 }
 
-
-// --- Data Fetching ---
-// --- Data Fetching ---
 async function fetchBorrowingData(page = 1) {
-    // 1. Minimum delay start time
     const start = Date.now();
     
-    // --- Page Memory ---
     try {
         sessionStorage.setItem('studentBorrowingHistoryPage', page);
     } catch (e) {
@@ -145,11 +134,9 @@ async function fetchBorrowingData(page = 1) {
         return;
     }
 
-    // Tanggalin ang default text loading indicator at pagination bago mag-load
     recordsContainer.innerHTML = ''; 
     paginationContainer.innerHTML = '';
     
-    // 2. 🟠 SweetAlert2 Loading Animation (Same design as before)
     if (typeof Swal != 'undefined') {
         Swal.fire({
             background: "transparent",
@@ -162,7 +149,6 @@ async function fetchBorrowingData(page = 1) {
             allowOutsideClick: false,
             showConfirmButton: false,
             customClass: {
-                // Orange theme styling
                 popup: "!rounded-xl !shadow-md !border-2 !border-orange-400 !p-6 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ffb34770]",
             },
         });
@@ -174,9 +160,8 @@ async function fetchBorrowingData(page = 1) {
         
         const data = await response.json();
 
-        // 3. Close Loading Modal with Minimum Delay
         const elapsed = Date.now() - start;
-        const minDelay = 500; // Minimum 300ms loading time
+        const minDelay = 500; 
         if (elapsed < minDelay) await new Promise(r => setTimeout(r, minDelay - elapsed));
         if (typeof Swal != 'undefined') Swal.close();
 
@@ -184,7 +169,6 @@ async function fetchBorrowingData(page = 1) {
         if (data.success) {
             renderBorrowingTable(data.borrowingHistory);
             renderPagination(data.totalPages, data.currentPage);
-            // Update stats only on first page load for efficiency
             if (page === 1) {
                 fetchStats();
             }
@@ -192,7 +176,6 @@ async function fetchBorrowingData(page = 1) {
             recordsContainer.innerHTML = `<div class="text-center py-10 text-red-500">${data.message || 'Failed to load history.'}</div>`;
         }
     } catch (error) {
-        // 4. Close Loading Modal and show Error Toast
         if (typeof Swal != 'undefined') {
             Swal.close();
             Swal.fire({
@@ -240,7 +223,6 @@ async function fetchStats() {
     }
 }
 
-// --- Event Listeners ---
 document.addEventListener('DOMContentLoaded', () => {
   fetchBorrowingData(currentPage);
 

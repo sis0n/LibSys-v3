@@ -4,7 +4,7 @@ namespace App\Config;
 
 use App\Core\Router;
 use App\Controllers\ViewController;
-use App\Controllers\DomPdfTemplateController; 
+use App\Controllers\DomPdfTemplateController;
 
 class RouteConfig
 {
@@ -146,7 +146,7 @@ class RouteConfig
     $router->get('api/admin/reports/deleted-books', 'ReportController@getDeletedBooks', ['reports']);
     $router->get('api/admin/reports/library-visits-department', 'ReportController@getLibraryVisitsByDepartment', ['reports']);
     $router->get('api/admin/reports/getGraphData', 'ReportController@getReportGraphData', ['reports']);
-    $router->get('api/admin/userManagement/pagination', 'UserManagementController@fetchPaginatedUsers', ['user management']); 
+    $router->get('api/admin/userManagement/pagination', 'UserManagementController@fetchPaginatedUsers', ['user management']);
     $router->get('api/admin/userManagement/get/{id}', 'UserManagementController@getUserById', ['user management']);
     $router->get('api/admin/userManagement/search', 'UserManagementController@search', ['user management']);
     $router->post('api/admin/userManagement/add', 'UserManagementController@addUser', ['user management']);
@@ -164,7 +164,7 @@ class RouteConfig
     $router->get('api/admin/dashboard/getData', 'DashboardController@getData', ['reports']);
     $router->post('api/admin/reports/generate-report', 'DomPdfTemplateController@generateLibraryReport', ['reports']);
 
-    $router->get('api/superadmin/userManagement/pagination', 'UserManagementController@fetchPaginatedUsers', ['superadmin']); 
+    $router->get('api/superadmin/userManagement/pagination', 'UserManagementController@fetchPaginatedUsers', ['superadmin']);
     $router->get('api/superadmin/userManagement/get/{id}', 'UserManagementController@getUserById', ['superadmin']);
     $router->get('api/superadmin/userManagement/search', 'UserManagementController@search', ['superadmin']);
     $router->post('api/superadmin/userManagement/add', 'UserManagementController@addUser', ['superadmin']);
@@ -254,13 +254,15 @@ class RouteConfig
     $router->get('api/student/bookCatalog/availableCount', 'BookCatalogController@getAvailableCount', ['student']);
     $router->get('api/student/bookCatalog/fetch', 'BookCatalogController@fetch', ['student']);
     $router->get('api/student/borrowingHistory/fetch', 'StudentBorrowingHistoryController@fetchHistory', ['student']);
-    $router->get('api/student/borrowing-history/stats', 'StudentBorrowingHistoryController@fetchStats', ['student']); 
-    $router->get('api/student/borrowing-history/pagination', 'StudentBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['student']); 
+    $router->get('api/student/borrowing-history/stats', 'StudentBorrowingHistoryController@fetchStats', ['student']);
+    $router->get('api/student/borrowing-history/pagination', 'StudentBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['student']);
     $router->get('api/student/myprofile/get', 'StudentProfileController@getProfile', ['student']);
     $router->post('api/student/myprofile/update', 'StudentProfileController@updateProfile', ['student']);
     $router->get('api/data/getAllCourses', 'DataController@getAllCourses', ['student']);
 
     $router->get('api/attendance/logs/ajax', 'AttendanceController@fetchLogsAjax', ['attendance logs', 'superadmin']);
+    $router->get('api/superadmin/overdue/getTableData', 'OverdueController@getTableData', ['superadmin', 'overdue tracking']);
+    $router->post('api/superadmin/overdue/sendReminder', 'OverdueController@sendReminder', ['superadmin', 'overdue tracking']);
 
     $router->get('dashboard', 'ViewController@handleDashboard');
 

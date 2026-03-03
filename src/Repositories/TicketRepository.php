@@ -23,6 +23,31 @@ class TicketRepository
     return $student['student_id'] ?? null;
   }
 
+  /**
+   * Universal method to count active borrowings (Pending or Borrowed) for any role
+   */
+  public function countActiveBorrowedItems(int $userId): int
+  {
+    $sql = "
+        SELECT COUNT(bti.item_id) as total
+        FROM borrow_transaction_items bti
+        JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+        JOIN users u ON (
+            bt.student_id = (SELECT student_id FROM students WHERE user_id = u.user_id) OR
+            bt.faculty_id = (SELECT faculty_id FROM faculty WHERE user_id = u.user_id) OR
+            bt.staff_id   = (SELECT staff_id FROM staff WHERE user_id = u.user_id)
+        )
+        WHERE u.user_id = :uid 
+        AND bti.status IN ('pending', 'borrowed', 'overdue')
+        AND bt.status NOT IN ('expired', 'returned')
+    ";
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute(['uid' => $userId]);
+    $res = $stmt->fetch(PDO::FETCH_ASSOC);
+    return (int)($res['total'] ?? 0);
+  }
+
   public function getStudentDetailsById($studentId)
   {
     $sql = "

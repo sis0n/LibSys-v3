@@ -208,6 +208,7 @@ class UserManagementController extends Controller
             'book management',
             'qr scanner',
             'returning',
+            'overdue tracking',
             'borrowing form',
             'attendance logs',
             'reports',

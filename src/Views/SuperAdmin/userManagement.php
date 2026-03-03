@@ -307,6 +307,7 @@
                             'equipment management',
                             'qr scanner',
                             'returning',
+                            'overdue tracking',
                             'borrowing form',
                             'attendance logs',
                             'reports',
@@ -526,6 +527,7 @@
                         'equipment management',
                         'qr scanner',
                         'returning',
+                        'overdue tracking',
                         'borrowing form',
                         'attendance logs',
                         'reports',
@@ -536,7 +538,6 @@
                         'restore users',
                         'student promotion'
                     ];
-
                     foreach ($modules as $module):
                         $isUserManagement = ($module === 'user management');
                         $isRestoreUser = ($module === 'restore users');

@@ -100,7 +100,8 @@ class ViewController extends Controller
       'restoreEquipment' => 'restore equipment',
       'restoreUser' => 'restore users',
       'userManagement' => 'user management',
-      'libraryPolicies' => 'superadmin'
+      'libraryPolicies' => 'superadmin',
+      'overdue' => 'superadmin'
     ];
 
     $universalPages = [

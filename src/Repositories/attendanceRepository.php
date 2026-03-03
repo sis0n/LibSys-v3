@@ -85,7 +85,12 @@ class AttendanceRepository
         try {
             $this->db->beginTransaction();
 
-            // Get course_id from students table using student_number
+            $this->db->query("UPDATE borrow_transactions SET status = 'overdue' WHERE status = 'borrowed' AND due_date < NOW()");
+            $this->db->query("UPDATE borrow_transaction_items bti 
+                              INNER JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+                              SET bti.status = 'overdue' 
+                              WHERE bt.status = 'overdue' AND bti.status = 'borrowed'");
+
             $stmtCourse = $this->db->prepare("SELECT course_id FROM students WHERE student_number = :student_number");
             $stmtCourse->execute([':student_number' => $attendance->getStudentNumber()]);
             $studentData = $stmtCourse->fetch(PDO::FETCH_ASSOC);

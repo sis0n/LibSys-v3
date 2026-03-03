@@ -51,18 +51,18 @@ class StudentBorrowingHistoryController extends Controller
             $returnedDate = $record['returned_at'] ? strtotime($record['returned_at']) : null;
             $now = time();
 
-            $isBorrowed = $record['status'] === 'borrowed';
-            $isOverdue = $isBorrowed && ($dueDate < $now);
-            $statusText = ucfirst($record['status']);
+            $status = $record['status'];
+            $isOverdue = ($status === 'overdue') || ($status === 'borrowed' && ($dueDate < $now));
             
+            $statusText = ucfirst($status);
             $statusBgClass = 'bg-gray-100 text-gray-700'; 
 
-            if ($record['status'] === 'returned') {
+            if ($status === 'returned') {
                  $statusBgClass = 'bg-green-100 text-green-700';
             } elseif ($isOverdue) {
-                $statusText = 'Borrowed'; 
+                $statusText = ($status === 'overdue') ? 'Overdue' : 'Borrowed'; 
                  $statusBgClass = 'bg-red-100 text-red-700';
-            } elseif ($isBorrowed) {
+            } elseif ($status === 'borrowed') {
                 $statusBgClass = 'bg-amber-100 text-amber-700';
             }
 

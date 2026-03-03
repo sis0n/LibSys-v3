@@ -212,61 +212,174 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- End Close Modal Functions ---
 
 
+    // --- Overdue Section Elements ---
+    const toggleOverdue = document.getElementById('toggle-overdue');
+    const overdueContent = document.getElementById('overdue-content');
+    const overdueCaret = document.getElementById('overdue-caret');
+    const overdueSearch = document.getElementById('overdue-search');
+    const bulkNotifyBtn = document.getElementById('bulk-notify-btn');
+
+    let allOverdueData = []; // Store for filtering
+
+    // --- Toggle Logic ---
+    if (toggleOverdue) {
+        toggleOverdue.addEventListener('click', () => {
+            overdueContent.classList.toggle('hidden');
+            overdueCaret.classList.toggle('rotate-180');
+        });
+    }
+
+    // --- Search Logic ---
+    if (overdueSearch) {
+        overdueSearch.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allOverdueData.filter(item => 
+                item.user_name.toLowerCase().includes(term) || 
+                item.item_borrowed.toLowerCase().includes(term) ||
+                item.user_id.toLowerCase().includes(term)
+            );
+            renderOverdueBooksTable(filtered, true); // true means don't overwrite the master data
+        });
+    }
+
     async function fetchTableData() {
         try {
             const response = await fetch('api/superadmin/returning/getTableData');
             if (!response.ok) throw new Error('Network response not ok');
             const result = await response.json();
             if (result.success) {
-                renderOverdueBooksTable(result.data.overdue);
+                allOverdueData = result.data.overdue;
+                updateSummaryStats(allOverdueData);
+                renderOverdueBooksTable(allOverdueData);
             } else showTableError(result.message);
         } catch (error) {
             console.error('Error fetching table data:', error);
-            showProfileToast('ph-x-circle', 'List Load Error', 'Could not connect to server to load the overdue list.', 'error');
             showTableError('Could not connect to server.');
         }
     }
 
-    function showTableError(message) {
-        const errorRow = `<tr><td colspan="6" class="px-6 py-4 text-center text-red-500">${message}</td></tr>`;
-        overdueBooksTableBody.innerHTML = errorRow;
+    function updateSummaryStats(data) {
+        document.getElementById('stat-total-overdue').textContent = data.length;
+        
+        const today = new Date().toISOString().split('T')[0];
+        const dueTodayCount = data.filter(item => item.due_date === today).length;
+        document.getElementById('stat-due-today').textContent = dueTodayCount;
     }
 
-    function renderOverdueBooksTable(data) {
+    function renderOverdueBooksTable(data, isFiltering = false) {
         overdueBooksTableBody.innerHTML = '';
         if (!data || data.length === 0) {
-            overdueBooksTableBody.innerHTML = `<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No overdue books.</td></tr>`;
+            overdueBooksTableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-10 text-center text-gray-400 italic">No matching overdue records found.</td></tr>`;
             return;
         }
+
         data.forEach(book => {
+            // Calculate Urgency
+            const dueDate = new Date(book.due_date);
+            const now = new Date();
+            const diffTime = Math.abs(now - dueDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            let urgencyClass = 'bg-yellow-100 text-yellow-700';
+            let urgencyLabel = `${diffDays}d Late`;
+
+            if (diffDays > 7) {
+                urgencyClass = 'bg-red-100 text-red-700';
+                urgencyLabel = 'Critical (1wk+)';
+            } else if (diffDays > 3) {
+                urgencyClass = 'bg-orange-100 text-orange-700';
+            }
+
             const hasEmail = book.email && book.email.trim() !== '' && book.email !== 'N/A';
 
-            const contactAction = hasEmail
-                ? `<button class="contact-btn inline-flex items-center px-3 py-1.5 border border-orange-500 text-orange-600 bg-white rounded-md shadow-sm text-sm font-medium hover:bg-orange-50 transition"
-                        data-email="${book.email}"
-                        data-name="${book.user_name}"
-                        data-book="${book.item_borrowed}"
-                        data-due="${book.due_date}">
-                        <i class="ph ph-envelope-simple text-base mr-1"></i> Email
-                   </button>`
-                : `<span class="text-gray-400 text-xs italic inline-flex items-center px-3 py-1.5"><i class="ph ph-prohibit mr-1"></i> No Email</span>`;
-
             const row = `
-                <tr class="align-middle">
-                    <td class="px-6 py-4 align-middle">
-                        <div class="font-semibold text-gray-800">${book.user_name}</div>
-                        <div class="text-gray-500 text-xs">${book.user_id}</div>
-                        <div class="text-gray-500 text-xs">${book.department_or_course}</div>
+                <tr class="hover:bg-gray-50/50 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase">
+                                ${book.user_name.charAt(0)}
+                            </div>
+                            <div>
+                                <div class="text-sm font-bold text-gray-800">${book.user_name}</div>
+                                <div class="text-[10px] text-gray-400 font-mono tracking-tighter">${book.user_id} • ${book.department_or_course}</div>
+                            </div>
+                        </div>
                     </td>
-                    <td class="px-6 py-4 align-middle text-gray-800 max-w-[240px] whitespace-normal break-words">${book.item_borrowed}</td>
-                    <td class="px-6 py-4 align-middle text-gray-800">${book.date_borrowed}</td>
-                    <td class="px-6 py-4 align-middle text-gray-800">${book.due_date}</td>
-                    <td class="px-6 py-4 align-middle text-gray-800">${book.email}</td>
-                    <td class="px-6 py-4 align-middle">
-                       ${contactAction}
+                    <td class="px-6 py-4">
+                        <div class="text-sm font-medium text-gray-700 max-w-[300px] truncate" title="${book.item_borrowed}">${book.item_borrowed}</div>
+                        <div class="text-[10px] text-gray-400">Borrowed: ${book.date_borrowed}</div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="text-sm font-bold text-gray-800">${book.due_date}</div>
+                        <span class="inline-block px-2 py-0.5 rounded text-[10px] font-black uppercase mt-1 ${urgencyClass}">
+                            ${urgencyLabel}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-center">
+                        ${hasEmail ? `
+                            <button class="contact-btn p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" 
+                                title="Send Email Reminder"
+                                data-email="${book.email}"
+                                data-name="${book.user_name}"
+                                data-book="${book.item_borrowed}"
+                                data-due="${book.due_date}">
+                                <i class="ph ph-paper-plane-tilt text-xl"></i>
+                            </button>
+                        ` : '<i class="ph ph-envelope-simple-slash text-gray-300 text-xl" title="No Email Available"></i>'}
                     </td>
                 </tr>`;
             overdueBooksTableBody.insertAdjacentHTML('beforeend', row);
+        });
+    }
+
+    // --- Bulk Notify Logic ---
+    if (bulkNotifyBtn) {
+        bulkNotifyBtn.addEventListener('click', async () => {
+            const studentsWithEmail = allOverdueData.filter(b => b.email && b.email.trim() !== '' && b.email !== 'N/A');
+            
+            if (studentsWithEmail.length === 0) {
+                return showProfileToast('ph-info', 'Notice', 'No students with valid emails to notify.', 'warning');
+            }
+
+            const confirm = await showCustomConfirmationModal(
+                'Bulk Notification',
+                `Send overdue email reminders to ${studentsWithEmail.length} students?`,
+                'Yes, Send All'
+            );
+
+            if (!confirm) return;
+
+            bulkNotifyBtn.disabled = true;
+            bulkNotifyBtn.innerHTML = `<i class="ph ph-spinner animate-spin"></i> Sending...`;
+
+            let successCount = 0;
+            let notifiedToday = 0;
+
+            for (const student of studentsWithEmail) {
+                try {
+                    const res = await fetch('api/superadmin/returning/sendOverdueEmail', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: student.email,
+                            name: student.user_name,
+                            book_title: student.item_borrowed,
+                            due_date: student.due_date
+                        })
+                    });
+                    const result = await res.json();
+                    if (result.success) {
+                        successCount++;
+                        notifiedToday++;
+                        document.getElementById('stat-notified').textContent = notifiedToday;
+                    }
+                } catch (e) { console.error("Error sending bulk email:", e); }
+            }
+
+            bulkNotifyBtn.disabled = false;
+            bulkNotifyBtn.innerHTML = `<i class="ph ph-paper-plane-tilt"></i> Notify All Students`;
+            
+            showProfileToast('ph-check-circle', 'Process Complete', `Sent ${successCount} notifications successfully.`, 'success');
         });
     }
 

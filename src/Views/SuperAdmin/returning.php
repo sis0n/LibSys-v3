@@ -54,27 +54,87 @@
     </div>
     
     <!-- Overdue Books Section -->
-    <div class="mt-8 bg-red-50/60 border border-red-200/80 rounded-lg p-6 shadow-sm max-w-7xl mx-auto">
-        <div class="flex items-center gap-3 mb-4">
-            <i class="ph ph-warning text-2xl text-red-500"></i>
-            <h3 class="text-xl font-semibold text-gray-800">Overdue Books</h3>
+    <div class="mt-8 bg-white border border-gray-200 rounded-xl shadow-sm max-w-7xl mx-auto overflow-hidden">
+        <!-- Header with Toggle & Bulk Action -->
+        <div class="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-red-50/30">
+            <div class="flex items-center gap-3 cursor-pointer" id="toggle-overdue">
+                <div class="bg-red-100 p-2 rounded-lg">
+                    <i class="ph ph-warning text-2xl text-red-600"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        Overdue Inventory
+                        <i class="ph ph-caret-down text-gray-400 transition-transform duration-300" id="overdue-caret"></i>
+                    </h3>
+                    <p class="text-xs text-gray-500 font-medium">Manage and notify late book returns</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button id="bulk-notify-btn" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-red-700 transition shadow-lg shadow-red-600/20 active:scale-95">
+                    <i class="ph ph-paper-plane-tilt"></i>
+                    Notify All Students
+                </button>
+            </div>
         </div>
-        <p class="text-gray-600 -mt-2 ml-9">Books that are past their due date</p>
-        <div class="mt-4 bg-white border border-gray-200/80 rounded-lg overflow-hidden">
-            <table class="w-full overdue-books-table">
-                <thead class="bg-stone-50">
-                    <tr class="border-b border-gray-200/80">
-                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">Student Info</th>
-                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">Item Borrowed</th>
-                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">Date Borrowed</th>
-                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">Due Date</th>
-                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">Contact</th>
-                        <th class="px-6 py-3 text-left text-sm font-medium text-gray-500">Action</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-200/80">
-                </tbody>
-            </table>
+
+        <div id="overdue-content" class="transition-all duration-300">
+            <!-- Summary Stats -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-6 bg-white border-b border-gray-100">
+                <div class="p-4 rounded-xl border border-gray-100 bg-slate-50 flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                        <i class="ph ph-books text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Overdue</p>
+                        <h4 class="text-xl font-black text-gray-800" id="stat-total-overdue">0</h4>
+                    </div>
+                </div>
+                <div class="p-4 rounded-xl border border-gray-100 bg-slate-50 flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+                        <i class="ph ph-calendar-check text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Due Today</p>
+                        <h4 class="text-xl font-black text-gray-800" id="stat-due-today">0</h4>
+                    </div>
+                </div>
+                <div class="p-4 rounded-xl border border-gray-100 bg-slate-50 flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                        <i class="ph ph-envelope-open text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Notified Today</p>
+                        <h4 class="text-xl font-black text-gray-800" id="stat-notified">0</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Filters -->
+            <div class="px-6 py-4 flex items-center gap-3 bg-white border-b border-gray-50">
+                <div class="relative flex-grow max-w-md">
+                    <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                    <input type="text" id="overdue-search" placeholder="Search by student name or book title..." 
+                        class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-red-100 focus:border-red-400 outline-none transition-all">
+                </div>
+            </div>
+
+            <!-- The Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full overdue-books-table">
+                    <thead class="bg-gray-50/50">
+                        <tr class="border-b border-gray-100">
+                            <th class="px-6 py-4 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Borrower</th>
+                            <th class="px-6 py-4 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Item Information</th>
+                            <th class="px-6 py-4 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Due Status</th>
+                            <th class="px-6 py-4 text-center text-[11px] font-black text-gray-400 uppercase tracking-widest">Reminders</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <!-- Rows will be injected by JS -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

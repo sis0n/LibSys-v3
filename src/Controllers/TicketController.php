@@ -24,13 +24,8 @@ class TicketController extends Controller
     $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }
 
-  /**
-   * Nag-uupload ng QR code data sa Laravel Backend via API
-   */
   private function uploadQrToBackend(string $transactionCode, string $svgData): bool
   {
-    // STORAGE_URL = http://127.0.0.1:8000/storage
-    // API_URL = http://127.0.0.1:8000/api/upload-qr
     $apiUrl = str_replace('/storage', '/api/upload-qr', STORAGE_URL);
     $fileName = $transactionCode . '.svg';
 
@@ -49,19 +44,11 @@ class TicketController extends Controller
         'Accept: application/json'
       ]);
 
-      // Timeout safety
       curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
       curl_setopt($ch, CURLOPT_TIMEOUT, 10);
 
       $response = curl_exec($ch);
       $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-      
-      if (curl_errno($ch)) {
-        error_log("cURL Error: " . curl_error($ch));
-        curl_close($ch);
-        return false;
-      }
-
       curl_close($ch);
       return ($httpCode === 200);
     } catch (\Exception $e) {
@@ -76,10 +63,11 @@ class TicketController extends Controller
     header('Content-Type: application/json');
 
     $userId = $_SESSION['user_id'] ?? null;
-    $role = $_SESSION['role'] ?? 'student';
+    $role = strtolower($_SESSION['role'] ?? 'student');
 
     $policy = $this->policyRepo->getPolicyByRole($role);
     $DURATION_DAYS = $policy ? (int)$policy['borrow_duration_days'] : 7;
+    $maxAllowed = $policy ? (int)$policy['max_books'] : 5;
 
     if (!$userId) {
       echo json_encode(['success' => false, 'message' => 'Unauthorized']);
@@ -109,10 +97,21 @@ class TicketController extends Controller
         exit;
       }
 
+      $currentActiveCount = $this->ticketRepo->countActiveBorrowedItems((int)$userId);
+      $newItemsCount = count($cartItems);
+
+      if (($currentActiveCount + $newItemsCount) > $maxAllowed) {
+        $this->ticketRepo->rollback();
+        echo json_encode([
+          'success' => false, 
+          'message' => "Borrow limit exceeded. You already have $currentActiveCount active items and you're trying to add $newItemsCount more. Your limit is $maxAllowed."
+        ]);
+        exit;
+      }
+
       $transactionCode = strtoupper(uniqid());
       $dueDate = date("Y-m-d H:i:s", strtotime("+{$DURATION_DAYS} days"));
       
-      // 1. Generate QR SVG in memory (as string)
       $builder = new Builder(
         writer: new SvgWriter(),
         data: $transactionCode,
@@ -125,12 +124,10 @@ class TicketController extends Controller
       $result = $builder->build();
       $svgData = $result->getString();
 
-      // 2. Upload to Laravel Backend API
       if (!$this->uploadQrToBackend($transactionCode, $svgData)) {
-          throw new \Exception("Failed to bridge QR code to mobile storage. Ensure Laravel server is running.");
+          throw new \Exception("Failed to bridge QR code to mobile storage.");
       }
 
-      // 3. Save relative path to DB
       $dbPath = "uploads/qrcodes/" . $transactionCode . ".svg";
       $transactionId = $this->ticketRepo->createPendingTransaction($studentId, $transactionCode, $dueDate, $dbPath, 15);
 
@@ -146,7 +143,7 @@ class TicketController extends Controller
 
       echo json_encode([
         'success' => true,
-        'message' => 'Checkout successful! QR code available on mobile.',
+        'message' => 'Checkout successful!',
         'ticket_code' => $transactionCode,
         'qrPath' => STORAGE_URL . '/' . $dbPath
       ]);
@@ -229,7 +226,6 @@ class TicketController extends Controller
         }
         
         if (strtolower($transactionData['status']) === 'pending') {
-          // Gagamit ng STORAGE_URL + DB field 'qrcode'
           $qrPath = STORAGE_URL . "/" . ($transactionData['qrcode'] ?: "uploads/qrcodes/" . $transactionCode . ".svg");
         }
       }

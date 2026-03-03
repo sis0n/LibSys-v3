@@ -27,9 +27,6 @@ class FacultyTicketController extends Controller
     $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }
 
-  /**
-   * Nag-uupload ng QR code data sa Laravel Backend via API
-   */
   private function uploadQrToBackend(string $transactionCode, string $svgData): bool
   {
     $apiUrl = str_replace('/storage', '/api/upload-qr', STORAGE_URL);
@@ -78,11 +75,11 @@ class FacultyTicketController extends Controller
     header('Content-Type: application/json');
 
     $userId = $_SESSION['user_id'] ?? null;
-    $role = $_SESSION['role'] ?? 'faculty';
+    $role = strtolower($_SESSION['role'] ?? 'faculty');
 
     $policy = $this->policyRepo->getPolicyByRole($role);
-    $MAX_BOOKS = $policy ? (int)$policy['max_books'] : 10;
     $DURATION_DAYS = $policy ? (int)$policy['borrow_duration_days'] : 14;
+    $maxAllowed = $policy ? (int)$policy['max_books'] : 10;
 
     if (!$userId) {
       http_response_code(403);
@@ -105,8 +102,8 @@ class FacultyTicketController extends Controller
       $this->ticketRepo->expireOldPendingTransactionsFaculty();
 
       $cartItems = !empty($selectedIds)
-        ? $this->ticketRepo->getFacultyCartItemsByIds($facultyId, $selectedIds)
-        : $this->ticketRepo->getFacultyCartItems($facultyId);
+        ? $this->ticketRepo->getFacultyCartItemsByIds((int)$userId, $selectedIds)
+        : $this->ticketRepo->getFacultyCartItems((int)$userId);
 
       if (empty($cartItems)) {
         $this->ticketRepo->rollback();
@@ -114,10 +111,22 @@ class FacultyTicketController extends Controller
         exit;
       }
 
+      $ticketRepoGeneral = new \App\Repositories\TicketRepository();
+      $currentActiveCount = $ticketRepoGeneral->countActiveBorrowedItems((int)$userId);
+      $newItemsCount = count($cartItems);
+
+      if (($currentActiveCount + $newItemsCount) > $maxAllowed) {
+        $this->ticketRepo->rollback();
+        echo json_encode([
+          'success' => false, 
+          'message' => "Borrow limit exceeded. You already have $currentActiveCount active items and you're trying to add $newItemsCount more. Your limit is $maxAllowed."
+        ]);
+        exit;
+      }
+
       $transactionCode = strtoupper(uniqid());
       $dueDate = date("Y-m-d H:i:s", strtotime("+{$DURATION_DAYS} days"));
       
-      // 1. Generate QR SVG in memory
       $builder = new Builder(
         writer: new SvgWriter(),
         data: $transactionCode,
@@ -130,12 +139,10 @@ class FacultyTicketController extends Controller
       $result = $builder->build();
       $svgData = $result->getString();
 
-      // 2. Upload to Laravel API
       if (!$this->uploadQrToBackend($transactionCode, $svgData)) {
           throw new \Exception("Failed to bridge QR code to mobile storage.");
       }
 
-      // 3. Save to DB
       $dbPath = "uploads/qrcodes/" . $transactionCode . ".svg";
       $transactionId = $this->ticketRepo->createPendingTransactionForFaculty($facultyId, $transactionCode, $dueDate, $dbPath, 15);
 
@@ -144,7 +151,7 @@ class FacultyTicketController extends Controller
       $itemTitles = implode(', ', array_column($cartItems, 'title'));
       $this->auditRepo->log($userId, 'TICKET_CREATED', 'TRANSACTIONS', $transactionCode, "Faculty generated borrowing ticket for: $itemTitles");
 
-      $this->ticketRepo->removeFacultyCartItemsByIds($facultyId, array_column($cartItems, 'cart_id'));
+      $this->ticketRepo->removeFacultyCartItemsByIds((int)$userId, array_column($cartItems, 'cart_id'));
       
       $_SESSION['last_ticket_code'] = $transactionCode;
       $this->ticketRepo->commit();

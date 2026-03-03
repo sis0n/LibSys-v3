@@ -73,7 +73,6 @@
         </div>
     </div>
 
-    <!-- Updated -->
     <div class="flex items-center justify-between my-4">
 
         <h4 id="resultsIndicator" class="text-sm text-gray-600">
@@ -115,7 +114,7 @@
         </div>
 
     </div>
-    <!-- end -->
+
     <div class="overflow-x-auto rounded-lg border border-orange-200">
         <table class="w-full text-sm border-collapse">
             <thead class="bg-orange-50 text-gray-700 border border-orange-100">
@@ -274,7 +273,7 @@
                         <div>
                             <label id="addCourseLabel" class="block text-sm font-medium text-gray-700 mb-1">Course/Program <span class="text-red-500">*</span></label>
                             <select id="addCourseDropdown" name="course_id" required disabled
-                                class="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm bg-gray-100 focus-visible:ring-[var(--color-ring)] focus-visible:border-[var(--color-ring)] outline-none">
+                                class="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm focus-visible:ring-[var(--color-ring)] focus-visible:border-[var(--color-ring)] outline-none">
                                 <option value="">Select College First</option>
                             </select>
                         </div>
@@ -305,6 +304,7 @@
                             'user management',
                             'qr scanner',
                             'returning',
+                            'overdue tracking',
                             'borrowing form',
                             'attendance logs',
                             'reports',
@@ -519,6 +519,7 @@
                         'user management',
                         'qr scanner',
                         'returning',
+                        'overdue tracking',
                         'borrowing form',
                         'attendance logs',
                         'reports',

@@ -61,7 +61,7 @@ class LibraryPolicyController extends Controller
             $this->json(['success' => false, 'message' => 'Invalid data provided'], 400);
         }
 
-        $role = $data['role'];
+        $role = strtolower($data['role']);
         $maxBooks = (int)$data['max_books'];
         $durationDays = (int)$data['borrow_duration_days'];
 
