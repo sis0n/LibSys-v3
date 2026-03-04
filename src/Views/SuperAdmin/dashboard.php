@@ -79,6 +79,8 @@ $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
             <tr>
               <th scope="col" class="px-4 py-3 text-left font-black uppercase w-12">Rank</th>
               <th scope="col" class="px-4 py-3 text-left font-black uppercase">Name</th>
+              <th scope="col" class="px-4 py-3 text-left font-black uppercase">ID Number</th>
+              <th scope="col" class="px-4 py-3 text-left font-black uppercase">Year & Section</th>
               <th scope="col" class="px-4 py-3 text-right font-black uppercase">Visits</th>
             </tr>
           </thead>

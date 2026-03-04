@@ -96,9 +96,10 @@ class DashboardRepository
   public function getTopVisitors(int $limit = 5): array
   {
     $sql = "
-        SELECT u.first_name, u.last_name, COUNT(a.user_id) AS visits
+        SELECT u.first_name, u.last_name, s.student_number, s.year_level, s.section, COUNT(a.user_id) AS visits
         FROM attendance a
         JOIN users u ON u.user_id = a.user_id
+        LEFT JOIN students s ON u.user_id = s.user_id
         WHERE DATE(a.first_scan_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
         GROUP BY a.user_id
         ORDER BY visits DESC
@@ -114,6 +115,9 @@ class DashboardRepository
     return array_map(function ($r) {
       return [
         'user_name' => trim($r['first_name'] . ' ' . $r['last_name']),
+        'student_number' => $r['student_number'] ?? 'N/A',
+        'year_level' => $r['year_level'] ?? 'N/A',
+        'section' => $r['section'] ?? 'N/A',
         'visits' => (int)$r['visits']
       ];
     }, $rows);

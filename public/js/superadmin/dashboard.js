@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!topVisitorsTableBody) return;
 
     if (!visitors || visitors.length === 0) {
-      topVisitorsTableBody.innerHTML = '<tr><td colspan="3" class="py-10 text-center text-gray-400 italic text-xs uppercase font-bold">No records found</td></tr>';
+      topVisitorsTableBody.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-gray-400 italic text-xs uppercase font-bold">No records found</td></tr>';
       return;
     }
 
@@ -51,6 +51,8 @@ document.addEventListener('DOMContentLoaded', function () {
         <tr class="hover:bg-orange-50/30 transition-colors">
           <td class="px-4 py-3 text-left font-black text-orange-600">${index + 1}</td>
           <td class="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-tight text-[11px]">${v.user_name || "Unknown User"}</td>
+          <td class="px-4 py-3 text-left font-bold text-gray-600 uppercase tracking-tight text-[11px]">${v.student_number}</td>
+          <td class="px-4 py-3 text-left font-bold text-gray-600 uppercase tracking-tight text-[11px]">${v.year_level} - ${v.section}</td>
           <td class="px-4 py-3 text-right font-black text-gray-800">${v.visits}</td>
         </tr>
       `;
