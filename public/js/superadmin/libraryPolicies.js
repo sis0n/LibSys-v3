@@ -1,27 +1,34 @@
-document.addEventListener('DOMContentLoaded', function() {
-    const policyCardsContainer = document.getElementById('policyCardsContainer');
-    const editPolicyModal = document.getElementById('editPolicyModal');
-    const editPolicyForm = document.getElementById('editPolicyForm');
-    
-    let allPolicies = [];
+document.addEventListener("DOMContentLoaded", function () {
+  const policyCardsContainer = document.getElementById("policyCardsContainer");
+  const editPolicyModal = document.getElementById("editPolicyModal");
+  const editPolicyForm = document.getElementById("editPolicyForm");
 
-    // --- Helper for Toast ---
-    const showToast = (icon, title, text, theme) => {
-        if (typeof Swal === 'undefined') return alert(text);
-        
-        const themeMap = {
-            success: { color: 'text-green-600', bg: 'bg-green-100', border: '!border-green-400' },
-            error: { color: 'text-red-600', bg: 'bg-red-100', border: '!border-red-400' }
-        };
-        const selected = themeMap[theme] || themeMap.success;
+  let allPolicies = [];
 
-        Swal.fire({
-            toast: true,
-            position: 'bottom-end',
-            showConfirmButton: false,
-            timer: 3000,
-            background: 'transparent',
-            html: `
+  const showToast = (icon, title, text, theme) => {
+    if (typeof Swal === "undefined") return alert(text);
+
+    const themeMap = {
+      success: {
+        color: "text-green-600",
+        bg: "bg-green-100",
+        border: "!border-green-400",
+      },
+      error: {
+        color: "text-red-600",
+        bg: "bg-red-100",
+        border: "!border-red-400",
+      },
+    };
+    const selected = themeMap[theme] || themeMap.success;
+
+    Swal.fire({
+      toast: true,
+      position: "bottom-end",
+      showConfirmButton: false,
+      timer: 3000,
+      background: "transparent",
+      html: `
                 <div class="flex items-center gap-3 p-1">
                     <div class="flex items-center justify-center w-10 h-10 rounded-full ${selected.bg} ${selected.color}">
                         <i class="ph ph-${icon} text-lg"></i>
@@ -32,43 +39,45 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
             `,
-            customClass: {
-                popup: `!rounded-xl !shadow-lg !border-2 !p-2 !bg-white ${selected.border}`
-            }
-        });
-    };
+      customClass: {
+        popup: `!rounded-xl !shadow-lg !border-2 !p-2 !bg-white ${selected.border}`,
+      },
+    });
+  };
 
-    const loadPolicies = async () => {
-        try {
-            const res = await fetch('api/superadmin/libraryPolicies/getAll');
-            const data = await res.json();
-            
-            if (data.success) {
-                allPolicies = data.policies;
-                renderPolicies();
-            } else {
-                throw new Error(data.message);
-            }
-        } catch (err) {
-            console.error('Error loading policies:', err);
-            policyCardsContainer.innerHTML = `
+  const loadPolicies = async () => {
+    try {
+      const res = await fetch("api/superadmin/libraryPolicies/getAll");
+      const data = await res.json();
+
+      if (data.success) {
+        allPolicies = data.policies;
+        renderPolicies();
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (err) {
+      console.error("Error loading policies:", err);
+      policyCardsContainer.innerHTML = `
                 <div class="col-span-full py-10 text-center bg-red-50 rounded-xl border border-red-200">
                     <i class="ph ph-warning-circle text-red-500 text-4xl mb-2"></i>
                     <p class="text-red-700 font-medium">Failed to load policies</p>
-                    <button onclick="location.reload()" class="mt-2 text-sm text-red-600 hover:underline">Try again</button>
                 </div>
             `;
-        }
-    };
+    }
+  };
 
-    const renderPolicies = () => {
-        if (allPolicies.length === 0) {
-            policyCardsContainer.innerHTML = '<p class="col-span-full text-center text-gray-500">No policies found.</p>';
-            return;
-        }
+  const renderPolicies = () => {
+    if (allPolicies.length === 0) {
+      policyCardsContainer.innerHTML =
+        '<p class="col-span-full text-center text-gray-500">No policies found.</p>';
+      return;
+    }
 
-        policyCardsContainer.innerHTML = allPolicies.map(policy => `
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+    policyCardsContainer.innerHTML = allPolicies
+      .map(
+        (policy) => `
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow text-left">
                 <div class="px-6 py-4" style="background: ${getRoleGradient(policy.role)}">
                     <div class="flex items-center gap-3 text-white">
                         <i class="ph ${getRoleIcon(policy.role)} text-3xl"></i>
@@ -81,14 +90,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             <i class="ph ph-books text-orange-600 text-2xl"></i>
                             <span class="text-gray-600 font-medium">Borrow Limit</span>
                         </div>
-                        <span class="text-2xl font-bold text-gray-800">${policy.max_books} <small class="text-xs text-gray-500 font-normal uppercase">Books</small></span>
+                        <span class="text-2xl font-bold text-gray-800">${policy.max_books} <small class="text-xs text-gray-500 font-normal uppercase">${policy.role === "equipment" ? "Items" : "Books"}</small></span>
                     </div>
                     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div class="flex items-center gap-3">
                             <i class="ph ph-calendar-clock text-blue-600 text-2xl"></i>
                             <span class="text-gray-600 font-medium">Duration</span>
                         </div>
-                        <span class="text-2xl font-bold text-gray-800">${policy.borrow_duration_days} <small class="text-xs text-gray-500 font-normal uppercase">Days</small></span>
+                        <span class="text-2xl font-bold text-gray-800">${policy.borrow_duration_days === 0 ? "Same Day" : policy.borrow_duration_days} <small class="text-xs text-gray-500 font-normal uppercase">${policy.borrow_duration_days === 0 ? "" : "Days"}</small></span>
                     </div>
                     <div class="pt-2 text-xs text-gray-400 italic">
                         Last updated: ${new Date(policy.updated_at).toLocaleString()}
@@ -100,89 +109,117 @@ document.addEventListener('DOMContentLoaded', function() {
                     </button>
                 </div>
             </div>
-        `).join('');
+        `,
+      )
+      .join("");
 
-        // Attach event listeners to buttons
-        document.querySelectorAll('.edit-policy-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const role = btn.dataset.role;
-                openEditModal(role);
-            });
-        });
+    document.querySelectorAll(".edit-policy-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const role = btn.dataset.role;
+        openEditModal(role);
+      });
+    });
+  };
+
+  const getRoleIcon = (role) => {
+    switch (role) {
+      case "student":
+        return "ph-student";
+      case "faculty":
+        return "ph-chalkboard-teacher";
+      case "staff":
+        return "ph-user-gear";
+      case "equipment":
+        return "ph-desktop-tower";
+      default:
+        return "ph-user";
+    }
+  };
+
+  const getRoleGradient = (role) => {
+    switch (role) {
+      case "student":
+        return "linear-gradient(135deg, #10b981 0%, #0d9488 100%)";
+      case "faculty":
+        return "linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%)";
+      case "staff":
+        return "linear-gradient(135deg, #f97316 0%, #d97706 100%)";
+      case "equipment":
+        return "linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)";
+      default:
+        return "linear-gradient(135deg, #6b7280 0%, #4b5563 100%)";
+    }
+  };
+
+  const openEditModal = (role) => {
+    const policy = allPolicies.find((p) => p.role === role);
+    if (!policy) return;
+
+    document.getElementById("policyRole").value = policy.role;
+    document.getElementById("displayRole").value = policy.role;
+    document.getElementById("maxBooks").value = policy.max_books;
+
+    const durationInput = document.getElementById("durationDays");
+    durationInput.value = policy.borrow_duration_days;
+    durationInput.setAttribute("min", role === "equipment" ? "0" : "1");
+
+    document.getElementById("modalTitle").textContent =
+      `Edit ${policy.role.charAt(0).toUpperCase() + policy.role.slice(1)} Policy`;
+
+    editPolicyModal.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+  };
+
+  window.closePolicyModal = () => {
+    editPolicyModal.classList.add("hidden");
+    document.body.style.overflow = "";
+  };
+
+  editPolicyForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const payload = {
+      role: document.getElementById("policyRole").value,
+      max_books: document.getElementById("maxBooks").value,
+      borrow_duration_days: document.getElementById("durationDays").value,
     };
 
-    const getRoleIcon = (role) => {
-        switch(role) {
-            case 'student': return 'ph-student';
-            case 'faculty': return 'ph-chalkboard-teacher';
-            case 'staff': return 'ph-user-gear';
-            default: return 'ph-user';
-        }
-    };
-
-    const getRoleGradient = (role) => {
-        switch(role) {
-            case 'student': return 'linear-gradient(135deg, #10b981 0%, #0d9488 100%)'; // Emerald to Teal
-            case 'faculty': return 'linear-gradient(135deg, #3b82f6 0%, #4f46e5 100%)'; // Blue to Indigo
-            case 'staff': return 'linear-gradient(135deg, #f97316 0%, #d97706 100%)';   // Orange to Amber
-            default: return 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';       // Gray
-        }
-    };
-
-    const openEditModal = (role) => {
-        const policy = allPolicies.find(p => p.role === role);
-        if (!policy) return;
-
-        document.getElementById('policyRole').value = policy.role;
-        document.getElementById('displayRole').value = policy.role;
-        document.getElementById('maxBooks').value = policy.max_books;
-        document.getElementById('durationDays').value = policy.borrow_duration_days;
-        document.getElementById('modalTitle').textContent = `Edit ${policy.role.charAt(0).toUpperCase() + policy.role.slice(1)} Policy`;
-
-        editPolicyModal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-    };
-
-    window.closePolicyModal = () => {
-        editPolicyModal.classList.add('hidden');
-        document.body.style.overflow = '';
-    };
-
-    editPolicyForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const payload = {
-            role: document.getElementById('policyRole').value,
-            max_books: document.getElementById('maxBooks').value,
-            borrow_duration_days: document.getElementById('durationDays').value
-        };
-
-        Swal.fire({
-            title: 'Updating policy...',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading()
-        });
-
-        try {
-            const res = await fetch('api/superadmin/libraryPolicies/update', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-            const result = await res.json();
-
-            if (result.success) {
-                await loadPolicies();
-                closePolicyModal();
-                showToast('check-circle', 'Success', 'Library policy has been updated.', 'success');
-            } else {
-                throw new Error(result.message);
-            }
-        } catch (err) {
-            console.error('Update error:', err);
-            showToast('warning-circle', 'Update Failed', err.message || 'An error occurred.', 'error');
-        }
+    Swal.fire({
+      title: "Updating policy...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
     });
 
-    loadPolicies();
+    try {
+      const res = await fetch("api/superadmin/libraryPolicies/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+
+      if (result.success) {
+        await loadPolicies();
+        closePolicyModal();
+        showToast(
+          "check-circle",
+          "Success",
+          "Library policy has been updated.",
+          "success",
+        );
+      } else {
+        throw new Error(result.message);
+      }
+    } catch (err) {
+      console.error("Update error:", err);
+      showToast(
+        "warning-circle",
+        "Update Failed",
+        err.message || "An error occurred.",
+        "error",
+      );
+    }
+  });
+
+  loadPolicies();
 });

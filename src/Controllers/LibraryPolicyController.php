@@ -65,14 +65,22 @@ class LibraryPolicyController extends Controller
         $maxBooks = (int)$data['max_books'];
         $durationDays = (int)$data['borrow_duration_days'];
 
-        if ($maxBooks < 1 || $durationDays < 1) {
-            $this->json(['success' => false, 'message' => 'Values must be at least 1'], 400);
+        if ($maxBooks < 1) {
+            $this->json(['success' => false, 'message' => 'Max items must be at least 1'], 400);
+        }
+
+        if ($role !== 'equipment' && $durationDays < 1) {
+            $this->json(['success' => false, 'message' => 'Borrow duration must be at least 1 day'], 400);
+        }
+
+        if ($role === 'equipment' && $durationDays < 0) {
+            $this->json(['success' => false, 'message' => 'Duration cannot be negative'], 400);
         }
 
         $success = $this->policyRepo->updatePolicy($role, $maxBooks, $durationDays);
 
         if ($success) {
-            $this->auditRepo->log($_SESSION['user_id'], 'UPDATE', 'POLICIES', $role, "Updated policy for $role: Max Books = $maxBooks, Duration = $durationDays days");
+            $this->auditRepo->log($_SESSION['user_id'], 'UPDATE', 'POLICIES', $role, "Updated policy for $role: Max = $maxBooks, Duration = $durationDays days");
             $this->json(['success' => true, 'message' => 'Policy updated successfully']);
         } else {
             $this->json(['success' => false, 'message' => 'Failed to update policy'], 500);
