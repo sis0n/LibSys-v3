@@ -64,14 +64,14 @@
         </div>
 
         <div class="overflow-hidden border border-orange-200 rounded-lg shadow-sm">
-            <table class="w-full text-sm text-gray-700 table-fixed">
+            <table class="w-full text-base text-gray-700 table-fixed">
                 <thead class="bg-orange-100 text-left text-gray-800">
                     <tr>
-                        <th class="py-3 px-4 font-medium w-[25%]">Borrower</th>
-                        <th class="py-3 px-4 font-medium w-[15%] text-center">Year/Section</th>
-                        <th class="py-3 px-4 font-medium w-[15%] text-center">Accession</th>
-                        <th class="py-3 px-4 font-medium w-[25%]">Item Title</th>
-                        <th class="py-3 px-4 font-medium text-right w-[20%]">Timestamp</th>
+                        <th class="py-4 px-5 font-bold w-[25%] text-sm uppercase tracking-wider">Borrower</th>
+                        <th class="py-4 px-5 font-bold w-[15%] text-center text-sm uppercase tracking-wider">Year/Section</th>
+                        <th class="py-4 px-5 font-bold w-[15%] text-center text-sm uppercase tracking-wider">Accession</th>
+                        <th class="py-4 px-5 font-bold w-[25%] text-sm uppercase tracking-wider">Item Title</th>
+                        <th class="py-4 px-5 font-bold text-right w-[20%] text-sm uppercase tracking-wider">Timestamp</th>
                     </tr>
                 </thead>
                 <tbody id="recent-returns-feed" class="divide-y divide-orange-100 bg-white">

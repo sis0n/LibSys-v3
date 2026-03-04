@@ -68,16 +68,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
         recentReturnsFeed.innerHTML = list.map(item => `
             <tr class="hover:bg-gray-50 transition-colors">
-                <td class="px-4 py-3">
+                <td class="px-4 py-4">
                     <div class="flex flex-col">
-                        <span class="font-bold text-gray-800 leading-tight">${item.first_name} ${item.last_name}</span>
-                        <span class="text-[10px] text-orange-600 font-mono font-bold uppercase tracking-tighter">${item.identifier || 'N/A'}</span>
+                        <span class="font-bold text-gray-800 text-base leading-tight">${item.first_name} ${item.last_name}</span>
+                        <span class="text-[14px] text-orange-600 font-mono font-black uppercase tracking-tight mt-0.5">${item.identifier || 'N/A'}</span>
                     </div>
                 </td>
-                <td class="px-4 py-3 text-center text-xs text-gray-600 font-medium">${item.year_section || 'N/A'}</td>
-                <td class="px-4 py-3 text-center text-xs text-gray-500 font-mono font-bold">${item.accession_number || 'N/A'}</td>
-                <td class="px-4 py-3 text-gray-700 truncate max-w-[200px]" title="${item.item_title}">${item.item_title}</td>
-                <td class="px-4 py-3 text-right text-gray-400 text-[11px] font-mono">${formatTime(item.returned_at)}</td>
+                <td class="px-4 py-4 text-center text-sm text-gray-700 font-bold">${item.year_section || 'N/A'}</td>
+                <td class="px-4 py-4 text-center text-sm text-gray-600 font-mono font-black">${item.accession_number || 'N/A'}</td>
+                <td class="px-4 py-4 text-gray-800 text-sm font-medium truncate max-w-[200px]" title="${item.item_title}">${item.item_title}</td>
+                <td class="px-4 py-4 text-right text-orange-700 text-base font-black font-mono">${formatTime(item.returned_at)}</td>
             </tr>
         `).join('');
     }
