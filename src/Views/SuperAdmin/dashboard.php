@@ -1,11 +1,9 @@
 <?php
-// dashboard.php
 $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
 ?>
 
 <main class="min-h-min px-4 sm:px-6 md:px-10 flex flex-col gap-8">
 
-  <!-- Welcome Section -->
   <section class="py-0">
     <h2 class="text-2xl font-bold text-gray-900">
       Welcome back, <span id="adminName"><?= htmlspecialchars($fullName) ?></span>!
@@ -13,7 +11,6 @@ $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
     <p class="text-gray-600 mt-1 text-sm md:text-base">Here's your library system overview.</p>
   </section>
 
-  <!-- Quick Admin Actions -->
   <section class="border border-orange-100 border-t-4 border-t-green-500 rounded-2xl shadow p-8 bg-white">
     <div class="flex flex-col mb-6">
       <h3 class="text-lg font-semibold text-gray-800 flex items-center gap-2 mb-1">
@@ -24,27 +21,26 @@ $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 justify-items-center gap-4">
-      <a href="userManagement" class="flex items-center justify-center bg-white border border-gray-200 text-gray-800 font-semibold py-4 px-6 rounded-lg shadow hover:bg-orange-500 hover:text-white hover:border-orange-500 transition w-full sm:w-56">
+      <a href="userManagement" class="flex items-center justify-center bg-white border border-gray-200 text-gray-800 font-semibold py-4 px-6 rounded-lg shadow hover:bg-orange-500 hover:text-white hover:border-orange-500 transition w-full sm:w-56 text-left">
         <i class="ph ph-users text-xl mr-2 align-middle"></i>
         User Management
       </a>
-      <a href="bookManagement" class="flex items-center justify-center bg-white border border-gray-200 text-gray-800 font-semibold py-4 px-6 rounded-lg shadow hover:bg-orange-500 hover:text-white hover:border-orange-500 transition w-full sm:w-56">
+      <a href="bookManagement" class="flex items-center justify-center bg-white border border-gray-200 text-gray-800 font-semibold py-4 px-6 rounded-lg shadow hover:bg-orange-500 hover:text-white hover:border-orange-500 transition w-full sm:w-56 text-left">
         <i class="ph ph-books text-xl mr-2 align-middle"></i>
         Book Management
       </a>
-      <a href="returning" class="flex items-center justify-center bg-white border border-gray-200 text-gray-800 font-semibold py-4 px-6 rounded-lg shadow hover:bg-orange-500 hover:text-white hover:border-orange-500 transition w-full sm:w-56">
+      <a href="returning" class="flex items-center justify-center bg-white border border-gray-200 text-gray-800 font-semibold py-4 px-6 rounded-lg shadow hover:bg-orange-500 hover:text-white hover:border-orange-500 transition w-full sm:w-56 text-left">
         <i class="ph ph-swap text-xl mr-2 align-middle"></i>
         Returning Books
       </a>
-      <a href="topVisitor" class="flex items-center justify-center bg-white border border-gray-200 text-gray-800 font-semibold py-4 px-6 rounded-lg shadow hover:bg-orange-500 hover:text-white hover:border-orange-500 transition w-full sm:w-56">
+      <a href="topVisitor" class="flex items-center justify-center bg-white border border-gray-200 text-gray-800 font-semibold py-4 px-6 rounded-lg shadow hover:bg-orange-500 hover:text-white hover:border-orange-500 transition w-full sm:w-56 text-left">
         <i class="ph ph-activity text-xl mr-2 align-middle"></i>
         Analytics
       </a>
     </div>
   </section>
 
-  <!-- Dashboard Cards -->
-  <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+  <section class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-left">
     <?php
     $cards = [
       ['id' => 'totalUsers', 'title' => 'Total Users', 'icon' => 'ph-user', 'color' => 'orange', 'subtitle' => '+0 this month'],
@@ -67,131 +63,51 @@ $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
     <?php endforeach; ?>
   </section>
 
-  <!-- Charts Section -->
-  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Top Visitors -->
-    <div class="border border-green-200 rounded-lg p-6 shadow-sm bg-white">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-2">
-          <i class="ph ph-chart-bar text-green-500 text-lg"></i> Top Visitors
+  <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
+    <!-- Top Visitors (Table Design from Reports) -->
+    <div class="border border-orange-200 rounded-xl p-6 shadow-sm bg-white h-[450px] flex flex-col">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+          <i class="ph ph-crown text-orange-500 text-xl"></i> Top Visitors
         </h3>
-        <button class="text-xs bg-orange-100 text-orange-600 px-3 py-1 rounded">This Month</button>
+        <span class="text-[10px] bg-orange-100 text-orange-700 font-black uppercase tracking-wider px-3 py-1 rounded-full">This Month</span>
       </div>
-      <canvas id="topVisitorsChart" class="h-48"></canvas>
+      
+      <div class="overflow-hidden rounded-lg border border-orange-100 flex-grow overflow-y-auto custom-scrollbar">
+        <table class="w-full text-xs border-collapse">
+          <thead class="bg-orange-50 text-orange-700 sticky top-0 z-10">
+            <tr>
+              <th scope="col" class="px-4 py-3 text-left font-black uppercase w-12">Rank</th>
+              <th scope="col" class="px-4 py-3 text-left font-black uppercase">Name</th>
+              <th scope="col" class="px-4 py-3 text-right font-black uppercase">Visits</th>
+            </tr>
+          </thead>
+          <tbody id="topVisitorsTableBody" class="divide-y divide-orange-50 bg-white">
+            <!-- Rows injected via JS -->
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- Weekly Activity -->
-    <div class="border border-blue-200 rounded-lg p-6 shadow-sm bg-white">
+    <div class="border border-blue-200 rounded-lg p-6 shadow-sm bg-white h-[450px]">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-2">
           <i class="ph ph-activity text-blue-500 text-lg"></i> Weekly Activity
         </h3>
-        <p class="text-xs text-gray-500">Daily visitors and book checkouts</p>
+        <p class="text-xs text-gray-500">Visitors and checkouts</p>
       </div>
-      <canvas id="weeklyActivityChart" class="h-48"></canvas>
+      <div class="h-64 sm:h-80">
+        <canvas id="weeklyActivityChart"></canvas>
+      </div>
     </div>
   </section>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-  document.addEventListener("DOMContentLoaded", async () => {
-    try {
-      const res = await fetch("<?= BASE_URL ?>/api/superadmin/dashboard/getData");
-      const result = await res.json();
+<script src="<?= BASE_URL ?>/js/superadmin/dashboard.js" defer></script>
 
-      if (!result.success) {
-        console.error(result.message);
-        return;
-      }
-
-      const data = result.data;
-
-      // === Update Cards ===
-      const cardMap = {
-        totalUsers: data.totalUsers,
-        dailyVisitors: data.attendance_today,
-        activeBooks: data.availableBooks,
-        borrowedBooks: data.borrowed_books
-      };
-
-      for (const id in cardMap) {
-        document.getElementById(id).textContent = cardMap[id];
-      }
-
-      document.querySelector("#totalUsers + p").textContent = `+${data.usersAddedThisMonth} this month`;
-      document.querySelector("#activeBooks + p").textContent = `${data.availableBooksPercent}% available`;
-      document.querySelector("#borrowedBooks + p").textContent = `${data.borrowedBooksPercent}% of total books`;
-
-      // === Top Visitors Chart ===
-      const topLabels = result.topVisitors.map(v => v.user_name || "Unknown");
-      const topData = result.topVisitors.map(v => v.visits);
-
-      new Chart(document.getElementById("topVisitorsChart").getContext("2d"), {
-        type: "bar",
-        data: {
-          labels: topLabels,
-          datasets: [{
-            label: "Visits",
-            data: topData,
-            backgroundColor: "#22c55e",
-            borderRadius: 6
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              display: false
-            }
-          },
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
-      });
-
-      // === Weekly Activity Chart ===
-      const weeklyLabels = result.weeklyActivity.map(w => w.day);
-      const visitorsData = result.weeklyActivity.map(w => w.visitors);
-      const borrowsData = result.weeklyActivity.map(w => w.borrows);
-
-      new Chart(document.getElementById("weeklyActivityChart").getContext("2d"), {
-        type: "line",
-        data: {
-          labels: weeklyLabels,
-          datasets: [{
-              label: "Visitors",
-              data: visitorsData,
-              borderColor: "#3b82f6",
-              backgroundColor: "rgba(59,130,246,0.1)",
-              tension: 0.4,
-              fill: true
-            },
-            {
-              label: "Borrows",
-              data: borrowsData,
-              borderColor: "#f59e0b",
-              backgroundColor: "rgba(245,158,11,0.1)",
-              tension: 0.4,
-              fill: true
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true
-            }
-          }
-        }
-      });
-
-    } catch (err) {
-      console.error("Error loading dashboard:", err);
-    }
-  });
-</script>
+<style>
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #fed7aa; border-radius: 10px; }
+</style>
