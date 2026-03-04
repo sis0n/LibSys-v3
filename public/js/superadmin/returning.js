@@ -1,818 +1,129 @@
-// --- CORE CONFIRMATION FUNCTION (FINAL TEMPLATE - INLINE STYLE) ---
-async function showCustomConfirmationModal(title, text, confirmText = "Confirm") {
-    if (typeof Swal == "undefined") return confirm(title);
-
-    // Inline CSS Style para sa Orange Border, White BG, at Black Shadow
-    const inlineStyle = "border: 2px solid #f97316 !important; background: white !important; box-shadow: 0 0 15px #00000030 !important;";
-
-    const result = await Swal.fire({
-        background: "transparent",
-        buttonsStyling: false,
-        width: '450px',
-
-        html: `
-            <div class="flex flex-col text-center">
-                <div class="flex justify-center mb-3">
-                    <div class="flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 text-orange-600">
-                        <i class="ph ph-warning-circle text-3xl"></i>
-                    </div>
-                </div>
-                <h3 class="text-xl font-semibold text-gray-800">${title}</h3>
-                <p class="text-[14px] text-gray-700 mt-1">${text}</p>
-            </div>
-        `,
-        showCancelButton: true,
-        confirmButtonText: confirmText,
-        cancelButtonText: "Cancel",
-
-        customClass: {
-            // Tanggalin ang border/shadow/bg classes, hayaan ang rounded corners at padding
-            popup: "!rounded-xl !p-6",
-
-            // Confirm Button (Orange, Large, Bold)
-            confirmButton:
-                "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700 !mx-2 !font-semibold !text-base",
-            // Cancel Button (Gray, Large, Bold)
-            cancelButton:
-                "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300 !mx-2 !font-semibold !text-base",
-
-            actions: "!mt-4"
-        },
-        // Gamitin ang didOpen hook para i-inject ang inline style
-        didOpen: (popup) => {
-            popup.style.cssText = inlineStyle + " " + popup.style.cssText;
-        }
-    });
-    return result.isConfirmed;
-}
-// ----------------------------------------------------
-
-// Inalis ang mga declarations na hindi ginagamit sa snippet na ito.
-
-// --- SweetAlert Helper Functions for Toasts and Loaders (Shared design) ---
-
-// Utility for showing small, auto-closing toasts (RED BORDER ONLY)
-const showLibrarianToast = (title, text, duration = 3000) => {
-
-    // HARDCODED RED BORDER THEME (FOR INVALID TICKET/ERROR)
-    const iconClass = 'ph-x-circle';
-    const contentColor = 'text-red-600';
-    const bgColor = 'bg-red-100';
-
-    // INLINE CSS STYLE PARA SA RED BORDER (ito ang sa Invalid Ticket)
-    const inlineStyle = "border: 2px solid #dc2626 !important;"; // Red 600
-
-    Swal.fire({
-        toast: true,
-        position: "bottom-end",
-        showConfirmButton: false,
-        timer: duration,
-        width: "360px",
-
-        background: "white",
-        backdrop: `transparent`,
-
-        customClass: {
-            // Tanggalin ang border classes, hayaan ang rounded corners at padding
-            popup: `!rounded-xl !p-4 backdrop-blur-sm`,
-        },
-
-        html: `
-            <div class="flex flex-col text-left">
-                <div class="flex items-center gap-3 mb-2">
-                    <div class="flex items-center justify-center w-10 h-10 rounded-full ${bgColor} ${contentColor}">
-                        <i class="ph ${iconClass} text-lg"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-[15px] font-semibold ${contentColor}">${title}</h3>
-                        <p class="text-[13px] text-gray-700 mt-0.5">${text}</p>
-                    </div>
-                </div>
-            </div>
-        `,
-
-        // Gagamitin ang didOpen hook para i-inject ang style pagkatapos ma-render ang toast.
-        didOpen: (toast) => {
-            // I-apply ang style sa popup element
-            const popup = toast;
-            popup.style.cssText = inlineStyle + " " + popup.style.cssText;
-        },
-    });
-};
-
-const showProfileToast = (icon, title, text, theme, duration = 3000) => {
-    if (typeof Swal == "undefined") return alert(`${title}: ${text}`);
-
-    // Gagamitin ang theme colors para sa icon/text
-    const themeMap = {
-        'warning': { color: 'text-orange-600', bg: 'bg-orange-100', icon: 'ph-warning' },
-        'error': { color: 'text-red-600', bg: 'bg-red-100', icon: 'ph-x-circle' },
-        'success': { color: 'text-green-600', bg: 'bg-green-100', icon: 'ph-check-circle' },
-    };
-    const selectedTheme = themeMap[theme];
-
-    let inlineStyle;
-
-    if (theme === 'warning') {
-        // INLINE STYLE para sa ORANGE BORDER at ORANGE SHADOW (para sa Not Found)
-        inlineStyle = "border: 2px solid #f97316 !important; box-shadow: 0 0 10px #f9731670 !important;"; // Orange 500 border/shadow
-    } else if (theme === 'success') {
-        // INLINE STYLE para sa GREEN BORDER at GREEN SHADOW
-        inlineStyle = "border: 2px solid #10b981 !important; box-shadow: 0 0 10px #10b98170 !important;"; // Green 500 border/shadow
-    } else {
-        // Default style (Black/Gray border para sa Error/Other)
-        inlineStyle = "border: 2px solid #1f2937 !important; box-shadow: 0 0 10px #00000030 !important;"; // Gray-900 / Black border
-    }
-
-
-    Swal.fire({
-        toast: true,
-        position: "bottom-end",
-        showConfirmButton: false,
-        timer: duration,
-        width: "360px",
-        background: "white", // Explicitly set to white
-
-        html: `
-            <div class="flex flex-col text-left">
-                <div class="flex items-center gap-3 mb-2">
-                    <div class="flex items-center justify-center w-10 h-10 rounded-full ${selectedTheme.bg} ${selectedTheme.color}">
-                        <i class="ph ${selectedTheme.icon} text-lg"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-[15px] font-semibold ${selectedTheme.color}">${title}</h3>
-                        <p class="text-[13px] text-gray-700 mt-0.5">${text}</p>
-                    </div>
-                </div>
-            </div>
-        `,
-        customClass: {
-            // TOAST MODAL: Tanggalin ang border/shadow classes, hayaan ang rounded corners at padding
-            popup: `!rounded-xl !p-4`,
-        },
-        didOpen: (toast) => {
-            // I-apply ang inline style (Orange/Green/Black depende sa theme)
-            toast.style.cssText = inlineStyle + " " + toast.style.cssText;
-        },
-    });
-};
-
-const showLoadingModal = (message = "Processing request...", subMessage = "Please wait.") => {
-    if (typeof Swal == "undefined") return;
-
-    // INLINE STYLE para sa ORANGE BORDER at ORANGE SHADOW (para sa Loading)
-    const inlineStyle = "border: 2px solid #f97316 !important; background: white !important; box-shadow: 0 0 8px #f9731670 !important;"; // Orange 500 border/shadow
-
-    Swal.fire({
-        background: "transparent",
-        html: `
-            <div class="flex flex-col items-center justify-center gap-2">
-                <div class="animate-spin rounded-full h-10 w-10 border-4 border-orange-200 border-t-orange-600"></div>
-                <p class="text-gray-700 text-[14px]">${message}<br><span class="text-sm text-gray-500">${subMessage}</span></p>
-            </div>
-        `,
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        customClass: {
-            // LOADING MODAL: Tanggalin ang border/shadow classes
-            popup: "!rounded-xl !p-6",
-        },
-        didOpen: (popup) => {
-            // I-apply ang inline style (Orange)
-            popup.style.cssText = inlineStyle + " " + popup.style.cssText;
-        },
-    });
-};
-// --- End Shared SweetAlert Helpers ---
-
-
 document.addEventListener('DOMContentLoaded', function () {
-
-    // --- Table Elements ---
-    const overdueBooksTableBody = document.querySelector('.overdue-books-table tbody');
-
-    // --- Modal Elements ---
     const returnModal = document.getElementById('return-modal');
     const closeButton = document.getElementById('modal-close-button');
     const cancelButton = document.getElementById('modal-cancel-button');
     const modalReturnButton = document.getElementById('modal-return-button');
-    const modalExtendButton = document.getElementById('modal-extend-button');
-
     const availableBookModal = document.getElementById('available-book-modal');
     const availableModalCloseButton = document.getElementById('available-modal-close-button');
     const availableModalCloseAction = document.getElementById('available-modal-close-action');
-
     const accessionInput = document.getElementById('accession-input');
     const scanButton = document.getElementById('scan-button');
     const qrCodeValueInput = document.getElementById('qrCodeValue');
+    const recentReturnsFeed = document.getElementById('recent-returns-feed');
 
-    // --- Close Modal Functions (Needed for Auto-Close) ---
     const closeReturnModal = () => { if (returnModal) returnModal.classList.add('hidden'); };
     const closeAvailableModal = () => { if (availableBookModal) availableBookModal.classList.add('hidden'); };
-    // --- End Close Modal Functions ---
 
-
-    // --- Overdue Section Elements ---
-    const toggleOverdue = document.getElementById('toggle-overdue');
-    const overdueContent = document.getElementById('overdue-content');
-    const overdueCaret = document.getElementById('overdue-caret');
-    const overdueSearch = document.getElementById('overdue-search');
-    const bulkNotifyBtn = document.getElementById('bulk-notify-btn');
-
-    let allOverdueData = []; // Store for filtering
-
-    // --- Toggle Logic ---
-    if (toggleOverdue) {
-        toggleOverdue.addEventListener('click', () => {
-            overdueContent.classList.toggle('hidden');
-            overdueCaret.classList.toggle('rotate-180');
-        });
-    }
-
-    // --- Search Logic ---
-    if (overdueSearch) {
-        overdueSearch.addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            const filtered = allOverdueData.filter(item => 
-                item.user_name.toLowerCase().includes(term) || 
-                item.item_borrowed.toLowerCase().includes(term) ||
-                item.user_id.toLowerCase().includes(term)
-            );
-            renderOverdueBooksTable(filtered, true); // true means don't overwrite the master data
-        });
-    }
-
-    async function fetchTableData() {
+    async function fetchRecentReturns() {
         try {
-            const response = await fetch('api/superadmin/returning/getTableData');
-            if (!response.ok) throw new Error('Network response not ok');
+            const response = await fetch('api/superadmin/returning/getRecent?limit=10');
             const result = await response.json();
             if (result.success) {
-                allOverdueData = result.data.overdue;
-                updateSummaryStats(allOverdueData);
-                renderOverdueBooksTable(allOverdueData);
-            } else showTableError(result.message);
+                renderRecentReturns(result.list);
+            }
         } catch (error) {
-            console.error('Error fetching table data:', error);
-            showTableError('Could not connect to server.');
+            console.error('Error fetching recent returns:', error);
         }
     }
 
-    function updateSummaryStats(data) {
-        document.getElementById('stat-total-overdue').textContent = data.length;
-        
-        const today = new Date().toISOString().split('T')[0];
-        const dueTodayCount = data.filter(item => item.due_date === today).length;
-        document.getElementById('stat-due-today').textContent = dueTodayCount;
-    }
-
-    function renderOverdueBooksTable(data, isFiltering = false) {
-        overdueBooksTableBody.innerHTML = '';
-        if (!data || data.length === 0) {
-            overdueBooksTableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-10 text-center text-gray-400 italic">No matching overdue records found.</td></tr>`;
+    function renderRecentReturns(list) {
+        if (!recentReturnsFeed) return;
+        if (!list || list.length === 0) {
+            recentReturnsFeed.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-gray-400 italic">No returns processed yet.</td></tr>`;
             return;
         }
 
-        data.forEach(book => {
-            // Calculate Urgency
-            const dueDate = new Date(book.due_date);
-            const now = new Date();
-            const diffTime = Math.abs(now - dueDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
-            let urgencyClass = 'bg-yellow-100 text-yellow-700';
-            let urgencyLabel = `${diffDays}d Late`;
-
-            if (diffDays > 7) {
-                urgencyClass = 'bg-red-100 text-red-700';
-                urgencyLabel = 'Critical (1wk+)';
-            } else if (diffDays > 3) {
-                urgencyClass = 'bg-orange-100 text-orange-700';
-            }
-
-            const hasEmail = book.email && book.email.trim() !== '' && book.email !== 'N/A';
-
-            const row = `
-                <tr class="hover:bg-gray-50/50 transition-colors">
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs uppercase">
-                                ${book.user_name.charAt(0)}
-                            </div>
-                            <div>
-                                <div class="text-sm font-bold text-gray-800">${book.user_name}</div>
-                                <div class="text-[10px] text-gray-400 font-mono tracking-tighter">${book.user_id} • ${book.department_or_course}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm font-medium text-gray-700 max-w-[300px] truncate" title="${book.item_borrowed}">${book.item_borrowed}</div>
-                        <div class="text-[10px] text-gray-400">Borrowed: ${book.date_borrowed}</div>
-                    </td>
-                    <td class="px-6 py-4">
-                        <div class="text-sm font-bold text-gray-800">${book.due_date}</div>
-                        <span class="inline-block px-2 py-0.5 rounded text-[10px] font-black uppercase mt-1 ${urgencyClass}">
-                            ${urgencyLabel}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        ${hasEmail ? `
-                            <button class="contact-btn p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition-all" 
-                                title="Send Email Reminder"
-                                data-email="${book.email}"
-                                data-name="${book.user_name}"
-                                data-book="${book.item_borrowed}"
-                                data-due="${book.due_date}">
-                                <i class="ph ph-paper-plane-tilt text-xl"></i>
-                            </button>
-                        ` : '<i class="ph ph-envelope-simple-slash text-gray-300 text-xl" title="No Email Available"></i>'}
-                    </td>
-                </tr>`;
-            overdueBooksTableBody.insertAdjacentHTML('beforeend', row);
-        });
+        recentReturnsFeed.innerHTML = list.map(item => `
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-4 py-3">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-gray-800 leading-tight">${item.first_name} ${item.last_name}</span>
+                        <span class="text-[10px] text-orange-600 font-mono font-bold uppercase tracking-tighter">${item.identifier || 'N/A'}</span>
+                    </div>
+                </td>
+                <td class="px-4 py-3 text-center text-xs text-gray-600 font-medium">${item.year_section || 'N/A'}</td>
+                <td class="px-4 py-3 text-center text-xs text-gray-500 font-mono font-bold">${item.accession_number || 'N/A'}</td>
+                <td class="px-4 py-3 text-gray-700 truncate max-w-[200px]" title="${item.item_title}">${item.item_title}</td>
+                <td class="px-4 py-3 text-right text-gray-400 text-[11px] font-mono">${formatTime(item.returned_at)}</td>
+            </tr>
+        `).join('');
     }
 
-    // --- Bulk Notify Logic ---
-    if (bulkNotifyBtn) {
-        bulkNotifyBtn.addEventListener('click', async () => {
-            const studentsWithEmail = allOverdueData.filter(b => b.email && b.email.trim() !== '' && b.email !== 'N/A');
-            
-            if (studentsWithEmail.length === 0) {
-                return showProfileToast('ph-info', 'Notice', 'No students with valid emails to notify.', 'warning');
-            }
-
-            const confirm = await showCustomConfirmationModal(
-                'Bulk Notification',
-                `Send overdue email reminders to ${studentsWithEmail.length} students?`,
-                'Yes, Send All'
-            );
-
-            if (!confirm) return;
-
-            bulkNotifyBtn.disabled = true;
-            bulkNotifyBtn.innerHTML = `<i class="ph ph-spinner animate-spin"></i> Sending...`;
-
-            let successCount = 0;
-            let notifiedToday = 0;
-
-            for (const student of studentsWithEmail) {
-                try {
-                    const res = await fetch('api/superadmin/returning/sendOverdueEmail', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            email: student.email,
-                            name: student.user_name,
-                            book_title: student.item_borrowed,
-                            due_date: student.due_date
-                        })
-                    });
-                    const result = await res.json();
-                    if (result.success) {
-                        successCount++;
-                        notifiedToday++;
-                        document.getElementById('stat-notified').textContent = notifiedToday;
-                    }
-                } catch (e) { console.error("Error sending bulk email:", e); }
-            }
-
-            bulkNotifyBtn.disabled = false;
-            bulkNotifyBtn.innerHTML = `<i class="ph ph-paper-plane-tilt"></i> Notify All Students`;
-            
-            showProfileToast('ph-check-circle', 'Process Complete', `Sent ${successCount} notifications successfully.`, 'success');
-        });
+    function formatTime(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
-
-
-    let scanInProgress = false;
-
 
     async function handleBookCheck(accessionNumber) {
-        if (!accessionNumber || scanInProgress) return;
-        scanInProgress = true;
-
-        showLoadingModal("Checking Item Identifier...", "Please wait while we verify the provided identifier.");
+        if (!accessionNumber) return;
+        const formData = new FormData();
+        formData.append('accession_number', accessionNumber);
 
         try {
-            const formData = new FormData();
-            formData.append('accession_number', accessionNumber);
-
-            const response = await fetch('api/superadmin/returning/checkBook', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Server responded with an unexpected format.' }));
-                throw new Error(errorData.message || `Server error: ${response.status}`);
-            }
-
+            const response = await fetch('api/superadmin/returning/checkBook', { method: 'POST', body: formData });
             const result = await response.json();
-
-            await new Promise(r => setTimeout(r, 300));
-            Swal.close();
-
             if (result.success) {
-                const data = result.data;
-
-                if (data.status === 'borrowed' && data.details) openReturnModal(data.details);
-                else if (data.status === 'available' && data.details) openAvailableModal(data.details, data.status);
-                else showProfileToast('ph-warning', 'Not Found', 'No record found with that identifier.', 'warning');
-            } else {
-                showProfileToast('ph-x-circle', 'Error', result.message || 'An error occurred.', 'error');
+                if (result.data.status === 'borrowed') openReturnModal(result.data.details);
+                else if (result.data.status === 'available') openAvailableModal(result.data.details);
             }
-        } catch (error) {
-            Swal.close();
-            console.error('Error checking item:', error);
-            showProfileToast('ph-x-circle', 'Error', error.message || 'Could not connect to the server.', 'error');
-        }
-
-        if (accessionInput) accessionInput.value = '';
-        if (qrCodeValueInput) qrCodeValueInput.value = '';
-        if (qrCodeValueInput) qrCodeValueInput.focus();
-
-        scanInProgress = false;
-    }
-
-    const setText = (id, value) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = value || 'N/A';
-    };
-
-    const openReturnModal = (itemData) => {
-        const type = itemData.borrower_type || 'student';
-        const itemType = itemData.item_type || 'Book';
-        const isStudent = type === 'student';
-        const isFaculty = type === 'faculty';
-        const isStaff = type === 'staff';
-
-        let borrowerId = 'N/A';
-        let idLabel = 'Student Number:';
-
-        if (isStudent) {
-            borrowerId = itemData.student_number || itemData.id_number || 'N/A';
-        } else if (isFaculty) {
-            borrowerId = itemData.unique_faculty_id || itemData.id_number || itemData.faculty_id || 'N/A';
-            idLabel = 'Faculty ID:';
-        } else if (isStaff) {
-            borrowerId = itemData.employee_id || itemData.id_number || 'N/A';
-            idLabel = 'Employee ID:';
-        } else {
-            borrowerId = itemData.id_number || 'N/A';
-            idLabel = 'Guest ID:';
-        }
-
-        let courseOrDepartment = itemData.course_or_department || 'N/A';
-        let yearSectionLabel = 'Year & Section:';
-        let yearSectionValue = 'N/A';
-
-        if (isStudent) {
-            yearSectionValue = itemData.student_year_section || 'N/A';
-            yearSectionLabel = 'Year & Section:';
-        } else if (isFaculty) {
-            const facultyDeptString = itemData.course_or_department || ' - ';
-            const parts = facultyDeptString.split(' - ');
-            courseOrDepartment = parts[0] || 'N/A';
-            yearSectionLabel = 'College Name:';
-            yearSectionValue = parts[1] || 'N/A';
-        } else if (isStaff) {
-            courseOrDepartment = itemData.course_or_department || 'N/A';
-            yearSectionLabel = 'Position:';
-            yearSectionValue = itemData.borrower_type?.toUpperCase() || 'N/A';
-        } else {
-            yearSectionLabel = 'Borrower Type:';
-            yearSectionValue = itemData.borrower_type?.toUpperCase() || 'Guest';
-        }
-
-        // --- Dynamic Item Info Display ---
-        setText('modal-book-title', itemData.title);
-        setText('modal-book-status', itemData.availability);
-        
-        // Modal Headers
-        document.getElementById('return-modal-title').textContent = `${itemType} Identifier Scanned`;
-        document.getElementById('modal-item-type-label').textContent = `${itemType} Title`;
-
-        // Book Fields vs Equipment Fields
-        const bookOnlyFields = document.querySelectorAll('#return-modal .book-only-field');
-        const assetTagContainer = document.getElementById('modal-equipment-asset-tag-container');
-        const identifierLabel = document.getElementById('modal-item-identifier-label');
-
-        if (itemType === 'Book') {
-            bookOnlyFields.forEach(el => el.style.display = '');
-            if (assetTagContainer) assetTagContainer.style.display = 'none';
-            if (identifierLabel) identifierLabel.textContent = 'Accession Number';
-            
-            setText('modal-book-author', itemData.author);
-            setText('modal-book-isbn', itemData.book_isbn);
-            setText('modal-book-accessionnumber', itemData.accession_number);
-            setText('modal-book-callnumber', itemData.call_number);
-        } else {
-            // It's Equipment
-            bookOnlyFields.forEach(el => el.style.display = 'none');
-            if (assetTagContainer) assetTagContainer.style.display = 'block';
-            if (identifierLabel) identifierLabel.textContent = 'Equipment Name';
-            
-            setText('modal-book-accessionnumber', itemData.title); // Identifier for equipment
-            setText('modal-equipment-asset-tag', itemData.asset_tag || 'N/A');
-        }
-
-        setText('modal-borrower-name', itemData.borrower_name);
-
-        const idLabelEl = document.getElementById('modal-student-id-label');
-        const yearLabelEl = document.getElementById('modal-year-section-label');
-
-        if (idLabelEl) idLabelEl.textContent = idLabel;
-        if (yearLabelEl) yearLabelEl.textContent = yearSectionLabel;
-
-        setText('modal-student-id', borrowerId);
-        setText('modal-borrower-course', courseOrDepartment);
-        setText('modal-borrower-year-section', yearSectionValue);
-
-        setText('modal-borrower-email', itemData.email || 'N/A');
-        setText('modal-borrower-contact', itemData.contact || 'N/A');
-        setText('modal-borrow-date', itemData.date_borrowed);
-        setText('modal-due-date', itemData.due_date);
-
-        if (modalReturnButton) modalReturnButton.dataset.borrowingId = itemData.borrowing_id;
-        if (modalExtendButton) modalExtendButton.dataset.borrowingId = itemData.borrowing_id;
-
-        // Show modal
-        if (returnModal) returnModal.classList.remove('hidden');
-    };
-
-    if (modalExtendButton) {
-        modalExtendButton.addEventListener('click', async () => {
-            const borrowingId = modalExtendButton.dataset.borrowingId;
-            if (!borrowingId) return;
-
-            // NEW CODE: Isara ang Return Modal bago magpakita ng confirmation
-            closeReturnModal();
-
-            const { value: days } = await Swal.fire({
-                title: 'Extend Due Date',
-                input: 'number',
-                inputLabel: 'Enter number of days to extend',
-                inputPlaceholder: 'e.g., 7',
-                showCancelButton: true,
-                confirmButtonText: 'Extend',
-                inputValidator: (value) => {
-                    if (!value || value <= 0) {
-                        return 'Please enter a valid number of days (1 or more).';
-                    }
-                }
-            });
-
-            if (days) {
-                try {
-                    const formData = new FormData();
-                    formData.append('borrowing_id', borrowingId);
-                    formData.append('days', days);
-
-                    const response = await fetch('api/superadmin/returning/extend', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    const result = await response.json();
-
-                    if (result.success) {
-                        Swal.fire('Success', 'Due date extended successfully.', 'success');
-
-                        setText('modal-due-date', result.new_due_date);
-
-                        fetchTableData();
-                    } else {
-                        Swal.fire('Error', result.message || 'Could not extend due date.', 'error');
-                    }
-                } catch (error) {
-                    console.error('Error extending due date:', error);
-                    Swal.fire('Error', 'Could not connect to server.', 'error');
-                }
-            }
-        });
-    }
-
-
-    const openAvailableModal = (itemData, status) => {
-        const itemType = itemData.item_type || 'Book';
-        
-        const setText = (id, value) => {
-            const el = document.getElementById(id);
-            if (el) el.textContent = value || 'N/A';
-        };
-
-        // Header and labels
-        setText('available-modal-title', itemData.title);
-        const modalTitle = document.querySelector('#available-book-modal h3');
-        if (modalTitle) modalTitle.textContent = `${itemType} Identifier Verified Successfully`;
-        
-        document.getElementById('available-modal-item-type-label').textContent = `${itemType} Title`;
-
-        // Toggle fields visibility
-        const bookOnlyFields = document.querySelectorAll('#available-book-modal .book-only-field');
-        const assetTagContainer = document.getElementById('available-modal-asset-tag-container');
-        const identifierLabel = document.getElementById('available-modal-identifier-label');
-        const extraInfoContainer = document.getElementById('available-modal-extra-info');
-
-        if (itemType === 'Book') {
-            bookOnlyFields.forEach(el => el.style.display = '');
-            if (assetTagContainer) assetTagContainer.style.display = 'none';
-            if (identifierLabel) identifierLabel.textContent = 'Accession No.';
-            if (extraInfoContainer) extraInfoContainer.style.display = '';
-            
-            setText('available-modal-author', itemData.author);
-            setText('available-modal-isbn', itemData.book_isbn);
-            setText('available-modal-accession', itemData.accession_number);
-            setText('available-modal-call-number', itemData.call_number);
-        } else {
-            // It's Equipment
-            bookOnlyFields.forEach(el => el.style.display = 'none');
-            if (assetTagContainer) assetTagContainer.style.display = 'block';
-            if (identifierLabel) identifierLabel.textContent = 'Equipment Name';
-            if (extraInfoContainer) extraInfoContainer.style.display = 'none';
-            
-            setText('available-modal-accession', itemData.title); // Identifier for equipment
-            setText('available-modal-asset-tag', itemData.asset_tag || 'N/A');
-        }
-
-        // Status
-        const statusEl = document.getElementById('available-modal-status');
-        const displayStatus = status || itemData.availability || 'Unknown';
-        if (statusEl) {
-            statusEl.textContent = displayStatus;
-            statusEl.className = displayStatus.toLowerCase() === 'available'
-                ? 'bg-green-200 text-green-800 text-xs font-semibold px-3 py-1 rounded-full'
-                : 'bg-gray-200 text-gray-800 text-xs font-semibold px-3 py-1 rounded-full';
-        }
-
-        // Show modal
-        if (availableBookModal) availableBookModal.classList.remove('hidden');
-    };
-
-
-
-
-
-    // const closeReturnModal = () => { if (returnModal) returnModal.classList.add('hidden'); }; // Moved above for access
-    // const closeAvailableModal = () => { if (availableBookModal) availableBookModal.classList.add('hidden'); }; // Moved above for access
-
-    fetchTableData();
-
-    // --- QR Scanner input ---
-    if (qrCodeValueInput) {
-        let debounceTimer;
-        qrCodeValueInput.removeAttribute('readonly');
+        } catch (error) { console.error('Error:', error); }
+        accessionInput.value = '';
+        qrCodeValueInput.value = '';
         qrCodeValueInput.focus();
-
-        const processQRCode = () => {
-            const qrValue = qrCodeValueInput.value.trim();
-            if (qrValue) handleBookCheck(qrValue);
-            qrCodeValueInput.value = '';
-        };
-
-        qrCodeValueInput.addEventListener('input', () => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(processQRCode, 150);
-        });
-
-        qrCodeValueInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                clearTimeout(debounceTimer);
-                processQRCode();
-            }
-        });
-
-        // document.addEventListener('click', (e) => {
-        //      if (e.target !== accessionInput) {
-        //          setTimeout(() => qrCodeValueInput.focus(), 10);
-        //      }
-        // });
     }
 
+    function openReturnModal(data) {
+        document.getElementById('modal-book-title').textContent = data.title;
+        document.getElementById('modal-book-author').textContent = data.author || '';
+        document.getElementById('modal-book-accessionnumber').textContent = data.accession_number || data.title;
+        document.getElementById('modal-book-callnumber').textContent = data.call_number || 'N/A';
+        document.getElementById('modal-borrower-name').textContent = data.borrower_name;
+        document.getElementById('modal-student-id').textContent = data.id_number;
+        document.getElementById('modal-borrower-course').textContent = data.course_or_department;
+        document.getElementById('modal-due-date').textContent = data.due_date;
+        modalReturnButton.dataset.borrowingId = data.borrowing_id;
+        returnModal.classList.remove('hidden');
+    }
 
-    if (accessionInput) {
-        accessionInput.removeAttribute('readonly');
-        accessionInput.addEventListener('keydown', e => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                handleBookCheck(accessionInput.value.trim());
-            }
-        });
+    function openAvailableModal(data) {
+        document.getElementById('available-modal-title').textContent = data.title;
+        document.getElementById('available-modal-author').textContent = data.author || '';
+        availableBookModal.classList.remove('hidden');
     }
 
     if (modalReturnButton) {
         modalReturnButton.addEventListener('click', async () => {
-            const borrowingId = modalReturnButton.dataset.borrowingId;
-            if (!borrowingId) return;
-
-            // NEW CODE: Isara ang Return Modal bago magpakita ng confirmation
-            closeReturnModal();
-            // Isara rin ang available modal kung sakaling bukas (just in case)
-            closeAvailableModal();
-
-            // 1. CONFIRMATION
-            const isConfirmed = await showCustomConfirmationModal(
-                'Confirm Return',
-                'Are you sure you want to mark this book as returned?',
-                'Yes, Return Book!'
-            );
-            if (!isConfirmed) return;
-
-            showLoadingModal("Marking as Returned...", "Processing book return transaction.");
-
+            const id = modalReturnButton.dataset.borrowingId;
+            const formData = new FormData();
+            formData.append('borrowing_id', id);
             try {
-                const formData = new FormData();
-                formData.append('borrowing_id', borrowingId);
-
-                const response = await fetch('api/superadmin/returning/markReturned', {
-                    method: 'POST',
-                    body: formData
-                });
-
+                const response = await fetch('api/superadmin/returning/markReturned', { method: 'POST', body: formData });
                 const result = await response.json();
-
-                await new Promise(r => setTimeout(r, 300));
-                Swal.close();
-
                 if (result.success) {
-                    showProfileToast('ph-check-circle', 'Success', 'Book marked as returned successfully.', 'success');
-                    // Kung may error sa confirmation, baka kailangan i-close ulit:
                     closeReturnModal();
-                    fetchTableData();
-                } else {
-                    showProfileToast('ph-x-circle', 'Error', result.message || 'Could not mark as returned.', 'error');
+                    renderRecentReturns(result.recent);
                 }
-            } catch (error) {
-                Swal.close();
-                console.error('Error marking book as returned:', error);
-                showProfileToast('ph-x-circle', 'Error', 'Could not connect to server.', 'error');
+            } catch (error) { console.error('Error:', error); }
+        });
+    }
+
+    if (scanButton) scanButton.addEventListener('click', () => handleBookCheck(accessionInput.value.trim()));
+    if (accessionInput) accessionInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleBookCheck(accessionInput.value.trim()); });
+    
+    if (qrCodeValueInput) {
+        qrCodeValueInput.addEventListener('input', () => {
+            const val = qrCodeValueInput.value.trim();
+            if (val) {
+                handleBookCheck(val);
+                qrCodeValueInput.value = '';
             }
         });
     }
 
+    closeButton?.addEventListener('click', closeReturnModal);
+    cancelButton?.addEventListener('click', closeReturnModal);
+    availableModalCloseButton?.addEventListener('click', closeAvailableModal);
+    availableModalCloseAction?.addEventListener('click', closeAvailableModal);
 
-    if (scanButton) scanButton.addEventListener('click', () => handleBookCheck(accessionInput.value.trim()));
-
-    if (closeButton) closeButton.addEventListener('click', closeReturnModal);
-    if (cancelButton) cancelButton.addEventListener('click', closeReturnModal);
-    if (returnModal) returnModal.addEventListener('click', e => { if (e.target === returnModal) closeReturnModal(); });
-    if (availableModalCloseButton) availableModalCloseButton.addEventListener('click', closeAvailableModal);
-    if (availableBookModal) availableBookModal.addEventListener('click', e => { if (e.target === availableBookModal) closeAvailableModal(); });
-
-    // --- CONTACT BUTTON CLICK HANDLER ---
-    document.addEventListener('click', async (e) => {
-        const btn = e.target.closest('.contact-btn');
-        if (!btn) return;
-
-        // Iwasan ang double-click habang nagse-send
-        if (btn.hasAttribute('disabled')) return;
-
-        // I-save ang original text para pwede ibalik pag nag-fail
-        const originalContent = btn.innerHTML;
-
-        // Change button state to "Sending..."
-        btn.setAttribute('disabled', 'true');
-        btn.innerHTML = `<i class="ph ph-spinner animate-spin mr-1"></i> Sending...`;
-        btn.classList.remove('text-orange-600', 'border-orange-500', 'hover:bg-orange-50');
-        btn.classList.add('text-gray-500', 'border-gray-300', 'bg-gray-50', 'cursor-not-allowed');
-
-        const payload = {
-            email: btn.dataset.email,
-            name: btn.dataset.name,
-            book_title: btn.dataset.book,
-            due_date: btn.dataset.due
-        };
-
-        try {
-            const response = await fetch('api/superadmin/returning/sendOverdueEmail', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                btn.innerHTML = `<i class="ph ph-check-circle mr-1"></i> Sent`;
-                btn.classList.remove('text-gray-500', 'border-gray-300', 'bg-gray-50');
-                btn.classList.add('text-green-600', 'border-green-500', 'bg-green-50');
-                showProfileToast('ph-check-circle', 'Email Sent', `Notice sent to ${payload.name}.`, 'success');
-            } else {
-                throw new Error(result.message || 'Failed to send email');
-            }
-        } catch (error) {
-            console.error('Email sending failed:', error);
-            btn.removeAttribute('disabled');
-            btn.innerHTML = originalContent;
-            btn.classList.remove('text-gray-500', 'border-gray-300', 'bg-gray-50', 'cursor-not-allowed');
-            btn.classList.add('text-orange-600', 'border-orange-500', 'hover:bg-orange-50');
-
-            showProfileToast('ph-x-circle', 'Sending Failed', 'Could not send email. Please check connection.', 'error');
-        }
-    });
-
+    fetchRecentReturns();
 });

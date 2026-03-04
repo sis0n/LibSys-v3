@@ -18,7 +18,6 @@ class ReturningRepository
   public function getOverdue(): ?array
   {
     try {
-      // AUTO-UPDATE STATUSES
       $this->db->query("UPDATE borrow_transactions SET status = 'overdue' WHERE status = 'borrowed' AND due_date < NOW()");
       $this->db->query("UPDATE borrow_transaction_items bti 
                               INNER JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
@@ -76,10 +75,38 @@ class ReturningRepository
     }
   }
 
+  public function getRecentReturns(int $limit = 5): array
+  {
+    $sql = "
+        SELECT 
+            COALESCE(b.title, e.equipment_name) as item_title,
+            COALESCE(b.accession_number, e.asset_tag) as accession_number,
+            bti.returned_at,
+            u.first_name, u.last_name,
+            COALESCE(s.student_number, f.unique_faculty_id, st.employee_id) as identifier,
+            COALESCE(CONCAT(s.year_level, ' ', s.section), cl.college_code, st.position) as year_section
+        FROM borrow_transaction_items bti
+        JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+        LEFT JOIN books b ON bti.book_id = b.book_id
+        LEFT JOIN equipments e ON bti.equipment_id = e.equipment_id
+        LEFT JOIN students s ON bt.student_id = s.student_id
+        LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+        LEFT JOIN staff st ON bt.staff_id = st.staff_id
+        LEFT JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+        LEFT JOIN colleges cl ON f.college_id = cl.college_id
+        WHERE bti.status = 'returned'
+        ORDER BY bti.returned_at DESC
+        LIMIT :limit
+    ";
+    $stmt = $this->db->prepare($sql);
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+  }
+
   public function findItemByIdentifier($identifier): ?array
   {
     try {
-      // 1. Subukang hanapin kung LIBRO (via accession number)
       $stmt = $this->db->prepare("SELECT * FROM books WHERE accession_number = ?");
       $stmt->execute([$identifier]);
       $book = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -93,7 +120,6 @@ class ReturningRepository
         $itemType = 'Book';
         $itemBasicDetails = $book;
       } else {
-        // 2. Kung hindi libro, subukang hanapin kung EQUIPMENT (via name o asset tag)
         $stmt = $this->db->prepare("SELECT * FROM equipments WHERE equipment_name = ? OR asset_tag = ?");
         $stmt->execute([$identifier, $identifier]);
         $equipment = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -107,7 +133,6 @@ class ReturningRepository
         }
       }
 
-      // 3. I-check ang availability/status
       $availability = strtolower(trim(($itemType === 'Book' ? $itemBasicDetails['availability'] : $itemBasicDetails['status']) ?? ''));
 
       if ($availability === 'borrowed' || $availability === 'overdue') {
@@ -227,8 +252,6 @@ class ReturningRepository
     try {
       $this->db->beginTransaction();
 
-      // Allow returning if status is 'borrowed' OR 'overdue'
-      // Fetch both book_id and equipment_id
       $stmtGetItem = $this->db->prepare("
                 SELECT bti.book_id, bti.equipment_id, bti.transaction_id
                 FROM borrow_transaction_items bti
@@ -239,14 +262,13 @@ class ReturningRepository
 
       if (!$itemInfo) {
         $this->db->rollBack();
-        return null; // Item not found or already returned
+        return null;
       }
 
       $bookId = $itemInfo['book_id'];
-      $equipmentId = $itemInfo['equipment_id']; // Get equipment_id
+      $equipmentId = $itemInfo['equipment_id'];
       $transactionId = $itemInfo['transaction_id'];
 
-      // Update borrow_transaction_items status
       $stmtUpdateItem = $this->db->prepare("
                 UPDATE borrow_transaction_items
                 SET status = 'returned', returned_at = NOW()
@@ -254,22 +276,17 @@ class ReturningRepository
             ");
       $stmtUpdateItem->execute([$itemId]);
 
-      // Update specific item's availability/status
       if ($bookId !== null) {
-        // It's a book
         $stmtUpdateBook = $this->db->prepare("UPDATE books SET availability = 'available' WHERE book_id = ?");
         $stmtUpdateBook->execute([$bookId]);
       } elseif ($equipmentId !== null) {
-        // It's an equipment (using its ID/Name)
         $stmtUpdateEquipment = $this->db->prepare("UPDATE equipments SET status = 'available' WHERE equipment_id = ?");
         $stmtUpdateEquipment->execute([$equipmentId]);
       } else {
-        // Neither book nor equipment ID found (error state)
         $this->db->rollBack();
         return null;
       }
 
-      // Check if all items in this transaction are returned
       $stmtCheckAll = $this->db->prepare("
                 SELECT COUNT(*) as remaining
                 FROM borrow_transaction_items
@@ -306,7 +323,6 @@ class ReturningRepository
       }
       $transactionId = $item['transaction_id'];
 
-      // Allow extension for borrowed OR overdue
       $stmtUpdate = $this->db->prepare("
                 UPDATE borrow_transactions 
                 SET due_date = DATE_ADD(due_date, INTERVAL ? DAY), status = 'borrowed'
@@ -319,7 +335,6 @@ class ReturningRepository
         return null;
       }
 
-      // Also update items back to 'borrowed' if they were overdue
       $this->db->prepare("UPDATE borrow_transaction_items SET status = 'borrowed' WHERE transaction_id = ? AND status = 'overdue'")
         ->execute([$transactionId]);
 
@@ -338,7 +353,6 @@ class ReturningRepository
 
   private function formatTableData($row)
   {
-    // Determine borrower type based on which ID field is present
     $type = 'student';
     $id = $row['id_number'] ?? 'N/A';
     $contact = $row['contact_number'] ?? 'N/A';
@@ -374,7 +388,7 @@ class ReturningRepository
       'date_borrowed' => (new \DateTime($row['borrowed_at']))->format('Y-m-d'),
       'due_date' => (new \DateTime($row['due_date']))->format('Y-m-d'),
       'contact' => $contact,
-      'email' => $row['email'] ?? null, // <-- ADDED EMAIL HERE
+      'email' => $row['email'] ?? null,
     ];
   }
 }

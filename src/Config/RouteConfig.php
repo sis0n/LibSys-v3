@@ -87,6 +87,7 @@ class RouteConfig
     $router->post('api/librarian/qrScanner/scanTicket', 'QRScannerController@scan', ['qr scanner']);
     $router->post('api/librarian/qrScanner/borrowTransaction', 'QRScannerController@borrowTransaction', ['qr scanner']);
     $router->get('api/librarian/returning/getTableData', 'ReturningController@getOverdue', ['returning']);
+    $router->get('api/librarian/returning/getRecent', 'ReturningController@getRecentReturnsJson', ['returning']);
     $router->post('api/librarian/returning/checkBook', 'ReturningController@checkBookStatus', ['returning']);
     $router->post('api/librarian/returning/markReturned', 'ReturningController@returnBook', ['returning']);
     $router->post('api/librarian/returning/extend', 'ReturningController@extendDueDate', ['returning']);
@@ -133,8 +134,9 @@ class RouteConfig
     $router->post('api/admin/borrowingForm/create', 'ManualBorrowingController@create', ['borrowing form']);
     $router->get('api/admin/borrowingForm/getEquipments', 'ManualBorrowingController@getEquipments', ['borrowing form']);
     $router->get('api/admin/borrowingForm/getCollaterals', 'ManualBorrowingController@getCollaterals', ['borrowing form']);
-    $router->get('api/admin/returning/getTableData', 'ReturningController@getOverdue', ['returning']);
-    $router->post('api/admin/returning/checkBook', 'ReturningController@checkBookStatus', ['returning']);
+    $router->get('api/librarian/returning/getTableData', 'ReturningController@getOverdue', ['returning']);
+    $router->get('api/librarian/returning/getRecent', 'ReturningController@getRecentReturnsJson', ['returning']);
+    $router->post('api/librarian/returning/checkBook', 'ReturningController@checkBookStatus', ['returning']);
     $router->post('api/admin/returning/markReturned', 'ReturningController@returnBook', ['returning']);
     $router->post('api/admin/returning/extend', 'ReturningController@extendDueDate', ['returning']);
     $router->post('api/admin/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['returning']);
@@ -193,6 +195,7 @@ class RouteConfig
     $router->post('api/superadmin/qrScanner/borrowTransaction', 'QRScannerController@borrowTransaction', ['superadmin']);
     $router->get('api/superadmin/qrScanner/transactionHistory', 'QRScannerController@history', ['superadmin']);
     $router->get('api/superadmin/returning/getTableData', 'ReturningController@getOverdue', ['superadmin']);
+    $router->get('api/superadmin/returning/getRecent', 'ReturningController@getRecentReturnsJson', ['superadmin']);
     $router->post('api/superadmin/returning/checkBook', 'ReturningController@checkBookStatus', ['superadmin']);
     $router->post('api/superadmin/returning/markReturned', 'ReturningController@returnBook', ['superadmin']);
     $router->post('api/superadmin/returning/extend', 'ReturningController@extendDueDate', ['superadmin']);
