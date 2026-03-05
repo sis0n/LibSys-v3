@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // --- SweetAlert Helper Functions (Identical to User Management) ---
+    // --- SweetAlert Helper Functions ---
 
     function showSuccessToast(title, body = "Successfully processed.") {
         if (typeof Swal == "undefined") return alert(title);
@@ -11,9 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
             width: "360px",
             background: "transparent",
             html: `<div class="flex flex-col text-left"><div class="flex items-center gap-3 mb-2"><div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-600"><i class="ph ph-check-circle text-lg"></i></div><div><h3 class="text-[15px] font-semibold text-green-600">${title}</h3><p class="text-[13px] text-gray-700 mt-0.5">${body}</p></div></div></div>`,
-            customClass: {
-                popup: "!rounded-xl !shadow-md !border-2 !border-green-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#f0fff5] shadow-[0_0_8px_#22c55e70]",
-            },
+            customClass: { popup: "!rounded-xl !shadow-md !border-2 !border-green-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#f0fff5] shadow-[0_0_8px_#22c55e70]" },
         });
     }
 
@@ -27,9 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
             width: "360px",
             background: "transparent",
             html: `<div class="flex flex-col text-left"><div class="flex items-center gap-3 mb-2"><div class="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600"><i class="ph ph-x-circle text-lg"></i></div><div><h3 class="text-[15px] font-semibold text-red-600">${title}</h3><p class="text-[13px] text-gray-700 mt-0.5">${body}</p></div></div></div>`,
-            customClass: {
-                popup: "!rounded-xl !shadow-md !border-2 !border-red-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ff6b6b70]",
-            },
+            customClass: { popup: "!rounded-xl !shadow-md !border-2 !border-red-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ff6b6b70]" },
         });
     }
 
@@ -37,45 +33,37 @@ document.addEventListener("DOMContentLoaded", () => {
         if (typeof Swal == "undefined") return;
         Swal.fire({
             background: "transparent",
-            html: `
-                <div class="flex flex-col items-center justify-center gap-2">
-                    <div class="animate-spin rounded-full h-10 w-10 border-4 border-orange-200 border-t-orange-600"></div>
-                    <p class="text-gray-700 text-[14px]">${message}<br><span class="text-sm text-gray-500">${subMessage}</span></p>
-                </div>
-            `,
+            html: `<div class="flex flex-col items-center justify-center gap-2"><div class="animate-spin rounded-full h-10 w-10 border-4 border-orange-200 border-t-orange-600"></div><p class="text-gray-700 text-[14px]">${message}<br><span class="text-sm text-gray-500">${subMessage}</span></p></div>`,
             allowOutsideClick: false,
             showConfirmButton: false,
-            customClass: {
-                popup: "!rounded-xl !shadow-md !border-2 !border-orange-400 !p-6 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ffb34770]",
-            },
+            customClass: { popup: "!rounded-xl !shadow-md !border-2 !border-orange-400 !p-6 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ffb34770]" },
         });
     }
 
-    async function showConfirmationModal(title, text, confirmText = "Confirm") {
+    async function showConfirmationModal(title, text, confirmText = "Confirm", isDelete = false) {
         if (typeof Swal == "undefined") return confirm(title);
         const result = await Swal.fire({
-            background: "transparent",
-            buttonsStyling: false,
-            width: '450px',
+            width: '400px',
             html: `
                 <div class="flex flex-col text-center">
                     <div class="flex justify-center mb-3">
-                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 text-orange-600">
-                            <i class="ph ph-warning-circle text-3xl"></i>
+                        <div class="flex items-center justify-center w-16 h-16 rounded-full ${isDelete ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}">
+                            <i class="ph ${isDelete ? 'ph-trash' : 'ph-warning-circle'} text-3xl"></i>
                         </div>
                     </div>
-                    <h3 class="text-xl font-semibold text-gray-800">${title}</h3>
-                    <p class="text-[14px] text-gray-700 mt-1">${text}</p>
+                    <h3 class="text-lg font-bold text-gray-800">${title}</h3>
+                    <p class="text-[13px] text-gray-700 mt-1">${text}</p>
                 </div>
             `,
             showCancelButton: true,
             confirmButtonText: confirmText,
             cancelButtonText: "Cancel",
+            confirmButtonColor: isDelete ? '#ef4444' : '#f97316',
+            cancelButtonColor: '#e5e7eb',
             customClass: {
-                popup: "!rounded-xl !shadow-lg !p-6 !bg-white !border-2 !border-orange-400 shadow-[0_0_15px_#ffb34780]",
-                confirmButton: "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700 !mx-2 !font-semibold !text-base",
-                cancelButton: "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300 !mx-2 !font-semibold !text-base",
-                actions: "!mt-4"
+                popup: "!rounded-xl !border-2 " + (isDelete ? "!border-red-400" : "!border-orange-400"),
+                confirmButton: "!px-5 !py-2 !text-sm !font-bold !rounded-lg !text-white",
+                cancelButton: "!px-5 !py-2 !text-sm !font-bold !rounded-lg !text-gray-700"
             },
         });
         return result.isConfirmed;
@@ -176,17 +164,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                 </td>
                 <td class="px-6 py-4 text-gray-500 text-xs">${new Date(eq.updated_at).toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'})}</td>
-                <td class="px-6 py-4 text-center">
-                    <button onclick="editEq(${eq.equipment_id})" class="inline-flex items-center gap-1.5 border border-orange-200 text-orange-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-100 transition shadow-sm">
-                        <i class="ph ph-note-pencil text-base"></i> Edit
-                    </button>
+                <td class="px-6 py-4 text-right">
+                    <div class="flex justify-end gap-2">
+                        <button onclick="editEq(${eq.equipment_id})" class="inline-flex items-center gap-1.5 border border-orange-200 text-orange-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-100 transition shadow-sm">
+                            <i class="ph ph-note-pencil text-base"></i> Edit
+                        </button>
+                        <button onclick="deleteEq(${eq.equipment_id}, '${eq.equipment_name}')" class="inline-flex items-center gap-1.5 border border-red-200 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-50 transition shadow-sm">
+                            <i class="ph ph-trash text-base"></i> Delete
+                        </button>
+                    </div>
                 </td>
             `;
             tableBody.appendChild(row);
         });
     }
-
-    // --- Action Handlers ---
 
     window.toggleActive = async (id, currentIsActive, name) => {
         const newStatus = currentIsActive ? 0 : 1;
@@ -201,29 +192,17 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!isConfirmed) return;
 
         showLoadingModal("Updating Status...", `Setting status to ${newStatusText}.`);
-        const startTime = Date.now();
-
         try {
             const fd = new FormData();
             fd.append('is_active', newStatus);
-            
             const res = await fetch(`api/admin/equipmentManagement/toggleActive/${id}`, { method: "POST", body: fd });
             const data = await res.json();
-
-            const elapsed = Date.now() - startTime;
-            if (elapsed < 500) await new Promise(r => setTimeout(r, 500 - elapsed));
             Swal.close();
-
             if (data.success) {
                 showSuccessToast("Status Updated", `${name} is now ${newStatusText}.`);
                 loadEquipments(currentPage, false);
-            } else {
-                showErrorToast("Update Failed", data.message);
-            }
-        } catch (err) {
-            Swal.close();
-            showErrorToast("Connection Error", "An error occurred while updating status.");
-        }
+            } else showErrorToast("Update Failed", data.message);
+        } catch (err) { Swal.close(); showErrorToast("Connection Error", "An error occurred."); }
     };
 
     window.editEq = async (id) => {
@@ -232,7 +211,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const res = await fetch(`api/admin/equipmentManagement/get/${id}`);
             const data = await res.json();
             Swal.close();
-
             if (data.success) {
                 document.getElementById("edit_equipment_id").value = data.equipment.equipment_id;
                 document.getElementById("edit_equipment_name").value = data.equipment.equipment_name;
@@ -241,23 +219,39 @@ document.addEventListener("DOMContentLoaded", () => {
                 editModal.classList.remove("hidden");
                 document.body.classList.add("overflow-hidden");
             }
-        } catch (err) {
+        } catch (err) { Swal.close(); showErrorToast("Error", "Could not fetch details."); }
+    };
+
+    window.deleteEq = async (id, name) => {
+        const isConfirmed = await showConfirmationModal(
+            "Delete Equipment",
+            `Are you sure you want to delete <b>${name}</b>? This action will move the item to the archive.`,
+            "Yes, Delete",
+            true
+        );
+
+        if (!isConfirmed) return;
+
+        showLoadingModal("Deleting...", "Moving equipment to archive.");
+        try {
+            const res = await fetch(`api/admin/equipmentManagement/delete/${id}`, { method: "POST" });
+            const data = await res.json();
             Swal.close();
-            showErrorToast("Error", "Could not fetch item details.");
-        }
+            if (data.success) {
+                showSuccessToast("Deleted", "Equipment moved to archive.");
+                loadEquipments(currentPage, false);
+            } else showErrorToast("Error", data.message);
+        } catch (err) { Swal.close(); showErrorToast("Error", "Server connection failed."); }
     };
 
     addForm.onsubmit = async (e) => {
         e.preventDefault();
         const fd = new FormData(addForm);
         showLoadingModal("Adding Equipment...", "Saving to inventory.");
-        
         try {
             const res = await fetch(`api/admin/equipmentManagement/store`, { method: "POST", body: fd });
             const data = await res.json();
-            await new Promise(r => setTimeout(r, 500));
             Swal.close();
-
             if (data.success) {
                 showSuccessToast("Success", data.message);
                 addModal.classList.add("hidden");
@@ -265,10 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 addForm.reset();
                 loadEquipments(1, false);
             } else showErrorToast("Error", data.message);
-        } catch (err) {
-            Swal.close();
-            showErrorToast("Error", "Server connection failed.");
-        }
+        } catch (err) { Swal.close(); showErrorToast("Error", "Server connection failed."); }
     };
 
     editForm.onsubmit = async (e) => {
@@ -276,26 +267,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const id = document.getElementById("edit_equipment_id").value;
         const fd = new FormData(editForm);
         showLoadingModal("Saving Changes...", "Updating record.");
-
         try {
             const res = await fetch(`api/admin/equipmentManagement/update/${id}`, { method: "POST", body: fd });
             const data = await res.json();
-            await new Promise(r => setTimeout(r, 500));
             Swal.close();
-
             if (data.success) {
                 showSuccessToast("Updated", data.message);
                 editModal.classList.add("hidden");
                 document.body.classList.remove("overflow-hidden");
                 loadEquipments(currentPage, false);
             } else showErrorToast("Error", data.message);
-        } catch (err) {
-            Swal.close();
-            showErrorToast("Error", "Server connection failed.");
-        }
+        } catch (err) { Swal.close(); showErrorToast("Error", "Server connection failed."); }
     };
-
-    // --- Utility Functions ---
 
     function updateIndicator(total) {
         const start = equipments.length ? (currentPage - 1) * limit + 1 : 0;
@@ -307,13 +290,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const list = document.getElementById("eqPaginationList");
         const totalPages = Math.ceil(total / limit);
         list.innerHTML = "";
-        
         if (totalPages <= 1) {
             document.getElementById("eqPaginationControls").classList.add("hidden");
             return;
         }
         document.getElementById("eqPaginationControls").classList.remove("hidden");
-
         for (let i = 1; i <= totalPages; i++) {
             const li = document.createElement("li");
             const btn = document.createElement("button");
@@ -325,8 +306,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // --- Search & Filter ---
-    let debounceTimer;
     searchInput.addEventListener("input", (e) => {
         currentSearch = e.target.value;
         clearTimeout(debounceTimer);
@@ -345,7 +324,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("eqStatusDropdownMenu").classList.toggle("hidden");
     };
 
-    // Modal Controls
     document.getElementById("openAddEqBtn").onclick = () => {
         addModal.classList.remove("hidden");
         document.body.classList.add("overflow-hidden");

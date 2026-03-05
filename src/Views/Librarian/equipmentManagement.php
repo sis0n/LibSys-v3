@@ -65,7 +65,7 @@
                     <th class="py-3 px-4 font-medium text-left">Condition</th>
                     <th class="py-3 px-4 font-medium text-left">Visibility</th>
                     <th class="py-3 px-4 font-medium text-left">Last Updated</th>
-                    <th class="py-3 px-4 font-medium text-center">Actions</th>
+                    <th class="py-3 px-4 font-medium text-right">Actions</th>
                 </tr>
             </thead>
             <tbody id="eqTableBody" class="divide-y divide-orange-100 bg-white">
@@ -101,8 +101,8 @@
                 <input type="text" name="equipment_name" required placeholder="e.g. Chess Board #1" class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Asset Tag / ID (Optional)</label>
-                <input type="text" name="asset_tag" placeholder="e.g. EQ-2024-001" class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Asset Tag</label>
+                <input type="text" name="asset_tag" readonly placeholder="Auto-generated" class="w-full border border-gray-200 bg-gray-50 text-gray-500 rounded-md px-3 py-2 outline-none cursor-not-allowed">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Initial Status</label>
@@ -139,8 +139,8 @@
                 <input type="text" id="edit_equipment_name" name="equipment_name" required class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500">
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Asset Tag / ID</label>
-                <input type="text" id="edit_asset_tag" name="asset_tag" class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Asset Tag</label>
+                <input type="text" id="edit_asset_tag" name="asset_tag" readonly class="w-full border border-gray-200 bg-gray-50 text-gray-500 rounded-md px-3 py-2 outline-none cursor-not-allowed">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>

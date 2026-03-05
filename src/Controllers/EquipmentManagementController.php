@@ -8,120 +8,177 @@ use Exception;
 
 class EquipmentManagementController extends Controller
 {
-    private $repo;
-    private $auditRepo;
+    private EquipmentManagementRepository $equipmentRepo;
+    private \App\Repositories\AuditLogRepository $auditRepo;
 
     public function __construct()
     {
-        $this->repo = new EquipmentManagementRepository();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $this->equipmentRepo = new EquipmentManagementRepository();
         $this->auditRepo = new \App\Repositories\AuditLogRepository();
     }
 
-    public function fetch()
+    private function json($data, int $statusCode = 200)
     {
+        http_response_code($statusCode);
         header('Content-Type: application/json');
-        $search = $_GET['search'] ?? '';
-        $status = $_GET['status'] ?? 'All Status';
-        $sort   = $_GET['sort'] ?? 'default';
-        $limit  = $_GET['limit'] ?? 30;
-        $offset = $_GET['offset'] ?? 0;
+        echo json_encode($data);
+        exit;
+    }
 
+    private function generateAssetTag(): string
+    {
+        $prefix = "EQP-" . date('Y') . "-";
+        $isUnique = false;
+        $newTag = "";
+
+        while (!$isUnique) {
+            $random = str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
+            $newTag = $prefix . $random;
+            if ($this->equipmentRepo->isAssetTagUnique($newTag)) {
+                $isUnique = true;
+            }
+        }
+        return $newTag;
+    }
+
+    public function index()
+    {
+        $role = $_SESSION['role'] ?? 'guest';
+        $viewPath = ucfirst($role) . "/equipmentManagement";
+        $this->view($viewPath, ["title" => "Equipment Management"]);
+    }
+
+    public function getAll()
+    {
         try {
-            $equipments = $this->repo->fetchEquipments($search, $status, $sort, $limit, $offset);
-            $totalCount = $this->repo->countEquipments($search, $status);
+            $search = $_GET['search'] ?? '';
+            $status = $_GET['status'] ?? 'All Status';
+            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
+            $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
 
-            echo json_encode([
+            $equipments = $this->equipmentRepo->fetchEquipments($search, $status, 'default', $limit, $offset);
+            $totalCount = $this->equipmentRepo->countEquipments($search, $status);
+
+            $this->json([
                 'success' => true,
                 'equipments' => $equipments,
                 'totalCount' => (int)$totalCount
             ]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
-    public function store()
+    public function get($id = null)
     {
-        header('Content-Type: application/json');
-        $data = [
-            'equipment_name' => trim($_POST['equipment_name'] ?? ''),
-            'asset_tag'      => trim($_POST['asset_tag'] ?? ''),
-            'status'         => $_POST['status'] ?? 'available'
-        ];
-
-        if (empty($data['equipment_name'])) {
-            echo json_encode(['success' => false, 'message' => 'Equipment name is required.']);
-            return;
-        }
-
         try {
-            if ($this->repo->store($data)) {
-                $this->auditRepo->log($_SESSION['user_id'], 'CREATE', 'EQUIPMENT', $data['asset_tag'] ?: $data['equipment_name'], "Added new equipment: {$data['equipment_name']}");
-                echo json_encode(['success' => true, 'message' => 'Equipment added successfully!']);
-            } else {
-                echo json_encode(['success' => false, 'message' => 'Failed to add equipment.']);
-            }
-        } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
-        }
-    }
-
-    public function get($id)
-    {
-        header('Content-Type: application/json');
-        try {
-            $equipment = $this->repo->getById($id);
+            if (!$id) $this->json(['success' => false, 'message' => 'ID required'], 400);
+            $equipment = $this->equipmentRepo->getById($id);
             if ($equipment) {
-                echo json_encode(['success' => true, 'equipment' => $equipment]);
+                $this->json(['success' => true, 'equipment' => $equipment]);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Equipment not found.']);
+                $this->json(['success' => false, 'message' => 'Equipment not found'], 404);
             }
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
-    public function update($id)
+    public function add()
     {
-        header('Content-Type: application/json');
-        $data = [
-            'equipment_name' => trim($_POST['equipment_name'] ?? ''),
-            'asset_tag'      => trim($_POST['asset_tag'] ?? ''),
-            'status'         => $_POST['status'] ?? 'available'
-        ];
-
-        if (empty($data['equipment_name'])) {
-            echo json_encode(['success' => false, 'message' => 'Equipment name is required.']);
-            return;
-        }
-
         try {
-            if ($this->repo->update($id, $data)) {
-                $this->auditRepo->log($_SESSION['user_id'], 'UPDATE', 'EQUIPMENT', $data['asset_tag'] ?: $data['equipment_name'], "Updated equipment: {$data['equipment_name']}");
-                echo json_encode(['success' => true, 'message' => 'Equipment updated successfully!']);
+            $data = [
+                'equipment_name' => $_POST['equipment_name'] ?? '',
+                'category'       => $_POST['category'] ?? 'General',
+                'asset_tag'      => $this->generateAssetTag(),
+                'status'         => $_POST['status'] ?? 'available',
+                'is_active'      => 1
+            ];
+
+            if (empty($data['equipment_name'])) {
+                $this->json(['success' => false, 'message' => 'Equipment Name is required'], 400);
+            }
+
+            $equipmentId = $this->equipmentRepo->addEquipment($data);
+
+            if ($equipmentId) {
+                $this->auditRepo->log($_SESSION['user_id'], 'ADD', 'EQUIPMENTS', $data['asset_tag'], "Added new equipment: {$data['equipment_name']}");
+                $this->json(['success' => true, 'message' => 'Equipment added successfully', 'asset_tag' => $data['asset_tag']]);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Failed to update equipment.']);
+                $this->json(['success' => false, 'message' => 'Failed to add equipment'], 500);
             }
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
-    public function toggleActive($id)
+    public function store() { $this->add(); }
+
+    public function update($id = null)
     {
-        header('Content-Type: application/json');
-        $newStatus = (int)($_POST['is_active'] ?? 0);
         try {
-            $eq = $this->repo->getById($id);
-            if ($this->repo->toggleActiveStatus($id, $newStatus)) {
-                $msg = $newStatus ? "Equipment activated." : "Equipment deactivated.";
-                $this->auditRepo->log($_SESSION['user_id'], 'TOGGLE_STATUS', 'EQUIPMENT', $eq['asset_tag'] ?: $eq['equipment_name'], "$msg Item: {$eq['equipment_name']}");
-                echo json_encode(['success' => true, 'message' => $msg]);
+            $equipmentId = $id ?? $_POST['equipment_id'] ?? null;
+            if (!$equipmentId) $this->json(['success' => false, 'message' => 'Equipment ID required'], 400);
+
+            $data = [
+                'equipment_name' => $_POST['equipment_name'] ?? '',
+                'status'         => $_POST['status'] ?? 'available'
+            ];
+
+            if (empty($data['equipment_name'])) {
+                $this->json(['success' => false, 'message' => 'Equipment Name is required'], 400);
+            }
+
+            $success = $this->equipmentRepo->updateEquipment((int)$equipmentId, $data);
+
+            if ($success) {
+                $this->auditRepo->log($_SESSION['user_id'], 'UPDATE', 'EQUIPMENTS', $equipmentId, "Updated equipment ID $equipmentId: {$data['equipment_name']}");
+                $this->json(['success' => true, 'message' => 'Equipment updated successfully']);
             } else {
-                echo json_encode(['success' => false, 'message' => 'Failed to change status.']);
+                $this->json(['success' => false, 'message' => 'Failed to update equipment'], 500);
             }
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function toggleActive($id = null)
+    {
+        try {
+            if (!$id) $this->json(['success' => false, 'message' => 'ID required'], 400);
+            $newStatus = $_POST['is_active'] ?? 0;
+            
+            $success = $this->equipmentRepo->toggleActiveStatus((int)$id, (int)$newStatus);
+
+            if ($success) {
+                $action = $newStatus ? 'activated' : 'deactivated';
+                $this->auditRepo->log($_SESSION['user_id'], 'TOGGLE_STATUS', 'EQUIPMENTS', $id, "Equipment $id was $action");
+                $this->json(['success' => true, 'message' => "Equipment successfully $action"]);
+            } else {
+                $this->json(['success' => false, 'message' => 'Failed to toggle status'], 500);
+            }
+        } catch (Exception $e) {
+            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function destroy($id = null)
+    {
+        try {
+            if (!$id) $this->json(['success' => false, 'message' => 'ID required'], 400);
+            $success = $this->equipmentRepo->softDeleteEquipment((int)$id);
+
+            if ($success) {
+                $this->auditRepo->log($_SESSION['user_id'], 'DELETE', 'EQUIPMENTS', $id, "Deleted (archived) equipment ID $id");
+                $this->json(['success' => true, 'message' => 'Equipment deleted successfully']);
+            } else {
+                $this->json(['success' => false, 'message' => 'Failed to delete equipment'], 500);
+            }
+        } catch (Exception $e) {
+            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 }

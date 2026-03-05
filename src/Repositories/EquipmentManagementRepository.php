@@ -15,9 +15,16 @@ class EquipmentManagementRepository
         $this->db = Database::getInstance()->getConnection();
     }
 
+    public function isAssetTagUnique(string $tag): bool
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM equipments WHERE asset_tag = ? AND deleted_at IS NULL");
+        $stmt->execute([$tag]);
+        return (int)$stmt->fetchColumn() === 0;
+    }
+
     public function fetchEquipments($search = '', $status = 'All Status', $sort = 'default', $limit = 30, $offset = 0)
     {
-        $query = "SELECT * FROM equipments WHERE 1=1"; // Removed deleted_at filter
+        $query = "SELECT * FROM equipments WHERE deleted_at IS NULL"; 
         $params = [];
 
         if (!empty($search)) {
@@ -36,7 +43,6 @@ class EquipmentManagementRepository
             }
         }
 
-        // Sorting
         switch ($sort) {
             case 'name_asc':  $query .= " ORDER BY equipment_name ASC"; break;
             case 'name_desc': $query .= " ORDER BY equipment_name DESC"; break;
@@ -60,7 +66,7 @@ class EquipmentManagementRepository
 
     public function countEquipments($search = '', $status = 'All Status')
     {
-        $query = "SELECT COUNT(*) FROM equipments WHERE 1=1";
+        $query = "SELECT COUNT(*) FROM equipments WHERE deleted_at IS NULL";
         $params = [];
 
         if (!empty($search)) {
@@ -80,34 +86,44 @@ class EquipmentManagementRepository
         }
 
         $stmt = $this->db->prepare($query);
-        $stmt->execute($params);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
+        $stmt->execute();
         return $stmt->fetchColumn();
     }
 
-    public function store($data)
+    public function addEquipment($data)
     {
-        $stmt = $this->db->prepare("INSERT INTO equipments (equipment_name, asset_tag, status, is_active) VALUES (:name, :asset_tag, :status, 1)");
-        return $stmt->execute([
-            ':name' => $data['equipment_name'],
-            ':asset_tag' => $data['asset_tag'] ?: null,
-            ':status' => $data['status'] ?? 'available'
+        $stmt = $this->db->prepare("INSERT INTO equipments (equipment_name, asset_tag, status, is_active, created_at) VALUES (:name, :asset_tag, :status, :is_active, NOW())");
+        $stmt->execute([
+            ':name'      => $data['equipment_name'],
+            ':asset_tag' => $data['asset_tag'],
+            ':status'    => $data['status'],
+            ':is_active' => $data['is_active']
         ]);
+        return $this->db->lastInsertId();
     }
 
-    public function update($id, $data)
+    public function updateEquipment($id, $data)
     {
-        $stmt = $this->db->prepare("UPDATE equipments SET equipment_name = :name, asset_tag = :asset_tag, status = :status, updated_at = NOW() WHERE equipment_id = :id");
+        $stmt = $this->db->prepare("UPDATE equipments SET equipment_name = :name, status = :status, updated_at = NOW() WHERE equipment_id = :id");
         return $stmt->execute([
-            ':id' => $id,
-            ':name' => $data['equipment_name'],
-            ':asset_tag' => $data['asset_tag'] ?: null,
+            ':id'     => $id,
+            ':name'   => $data['equipment_name'],
             ':status' => $data['status']
         ]);
     }
 
+    public function softDeleteEquipment($id)
+    {
+        $stmt = $this->db->prepare("UPDATE equipments SET deleted_at = NOW(), is_active = 0 WHERE equipment_id = ?");
+        return $stmt->execute([$id]);
+    }
+
     public function getById($id)
     {
-        $stmt = $this->db->prepare("SELECT * FROM equipments WHERE equipment_id = ?");
+        $stmt = $this->db->prepare("SELECT * FROM equipments WHERE equipment_id = ? AND deleted_at IS NULL");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
