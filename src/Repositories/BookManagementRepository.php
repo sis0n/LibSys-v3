@@ -180,7 +180,7 @@ class BookManagementRepository
         $allowedFields = ['accession_number', 'call_number', 'title', 'author', 'book_place', 'book_publisher', 'year', 'book_edition', 'description', 'book_isbn', 'book_supplementary', 'subject', 'availability', 'cover'];
 
         foreach ($allowedFields as $field) {
-            if (isset($data[$field])) {
+            if (array_key_exists($field, $data)) {
                 $sqlParts[] = "$field = :$field";
                 $params[":$field"] = ($field === 'year' && empty($data[$field])) ? null : $data[$field];
             }

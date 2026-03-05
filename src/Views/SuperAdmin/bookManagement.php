@@ -320,11 +320,17 @@
             </div>
             <div class="flex flex-col">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Book Image</label>
-                <label for="edit_book_image"
-                    class="cursor-pointer flex items-center justify-center gap-2 w-full text-orange-700 border border-orange-200 rounded-md px-3 py-2 text-sm font-medium hover:bg-orange-100 transition shadow-sm">
-                    <i class="ph ph-image-square text-lg"></i>
-                    <span id="editUploadText">Change Image</span>
-                </label>
+                <input type="hidden" id="edit_remove_image" name="remove_image" value="0">
+                <div class="flex gap-2">
+                    <label for="edit_book_image"
+                        class="cursor-pointer flex items-center justify-center gap-2 flex-grow text-orange-700 border border-orange-200 rounded-md px-3 py-2 text-sm font-medium hover:bg-orange-100 transition shadow-sm">
+                        <i class="ph ph-image-square text-lg"></i>
+                        <span id="editUploadText">Change Image</span>
+                    </label>
+                    <button type="button" id="removeImageBtn" class="hidden px-3 py-2 text-red-600 border border-red-200 rounded-md hover:bg-red-50 transition shadow-sm" title="Remove current image">
+                        <i class="ph ph-trash text-lg"></i>
+                    </button>
+                </div>
                 <input type="file" id="edit_book_image" name="book_image" accept="image/*" class="hidden">
                 <div id="editPreviewContainer" class="mt-2 hidden">
                     <img id="editPreviewImage"
@@ -549,6 +555,8 @@
     const editUploadText = document.getElementById('editUploadText');
     const editPreviewContainer = document.getElementById('editPreviewContainer');
     const editPreviewImage = document.getElementById('editPreviewImage');
+    const removeImageBtn = document.getElementById('removeImageBtn');
+    const editRemoveImageInput = document.getElementById('edit_remove_image');
 
     // --- View Modal Elements ---
     const viewBookModal = document.getElementById("viewBookModal");
@@ -1163,12 +1171,18 @@
                 document.getElementById("edit_description").value = book.description || '';
                 editUploadText.textContent = 'Change Image';
                 editInput.value = '';
+                
+                // Reset remove image state
+                editRemoveImageInput.value = "0";
+
                 if (book.cover) {
                     editPreviewImage.src = book.cover;
                     editPreviewContainer.classList.remove('hidden');
+                    removeImageBtn.classList.remove('hidden');
                 } else {
                     editPreviewContainer.classList.add('hidden');
                     editPreviewImage.src = '';
+                    removeImageBtn.classList.add('hidden');
                 }
                 openModal(editBookModal);
             } else {
@@ -1180,6 +1194,15 @@
             showErrorToast('Error', 'Error fetching book data.');
         }
     };
+
+    removeImageBtn?.addEventListener('click', () => {
+        editRemoveImageInput.value = "1";
+        editPreviewContainer.classList.add('hidden');
+        editPreviewImage.src = '';
+        removeImageBtn.classList.add('hidden');
+        editUploadText.textContent = 'Upload Image';
+        editInput.value = '';
+    });
 
     editBookForm?.addEventListener("submit", async (e) => {
         e.preventDefault();

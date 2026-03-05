@@ -24,26 +24,78 @@ class BookManagementController extends Controller
         exit;
     }
 
-    private function handleImageUpload($file)
+    /**
+     * BRIDGE: Nag-uupload ng file sa Laravel Backend via Universal API
+     */
+    private function uploadToBackendAPI($file, $folder)
     {
         if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
             return null;
         }
 
-        $targetDir = __DIR__ . '/../../public_html/uploads/book_covers/';
-        if (!file_exists($targetDir)) {
-            mkdir($targetDir, 0777, true);
+        $apiUrl = str_replace('/storage', '/api/upload-file', STORAGE_URL);
+        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+
+        // Gagamit ng Random Unique ID para sa security at privacy
+        $uniqueId = uniqid();
+        $fileName = "book_{$uniqueId}.{$extension}";
+
+        $fileData = base64_encode(file_get_contents($file['tmp_name']));
+
+        try {
+            $ch = curl_init($apiUrl);
+            $postData = json_encode([
+                'filename' => $fileName,
+                'folder' => $folder,
+                'file' => $fileData
+            ]);
+
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'Accept: application/json'
+            ]);
+
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode === 200) {
+                return "uploads/" . trim($folder, '/') . "/" . $fileName;
+            }
+            return null;
+        } catch (\Exception $e) {
+            error_log("API Upload Error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    private function validateImageUpload($file)
+    {
+        $maxSize = 2 * 1024 * 1024;
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if ($file['error'] !== UPLOAD_ERR_OK) return "Upload error.";
+        if ($file['size'] > $maxSize) return "Image must be less than 2MB.";
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+        if (!in_array($mime, $allowedTypes)) return "Invalid image type. Only JPG, PNG, GIF, WEBP allowed.";
+        return true;
+    }
+
+    private function handleImageUpload($file)
+    {
+        $validation = $this->validateImageUpload($file);
+        if ($validation !== true) {
+            return null;
         }
 
-        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
-        $fileName = uniqid('book_', true) . '.' . $extension;
-        $targetFile = $targetDir . $fileName;
-
-        if (move_uploaded_file($file['tmp_name'], $targetFile)) {
-            return BASE_URL . '/uploads/book_covers/' . $fileName;
-        }
-
-        return null;
+        return $this->uploadToBackendAPI($file, "book_covers");
     }
 
     public function fetch()
@@ -71,6 +123,12 @@ class BookManagementController extends Controller
             if (!$book) {
                 return $this->json(['success' => false, 'message' => 'Book not found.'], 404);
             }
+
+            // Transform path para isama ang STORAGE_URL
+            if (!empty($book['cover'])) {
+                $book['cover'] = STORAGE_URL . '/' . ltrim($book['cover'], '/');
+            }
+
             $this->json(['success' => true, 'book' => $book]);
         } catch (\Exception $e) {
             $this->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -126,6 +184,8 @@ class BookManagementController extends Controller
             } else {
                 return $this->json(['success' => false, 'message' => 'Error uploading new file.'], 500);
             }
+        } elseif (isset($data['remove_image']) && $data['remove_image'] == "1") {
+            $data['cover'] = null;
         }
 
         try {

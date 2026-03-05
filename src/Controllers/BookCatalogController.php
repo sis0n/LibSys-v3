@@ -18,6 +18,15 @@ class BookCatalogController extends Controller
   public function index()
   {
     $books = $this->bookRepo->getAllBooks();
+    
+    // Transform paths para isama ang STORAGE_URL
+    $books = array_map(function($book) {
+      if (!empty($book['cover'])) {
+        $book['cover'] = STORAGE_URL . '/' . ltrim($book['cover'], '/');
+      }
+      return $book;
+    }, $books);
+
     $this->view("Student/bookCatalog", [
       "books" => $books,
       "title" => "Books Inventory"
@@ -142,6 +151,14 @@ class BookCatalogController extends Controller
       $status,
       $sort
     );
+
+    // Transform paths para isama ang STORAGE_URL
+    $books = array_map(function($book) {
+      if (!empty($book['cover'])) {
+        $book['cover'] = STORAGE_URL . '/' . ltrim($book['cover'], '/');
+      }
+      return $book;
+    }, $books);
 
     $totalCount = $this->bookRepo->countPaginatedFiltered($search, $category, $status);
 
