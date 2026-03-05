@@ -175,6 +175,32 @@ class DashboardRepository
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
 
+  public function getOverdueBooks(int $limit = 5): array
+  {
+    $sql = "
+        SELECT 
+            CONCAT(u.first_name, ' ', u.last_name) AS borrower_name,
+            b.title,
+            b.accession_number,
+            bt.due_date,
+            DATEDIFF(CURDATE(), bt.due_date) AS days_overdue
+        FROM borrow_transaction_items bti
+        JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+        JOIN books b ON bti.book_id = b.book_id
+        LEFT JOIN students s ON bt.student_id = s.student_id
+        LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+        LEFT JOIN staff st ON bt.staff_id = st.staff_id
+        JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+        WHERE bti.status = 'overdue'
+        ORDER BY days_overdue DESC
+        LIMIT :limit
+    ";
+    $stmt = $this->db->prepare($sql);
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+  }
+
   public function getVisitorBreakdown(string $filter = 'month'): array
   {
     $whereClause = "";

@@ -63,7 +63,7 @@ $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
     <?php endforeach; ?>
   </section>
 
-  <!-- Role Breakdown (Feature #1) -->
+  <!-- Role Breakdown -->
   <section class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-left">
     <?php
     $breakdown = [
@@ -86,7 +86,7 @@ $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
   </section>
 
   <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 text-left">
-    <!-- Top Visitors (Table Design from Reports) -->
+    <!-- Top Visitors -->
     <div class="border border-orange-200 rounded-xl p-6 shadow-sm bg-white h-[450px] flex flex-col">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-lg font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
@@ -94,7 +94,6 @@ $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
         </h3>
         <span class="text-[10px] bg-orange-100 text-orange-700 font-black uppercase tracking-wider px-3 py-1 rounded-full">This Month</span>
       </div>
-      
       <div class="overflow-hidden rounded-lg border border-orange-100 flex-grow overflow-y-auto custom-scrollbar">
         <table class="w-full text-sm border-collapse">
           <thead class="bg-orange-50 text-orange-700 sticky top-0 z-10">
@@ -113,6 +112,7 @@ $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
       </div>
     </div>
 
+    <!-- Weekly Activity -->
     <div class="border border-green-200 rounded-lg p-6 shadow-sm bg-white h-[450px]">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-bold text-gray-700 flex items-center gap-2">
@@ -172,6 +172,34 @@ $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
             </tr>
           </thead>
           <tbody id="recentActivitiesTableBody" class="divide-y divide-orange-50 bg-white">
+            <!-- Rows injected via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Overdue Books (Feature #2) -->
+  <section class="grid grid-cols-1 gap-6 text-left mb-8">
+    <div class="border border-green-200 rounded-xl p-6 shadow-sm bg-white h-[450px] flex flex-col">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
+          <i class="ph ph-warning-circle text-green-500 text-3xl"></i> Overdue Books
+        </h3>
+        <span class="text-[10px] bg-green-100 text-green-700 font-black uppercase tracking-wider px-3 py-1 rounded-full">Requires Attention</span>
+      </div>
+      <div class="overflow-hidden rounded-lg border border-green-100 flex-grow overflow-y-auto custom-scrollbar">
+        <table class="w-full text-sm border-collapse">
+          <thead class="bg-green-50 text-green-700 sticky top-0 z-10">
+            <tr>
+              <th scope="col" class="px-4 py-3 text-left font-black uppercase w-12">Rank</th>
+              <th scope="col" class="px-4 py-3 text-left font-black uppercase">Borrower</th>
+              <th scope="col" class="px-4 py-3 text-left font-black uppercase">Book Title</th>
+              <th scope="col" class="px-4 py-3 text-left font-black uppercase">Accession</th>
+              <th scope="col" class="px-4 py-3 text-right font-black uppercase">Days Overdue</th>
+            </tr>
+          </thead>
+          <tbody id="overdueBooksTableBody" class="divide-y divide-green-50 bg-white">
             <!-- Rows injected via JS -->
           </tbody>
         </table>

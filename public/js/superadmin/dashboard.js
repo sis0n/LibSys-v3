@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const topVisitorsTableBody = document.getElementById('topVisitorsTableBody');
   const popularBooksTableBody = document.getElementById('popularBooksTableBody');
   const recentActivitiesTableBody = document.getElementById('recentActivitiesTableBody');
+  const overdueBooksTableBody = document.getElementById('overdueBooksTableBody');
   const weeklyActivityCtx = document.getElementById('weeklyActivityChart')?.getContext('2d');
 
   let weeklyActivityChartInstance = null;
@@ -46,10 +47,31 @@ document.addEventListener('DOMContentLoaded', function () {
         renderWeeklyChart(result.weeklyActivity);
         renderPopularBooksTable(result.popularBooks);
         renderRecentActivities(result.recentActivities);
+        renderOverdueBooksTable(result.overdueBooks);
       }
     } catch (error) {
       console.error('Error loading dashboard:', error);
     }
+  }
+
+  function renderOverdueBooksTable(books) {
+    if (!overdueBooksTableBody) return;
+    if (!books || books.length === 0) {
+      overdueBooksTableBody.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-gray-400 italic text-xs uppercase font-bold">No records found</td></tr>';
+      return;
+    }
+    overdueBooksTableBody.innerHTML = books.map((b, index) => {
+      const truncatedTitle = b.title.length > 40 ? b.title.substring(0, 40) + '...' : b.title;
+      return `
+        <tr class="hover:bg-green-50/30 transition-colors">
+          <td class="px-4 py-3 text-left font-black text-green-600 text-[13px]">${index + 1}</td>
+          <td class="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-tight text-[13px]">${b.borrower_name || "Unknown"}</td>
+          <td class="px-4 py-3 text-left font-bold text-gray-600 uppercase tracking-tight text-[13px]">${truncatedTitle}</td>
+          <td class="px-4 py-3 text-left font-bold text-gray-600 uppercase tracking-tight text-[13px]">${b.accession_number}</td>
+          <td class="px-4 py-3 text-right font-black text-gray-800 text-[13px]">${b.days_overdue} Days</td>
+        </tr>
+      `;
+    }).join('');
   }
 
   function renderPopularBooksTable(books) {
