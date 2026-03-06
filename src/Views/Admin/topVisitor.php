@@ -139,7 +139,6 @@
         <div class="bg-white border border-orange-200 rounded-xl shadow-sm p-5 transition-all hover:shadow-md">
             <div class="flex justify-between items-center mb-4 border-b border-orange-50 pb-3">
                 <h3 class="text-sm font-black text-gray-800 uppercase tracking-widest">Library Visit (by Department)</h3>
-                <span class="timeframe-badge text-[10px] bg-orange-100 text-orange-700 font-black uppercase tracking-wider px-3 py-1 rounded-full">This Month</span>
             </div>
             <div class="overflow-x-auto rounded-lg border border-orange-100">
                 <table class="w-full text-sm border-collapse">

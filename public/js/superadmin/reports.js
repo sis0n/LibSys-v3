@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', function () {
             populateCirculatedBooks(filter),
             populateCirculatedEquipments(filter),
             populateDeletedBooks(filter),
-            populateLibraryVisitByDepartment(filter),
+            populateLibraryVisitByDepartment(), // No filter passed here
             populateTopVisitors(filter),
             populateTopBorrowers(filter),
             populateMostBorrowedBooks(filter),

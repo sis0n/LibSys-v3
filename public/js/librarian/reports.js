@@ -322,7 +322,7 @@ document.addEventListener('DOMContentLoaded', function () {
             populateCirculatedBooks(filter),
             populateCirculatedEquipments(filter),
             populateDeletedBooks(filter),
-            populateLibraryVisitByDepartment(filter),
+            populateLibraryVisitByDepartment(),
             populateTopVisitors(filter),
             populateTopBorrowers(filter),
             populateMostBorrowedBooks(filter),

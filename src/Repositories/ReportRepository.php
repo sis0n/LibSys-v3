@@ -250,28 +250,26 @@ class ReportRepository
     public function getLibraryVisitsByDepartment(string $filter = 'month')
     {
         try {
-            $whereClause = "";
-            if ($filter === 'day') {
-                $whereClause = "WHERE DATE(a.date) = CURDATE()";
-            } elseif ($filter === 'month') {
-                $whereClause = "WHERE MONTH(a.date) = MONTH(CURDATE()) AND YEAR(a.date) = YEAR(CURDATE())";
-            } else { // year
-                $whereClause = "WHERE YEAR(a.date) = YEAR(CURDATE())";
-            }
-
             $sql = "
                 WITH DepartmentVisits AS (
                     SELECT
                         cl.college_name AS department,
                         COUNT(CASE WHEN DATE(a.date) = CURDATE() THEN a.id END) AS today,
-                        COUNT(CASE WHEN a.date >= CURDATE() - INTERVAL 6 DAY THEN a.id END) AS week,
+                        COUNT(CASE WHEN YEARWEEK(a.date, 1) = YEARWEEK(CURDATE(), 1) THEN a.id END) AS week,
                         COUNT(CASE WHEN MONTH(a.date) = MONTH(CURDATE()) AND YEAR(a.date) = YEAR(CURDATE()) THEN a.id END) AS month,
                         COUNT(CASE WHEN YEAR(a.date) = YEAR(CURDATE()) THEN a.id END) AS year,
                         COUNT(a.id) AS filtered_count
                     FROM colleges cl
-                    LEFT JOIN courses c ON cl.college_id = c.college_id
-                    LEFT JOIN students s ON c.course_id = s.course_id
-                    LEFT JOIN attendance a ON s.user_id = a.user_id AND $whereClause
+                    LEFT JOIN (
+                        -- Combine Students and Faculty attendance
+                        SELECT s.user_id, s.course_id, NULL as college_id FROM students s
+                        UNION ALL
+                        SELECT f.user_id, NULL as course_id, f.college_id FROM faculty f
+                    ) u_combined ON (
+                        (u_combined.college_id = cl.college_id) OR 
+                        (u_combined.course_id IN (SELECT course_id FROM courses WHERE college_id = cl.college_id))
+                    )
+                    LEFT JOIN attendance a ON u_combined.user_id = a.user_id
                     GROUP BY cl.college_name
                 )
                 SELECT * FROM DepartmentVisits
