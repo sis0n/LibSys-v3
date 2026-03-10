@@ -96,7 +96,7 @@ $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
       </div>
       <div class="overflow-hidden rounded-lg border border-orange-100 flex-grow overflow-y-auto custom-scrollbar">
         <table class="w-full text-sm border-collapse">
-          <thead class="bg-orange-50 text-orange-700 sticky top-0 z-10">
+          <thead class="bg-orange-50 text-orange-700 sticky top-0 z-0">
             <tr>
               <th scope="col" class="px-4 py-3 text-left font-black uppercase w-12">Rank</th>
               <th scope="col" class="px-4 py-3 text-left font-black uppercase">Name</th>
@@ -113,14 +113,14 @@ $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
     </div>
 
     <!-- Weekly Activity -->
-    <div class="border border-green-200 rounded-lg p-6 shadow-sm bg-white h-[450px]">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-bold text-gray-700 flex items-center gap-2">
+    <div class="border border-green-200 rounded-xl p-6 shadow-sm bg-white h-[450px] flex flex-col text-left">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-black text-gray-800 uppercase tracking-widest flex items-center gap-2">
           <i class="ph ph-activity text-green-500 text-3xl"></i> Weekly Activity
         </h3>
-        <p class="text-sm text-gray-500">Visitors and checkouts</p>
+        <span class="text-[10px] bg-green-100 text-green-700 font-black uppercase tracking-wider px-3 py-1 rounded-full">Visitors and checkouts</span>
       </div>
-      <div class="h-64 sm:h-80">
+      <div class="flex-grow">
         <canvas id="weeklyActivityChart"></canvas>
       </div>
     </div>
@@ -137,7 +137,7 @@ $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
       </div>
       <div class="overflow-hidden rounded-lg border border-orange-100 flex-grow overflow-y-auto custom-scrollbar">
         <table class="w-full text-sm border-collapse">
-          <thead class="bg-orange-50 text-orange-700 sticky top-0 z-10">
+          <thead class="bg-orange-50 text-orange-700 sticky top-0 z-0">
             <tr>
               <th scope="col" class="px-4 py-3 text-left font-black uppercase w-12">Rank</th>
               <th scope="col" class="px-4 py-3 text-left font-black uppercase">Title</th>
@@ -162,7 +162,7 @@ $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
       </div>
       <div class="overflow-hidden rounded-lg border border-orange-100 flex-grow overflow-y-auto custom-scrollbar">
         <table class="w-full text-sm border-collapse">
-          <thead class="bg-orange-50 text-orange-700 sticky top-0 z-10">
+          <thead class="bg-orange-50 text-orange-700 sticky top-0 z-0">
             <tr>
               <th scope="col" class="px-4 py-3 text-left font-black uppercase w-12">#</th>
               <th scope="col" class="px-4 py-3 text-left font-black uppercase">User</th>
@@ -190,7 +190,7 @@ $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
       </div>
       <div class="overflow-hidden rounded-lg border border-green-100 flex-grow overflow-y-auto custom-scrollbar">
         <table class="w-full text-sm border-collapse">
-          <thead class="bg-green-50 text-green-700 sticky top-0 z-10">
+          <thead class="bg-green-50 text-green-700 sticky top-0 z-0">
             <tr>
               <th scope="col" class="px-4 py-3 text-left font-black uppercase w-12">Rank</th>
               <th scope="col" class="px-4 py-3 text-left font-black uppercase">Borrower</th>

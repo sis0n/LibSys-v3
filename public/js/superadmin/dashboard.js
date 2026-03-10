@@ -137,10 +137,21 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
     topVisitorsTableBody.innerHTML = visitors.map((v, index) => {
+      // Split name and get only First and Last (assuming format is "First Middle Last")
+      const nameParts = (v.user_name || "Unknown User").trim().split(/\s+/);
+      let displayName = v.user_name;
+      
+      if (nameParts.length > 2) {
+        // If there are more than 2 parts, we take the first and the last one
+        displayName = `${nameParts[0]} ${nameParts[nameParts.length - 1]}`;
+      } else if (nameParts.length === 2) {
+        displayName = `${nameParts[0]} ${nameParts[1]}`;
+      }
+
       return `
         <tr class="hover:bg-orange-50/30 transition-colors">
           <td class="px-4 py-3 text-left font-black text-orange-600 text-[13px]">${index + 1}</td>
-          <td class="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-tight text-[13px]">${v.user_name || "Unknown User"}</td>
+          <td class="px-4 py-3 text-left font-bold text-gray-700 uppercase tracking-tight text-[13px]">${displayName}</td>
           <td class="px-4 py-3 text-left font-bold text-gray-600 uppercase tracking-tight text-[13px]">${v.student_number}</td>
           <td class="px-4 py-3 text-left font-bold text-gray-600 uppercase tracking-tight text-[13px]">${v.year_level} - ${v.section}</td>
           <td class="px-4 py-3 text-right font-black text-gray-800 text-[13px]">${v.visits}</td>
