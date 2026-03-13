@@ -726,6 +726,7 @@
                 document.getElementById("edit_book_supplementary").value = book.book_supplementary || '';
                 document.getElementById("edit_subject").value = book.subject || '';
                 document.getElementById("edit_description").value = book.description || '';
+                document.getElementById("edit_availability").value = book.availability || "available";
                 editUploadText.textContent = 'Change Image';
                 editInput.value = '';
                 
