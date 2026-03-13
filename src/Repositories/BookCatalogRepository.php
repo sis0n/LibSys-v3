@@ -103,7 +103,7 @@ class BookCatalogRepository
 
   public function filterBooks($filters = [])
   {
-    $query = "SELECT * FROM books WHERE 1=1 AND deleted_at IS NULL";
+    $query = "SELECT * FROM books WHERE deleted_at IS NULL AND availability NOT IN ('lost', 'damaged')";
     $place_holder = [];
 
     foreach ($filters as $column => $value) {
@@ -134,7 +134,7 @@ class BookCatalogRepository
   ): array {
     $limit = max(1, min($limit, 100));
     $offset = max(0, min($offset, 10000));
-    $query = "SELECT * FROM books WHERE 1=1 AND deleted_at IS NULL";
+    $query = "SELECT * FROM books WHERE deleted_at IS NULL AND availability NOT IN ('lost', 'damaged')";
     $params = [];
 
     if ($search !== '') {
@@ -190,7 +190,7 @@ class BookCatalogRepository
     string $category = '',
     string $status = ''
   ): int {
-    $query = "SELECT COUNT(*) FROM books WHERE 1=1 AND deleted_at IS NULL";
+    $query = "SELECT COUNT(*) FROM books WHERE deleted_at IS NULL AND availability NOT IN ('lost', 'damaged')";
     $params = [];
 
     if ($search !== '') {
