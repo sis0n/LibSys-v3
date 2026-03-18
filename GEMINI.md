@@ -1,6 +1,6 @@
-# LibSys - Library Information System
+# LibSys v2.0 - Library Information System (Production Ready)
 
-A comprehensive Library Information System for UCC (University of Caloocan City), featuring book and equipment management, attendance tracking, and borrowing transactions.
+A comprehensive Library Information System for UCC (University of Caloocan City), featuring book and equipment management, attendance tracking, and borrowing transactions. This version has been hardened for production deployment.
 
 ## Project Overview
 
@@ -15,6 +15,11 @@ A comprehensive Library Information System for UCC (University of Caloocan City)
     *   `dompdf/dompdf` (PDF Reports)
     *   `phpmailer/phpmailer` (Email notifications)
     *   `tailwindcss` (Styling)
+*   **Key Features:**
+    *   Role-Based Access Control (RBAC)
+    *   QR Code Attendance & Borrowing
+    *   **Advanced Analytics & PDF Reporting** (Most Borrowed, Top Borrowers, Lost/Damaged)
+    *   Email Notifications for Overdue Books
 
 ## Directory Structure
 
@@ -30,25 +35,17 @@ A comprehensive Library Information System for UCC (University of Caloocan City)
 *   `vendor/`: PHP dependencies (Composer).
 *   `node_modules/`: Frontend dependencies (NPM).
 
-## Core Framework Details
+## Development Conventions
 
-### Routing
-Routing is defined in `src/Config/RouteConfig.php`. The `App\Core\Router` supports:
-- HTTP Methods: GET, POST
-- Dynamic parameters: `{id}`
-- Role-based Access Control (RBAC): Middleware-like check in `Router::resolve`.
-
-### Database
-Managed by `App\Core\Database` using a Singleton pattern. Configuration is loaded from the `.env` file in the root directory.
-
-### Controllers
-Base controller `App\Core\Controller` handles:
-- Layout management (Head, Sidebar, Header, Footer).
-- Session-based user activity validation.
-- Data extraction to views.
-
-### Repositories
-Follows the Repository pattern to decouple database logic from controllers. See `src/Repositories/` for examples like `UserRepository`.
+- **Naming (PSR-4 Standard):** 
+    - All core classes **MUST** use `PascalCase.php` for their filenames to ensure compatibility with case-sensitive systems (like Linux) and adhere to PSR-4 autoloading.
+    - **Controllers:** `BookManagementController.php`
+    - **Models:** `Book.php`
+    - **Repositories:** `BookManagementRepository.php`
+- **Routing:** Add new routes in `src/Config/RouteConfig.php`. Use short class names (e.g., `BookManagementController@index`) as the Router automatically adds the namespace.
+- **Database:** Use PDO prepared statements in Repositories to prevent SQL injection.
+- **Styling:** Use Tailwind CSS utility classes. Avoid custom CSS unless necessary (modify `public/css/input.css`).
+- **Security:** Sanitize all user input using `$this->getPostData()` and validate all `POST` requests with `$this->validateCsrf()` in the controller.
 
 ## Building and Running
 
@@ -60,37 +57,57 @@ Follows the Repository pattern to decouple database logic from controllers. See 
 
 ### Setup
 1.  Clone the repository.
-2.  Install PHP dependencies:
-    ```bash
-    composer install
-    ```
-3.  Install NPM dependencies:
-    ```bash
-    npm install
-    ```
-4.  Configure environment:
-    - Copy `.env.example` to `.env` (if available) or create one with DB credentials.
-    - Ensure `APP_URL` and `STORAGE_URL` are set.
+2.  Install PHP dependencies: `composer install`
+3.  Install NPM dependencies: `npm install`
+4.  Create a `.env` file from the example below and fill in your details.
 5.  Database setup:
     - Import the database schema (look for a `.sql` file in `backups/` or root if provided).
 
 ### Development Commands
-- **Build CSS:**
-    ```bash
-    npm run build
-    ```
-- **Watch CSS changes:**
-    ```bash
-    npm run watch
-    ```
+- **Build CSS:** `npm run build`
+- **Watch CSS changes:** `npm run watch`
 
-## Development Conventions
+## `.env.example` Configuration
+Create a `.env` file in the root directory with the following content:
 
-- **Naming:** 
-    - Controllers: `PascalCaseController.php`
-    - Repositories: `PascalCaseRepository.php`
-    - Views: Located in `src/Views/`, grouped by role or feature.
-- **Routing:** Add new routes in `src/Config/RouteConfig.php`.
-- **Database:** Use PDO prepared statements in Repositories to prevent SQL injection.
-- **Styling:** Use Tailwind CSS utility classes. Avoid custom CSS unless necessary (modify `public/css/input.css`).
-- **JS:** AJAX is heavily used for dynamic updates; look in `public/js/` for client-side logic.
+```env
+# ==================================================
+# App Settings
+# ==================================================
+APP_NAME="UCC Lib-Sys"
+APP_ENV=local                # Use 'production' on live server
+APP_DEBUG=true               # Use 'false' on live server
+APP_URL=http://localhost/libsys-v2/public
+
+# ==================================================
+# Database Settings
+# ==================================================
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_DATABASE=libsys-mobile
+DB_USERNAME=root
+DB_PASSWORD=
+
+# ==================================================
+# Mail Settings (for Overdue Alerts)
+# ==================================================
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your-email@gmail.com
+MAIL_PASSWORD=your-google-app-password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@ucc-libsys.com
+MAIL_FROM_NAME="${APP_NAME}"
+```
+
+## Production Readiness & Deployment
+
+This application has been hardened for production. Key features include:
+
+*   **Error Handling:** The system displays a user-friendly 500 error page for any critical failures. To see detailed error messages during development, set `APP_DEBUG=true` in your `.env` file.
+*   **Security Hardening:** `public/index.php` includes security headers (X-Frame, CSP, etc.) and enforces `HttpOnly` session cookies to protect against common web vulnerabilities.
+*   **Database Optimization:** Performance indexes have been added to `borrow_transactions`, `borrow_transaction_items`, and `attendance` tables to ensure fast report generation even with large amounts of data.
+*   **Deployment Command:** When deploying to a live server, run the following command to optimize the Composer autoloader for speed:
+    ```bash
+    composer install --no-dev --optimize-autoloader
+    ```

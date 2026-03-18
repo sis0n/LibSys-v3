@@ -31,8 +31,8 @@ class StudentRepository
   public function insertStudent(int $userId, string $studentNumber, ?int $courseId, int $yearLevel, string $status, string $contact = 'N/A', string $section = 'N/A'): int
   {
     $stmt = $this->db->prepare("
-    INSERT INTO students (user_id, student_number, course_id, year_level, status, contact, section)
-    VALUES (:user_id, :student_number, :course_id, :year_level, :status, :contact, :section)
+    INSERT INTO students (user_id, student_number, course_id, year_level, status, contact, section, can_edit_profile)
+    VALUES (:user_id, :student_number, :course_id, :year_level, :status, :contact, :section, 1)
   ");
 
     $stmt->execute([
@@ -56,7 +56,7 @@ class StudentRepository
     $values = [];
 
     foreach ($studentsBatch as $s) {
-      $placeholders[] = '(?, ?, ?, ?, ?, ?, ?)';
+      $placeholders[] = '(?, ?, ?, ?, ?, ?, ?, 1)';
       $values[] = $s['user_id'];
       $values[] = $s['student_number'];
       $values[] = $s['course_id'];
@@ -66,7 +66,7 @@ class StudentRepository
       $values[] = $s['section'] ?? 'N/A';
     }
 
-    $sql = "INSERT IGNORE INTO students (user_id, student_number, course_id, year_level, status, contact, section) VALUES " . implode(',', $placeholders);
+    $sql = "INSERT IGNORE INTO students (user_id, student_number, course_id, year_level, status, contact, section, can_edit_profile) VALUES " . implode(',', $placeholders);
     $this->db->prepare($sql)->execute($values);
   }
 }
