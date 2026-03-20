@@ -68,17 +68,17 @@
         <table class="header-table">
             <tr>
                 <td style="width: 65px; border: none; padding: 0;">
-                    <?php if ($libLogoBase64): ?>
-                        <img src="<?= $libLogoBase64 ?>" class="header-logo" alt="Library Logo">
+                    <?php if ($uccLogoBase64): ?>
+                        <img src="<?= $uccLogoBase64 ?>" class="header-logo" alt="UCC Logo">
                     <?php endif; ?>
                 </td>
                 <td class="header-text" style="border: none; padding: 0;">
-                    <p class="brand">UCC LIB-SYS</p>
-                    <p class="sub-brand">University of Caloocan City Library Information System</p>
+                    <p class="brand">University of Caloocan City</p>
+                    <p class="sub-brand">UCC Library</p>
                 </td>
                 <td style="width: 65px; border: none; padding: 0; text-align: right;">
-                    <?php if ($uccLogoBase64): ?>
-                        <img src="<?= $uccLogoBase64 ?>" class="header-logo" alt="UCC Logo">
+                    <?php if ($libLogoBase64): ?>
+                        <img src="<?= $libLogoBase64 ?>" class="header-logo" alt="Library Logo">
                     <?php endif; ?>
                 </td>
             </tr>
@@ -86,7 +86,7 @@
     </div>
 
     <div class="footer">
-        Page <span class="pagenum"></span> | UCC Library Information System | UCC-LibSys &copy; <?= date('Y') ?>
+        Page <span class="pagenum"></span> | University of Caloocan City | UCC Library &copy; <?= date('Y') ?>
     </div>
 
     <div class="report-info">

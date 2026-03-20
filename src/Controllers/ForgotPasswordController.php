@@ -49,6 +49,70 @@ class ForgotPasswordController extends Controller
     $this->view('auth/resetPassword', $viewData, false);
   }
 
+  protected function validateCsrf(): bool
+  {
+      $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+      return !empty($token) && hash_equals($_SESSION['csrf_token'] ?? '', $token);
+  }
+
+  public function sendOTP()
+  {
+    header('Content-Type: application/json');
+
+    if (!$this->validateCsrf()) {
+      http_response_code(403);
+      echo json_encode(['success' => false, 'message' => 'CSRF token validation failed.']);
+      return;
+    }
+
+    $identifier = trim($_POST['identifier'] ?? '');
+    if (empty($identifier)) {
+      http_response_code(400);
+      echo json_encode(['success' => false, 'message' => 'Please enter your username or student number.']);
+      return;
+    }
+
+    $user = $this->userRepo->findByIdentifier($identifier);
+
+    $allowedRoles = ['superadmin', 'student', 'faculty', 'staff'];
+
+    if ($user && !empty($user['email']) && in_array(strtolower($user['role'] ?? ''), $allowedRoles)) {
+        $email = $user['email'];
+        $_SESSION['reset_user_id'] = $user['user_id'];
+        
+        $result = $this->_sendCode($email, $user['first_name']);
+
+        if ($result) {
+          $_SESSION['reset_email'] = $email;
+        }
+    }
+
+    echo json_encode(['success' => true, 'message' => 'If an account with that username exists, a code has been sent to the registered email.']);
+  }
+
+  private function _sendCode(string $email, string $firstName): bool
+  {
+      try {
+        $otp = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        $expiry = time() + 600; // 10 minutes expiry
+
+        $this->tokenRepo->createToken($email, $otp, $expiry);
+
+        $subject = "Your LibSys Password Reset Code";
+        $body = "
+              <p>Hello {$firstName},</p>
+              <p>You requested to reset your password. Use the code below to verify your identity.</p>
+              <h2 style='font-size: 24px; letter-spacing: 2px; font-weight: bold;'>{$otp}</h2>
+              <p>This code is valid for 10 minutes.</p>
+          ";
+
+        return $this->mailService->sendEmail($email, $subject, $body);
+      } catch (\Throwable $e) {
+        error_log("[ForgotPasswordController::_sendCode] " . $e->getMessage());
+        return false;
+      }
+  }
+
   public function updatePassword()
   {
     header('Content-Type: application/json');
@@ -59,7 +123,7 @@ class ForgotPasswordController extends Controller
       return;
     }
 
-    if (empty($_SESSION['reset_email']) || empty($_SESSION['otp_verified'])) {
+    if (empty($_SESSION['reset_user_id']) || empty($_SESSION['otp_verified'])) {
       http_response_code(403);
       echo json_encode(['success' => false, 'message' => 'Session expired. Please start over.']);
       return;
@@ -87,21 +151,14 @@ class ForgotPasswordController extends Controller
     }
 
     try {
-      $email = $_SESSION['reset_email'];
-      $user = $this->userRepo->findByEmail($email);
-
-      if (!$user) {
-        http_response_code(404);
-        echo json_encode(['success' => false, 'message' => 'User not found.']);
-        return;
-      }
-
+      $userId = $_SESSION['reset_user_id'];
       $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-      $success = $this->userRepo->updatePassword($user['user_id'], $hashedPassword);
+      $success = $this->userRepo->updatePassword($userId, $hashedPassword);
 
       if ($success) {
         unset($_SESSION['reset_email']);
+        unset($_SESSION['reset_user_id']);
         unset($_SESSION['otp_verified']);
 
         echo json_encode(['success' => true, 'message' => 'Password has been reset successfully.']);
@@ -114,60 +171,6 @@ class ForgotPasswordController extends Controller
       http_response_code(500);
       echo json_encode(['success' => false, 'message' => 'An internal error occurred.']);
     }
-  }
-
-  public function sendOTP()
-  {
-    header('Content-Type: application/json');
-
-    if (!$this->validateCsrf()) {
-      http_response_code(403);
-      echo json_encode(['success' => false, 'message' => 'CSRF token validation failed.']);
-      return;
-    }
-
-    $email = trim($_POST['email'] ?? '');
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-      http_response_code(400);
-      echo json_encode(['success' => false, 'message' => 'Invalid email format.']);
-      return;
-    }
-
-    $result = $this->_sendCode($email);
-
-    if ($result) {
-      $_SESSION['reset_email'] = $email;
-    }
-
-    echo json_encode(['success' => true, 'message' => 'If an account with that email exists, a code has been sent.']);
-  }
-
-  private function _sendCode(string $email): bool
-  {
-    $user = $this->userRepo->findByEmail($email);
-
-    if ($user) {
-      try {
-        $otp = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-        $expiry = time() + 600; // 10 minutes expiry
-
-        $this->tokenRepo->createToken($email, $otp, $expiry);
-
-        $subject = "Your LibSys Password Reset Code";
-        $body = "
-              <p>Hello {$user['first_name']},</p>
-              <p>You requested to reset your password. Use the code below to verify your identity.</p>
-              <h2 style='font-size: 24px; letter-spacing: 2px; font-weight: bold;'>{$otp}</h2>
-              <p>This code is valid for 10 minutes.</p>
-          ";
-
-        return $this->mailService->sendEmail($email, $subject, $body);
-      } catch (\Throwable $e) {
-        error_log("[ForgotPasswordController::_sendCode] " . $e->getMessage());
-        return false;
-      }
-    }
-    return false;
   }
 
   public function verifyOTPPage()

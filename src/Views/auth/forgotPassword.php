@@ -25,12 +25,12 @@
       <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token ?? '', ENT_QUOTES, 'UTF-8') ?>">
 
       <div class="text-left">
-        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+        <label for="identifier" class="block text-sm font-medium text-gray-700 mb-1">Username or Student Number</label>
         <input
-          type="email"
-          id="email"
-          name="email"
-          placeholder="Enter your email address"
+          type="text"
+          id="identifier"
+          name="identifier"
+          placeholder="Enter your username or ID number"
           required
           class="mt-1 block w-full rounded-lg border border-orange-300 bg-orange-50 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 transition">
       </div>
