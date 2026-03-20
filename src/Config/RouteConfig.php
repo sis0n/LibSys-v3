@@ -142,6 +142,9 @@ class RouteConfig
     $router->get('api/librarian/returning/getTableData', 'ReturningController@getOverdue', ['returning']);
     $router->get('api/librarian/returning/getRecent', 'ReturningController@getRecentReturnsJson', ['returning']);
     $router->post('api/librarian/returning/checkBook', 'ReturningController@checkBookStatus', ['returning']);
+    $router->get('api/admin/returning/getTableData', 'ReturningController@getOverdue', ['returning']);
+    $router->get('api/admin/returning/getRecent', 'ReturningController@getRecentReturnsJson', ['returning']);
+    $router->post('api/admin/returning/checkBook', 'ReturningController@checkBookStatus', ['returning']);
     $router->post('api/admin/returning/markReturned', 'ReturningController@returnBook', ['returning']);
     $router->post('api/admin/returning/extend', 'ReturningController@extendDueDate', ['returning']);
     $router->post('api/admin/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['returning']);

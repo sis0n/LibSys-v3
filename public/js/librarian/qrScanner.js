@@ -237,6 +237,14 @@ function renderScanResult(data) {
         extraInfoHtml = `
             <div class="flex justify-between"><span>Course:</span><span class="font-medium text-right">${user.course}</span></div>
             <div class="flex justify-between"><span>Year & Section:</span><span class="font-medium text-right">${user.yearsection}</span></div>
+            ${user.registrationFormUrl ? `
+                <div class="mt-3">
+                    <button onclick="window.open('${user.registrationFormUrl}', '_blank')" 
+                        class="w-full flex items-center justify-center gap-2 border border-orange-300 text-orange-700 px-3 py-2 rounded-lg hover:bg-orange-100 transition text-sm font-medium">
+                        <i class="ph ph-file-text"></i> View Registration Form
+                    </button>
+                </div>
+            ` : ''}
         `;
     } else if (user.type === 'faculty') {
         extraInfoHtml = `<div class="flex justify-between"><span>College/Dept:</span><span class="font-medium text-right">${user.department}</span></div>`;
