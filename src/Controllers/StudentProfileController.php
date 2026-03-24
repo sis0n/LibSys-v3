@@ -133,12 +133,18 @@ class StudentProfileController extends Controller
       }
 
       $fullName = trim($data['first_name'] . ' ' . $data['last_name']);
+
+      $gender = $data['gender'] ?? null;
+      if ($gender === 'Other') {
+        $gender = trim($data['gender_other'] ?? 'Other');
+      }
       
       $this->userRepo->updateUser($currentUserId, [
         'first_name' => $data['first_name'],
         'middle_name' => $data['middle_name'] ?? null,
         'last_name' => $data['last_name'],
         'suffix' => $data['suffix'] ?? null,
+        'gender' => $gender,
         'email' => $data['email'],
         'profile_picture' => $finalProfilePicPath
       ]);

@@ -32,6 +32,7 @@ class UserRepository
                 u.middle_name, 
                 u.last_name, 
                 u.suffix, 
+                u.gender,
                 u.profile_picture, 
                 u.is_active, 
                 u.role,
@@ -63,6 +64,7 @@ class UserRepository
                 u.middle_name, 
                 u.last_name, 
                 u.suffix, 
+                u.gender,
                 u.profile_picture, 
                 u.is_active, 
                 u.role,
@@ -160,8 +162,8 @@ class UserRepository
   public function insertUser(array $data): int
   {
     $stmt = $this->db->prepare("
-            INSERT INTO users (username, password, first_name, middle_name, last_name, suffix, email, role, is_active, created_at)
-            VALUES (:username, :password, :first_name, :middle_name, :last_name, :suffix, :email, :role, :is_active, :created_at)
+            INSERT INTO users (username, password, first_name, middle_name, last_name, suffix, gender, email, role, is_active, created_at)
+            VALUES (:username, :password, :first_name, :middle_name, :last_name, :suffix, :gender, :email, :role, :is_active, :created_at)
         ");
 
     $stmt->execute([
@@ -171,6 +173,7 @@ class UserRepository
       ':middle_name' => $data['middle_name'] ?? null,
       ':last_name' => $data['last_name'],
       ':suffix' => $data['suffix'] ?? null,
+      ':gender' => $data['gender'] ?? null,
       ':email' => $data['email'] ?? null,
       ':role' => $data['role'],
       ':is_active' => $data['is_active'] ?? 1,
@@ -200,6 +203,10 @@ class UserRepository
     if (isset($data['suffix'])) {
       $fields[] = "suffix = :suffix";
       $params[':suffix'] = $data['suffix'];
+    }
+    if (isset($data['gender'])) {
+      $fields[] = "gender = :gender";
+      $params[':gender'] = $data['gender'];
     }
     if (isset($data['username'])) {
       $fields[] = "username = :username";
