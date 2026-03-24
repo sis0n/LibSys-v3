@@ -28,60 +28,34 @@ class StudentProfileController extends Controller
     exit;
   }
 
-  /**
-   * BRIDGE: Nag-uupload ng file sa Laravel Backend via Universal API
-   */
-  private function uploadToBackendAPI($file, $folder, $lastName = 'file')
+  private function saveFileLocally($file, $subFolder)
   {
     if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
       return null;
     }
 
-    $apiUrl = str_replace('/storage', '/api/upload-file', STORAGE_URL);
     $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-
-    // Gagamit ng Random Unique ID para sa security at privacy
     $uniqueId = uniqid();
 
-    if (strpos($folder, 'profile') !== false) {
-        $fileName = "profile_{$uniqueId}.{$extension}";
+    if ($subFolder === 'profile') {
+      $fileName = "profile_{$uniqueId}.{$extension}";
     } else {
-        $fileName = "rf_{$uniqueId}.{$extension}";
+      $fileName = "rf_{$uniqueId}.{$extension}";
     }
 
-    $fileData = base64_encode(file_get_contents($file['tmp_name']));
-
-    try {
-      $ch = curl_init($apiUrl);
-      $postData = json_encode([
-        'filename' => $fileName,
-        'folder' => $folder,
-        'file' => $fileData
-      ]);
-
-      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-      curl_setopt($ch, CURLOPT_POST, true);
-      curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-      curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'Accept: application/json'
-      ]);
-
-      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-      curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-
-      $response = curl_exec($ch);
-      $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-      curl_close($ch);
-
-      if ($httpCode === 200) {
-          return "uploads/" . trim($folder, '/') . "/" . $fileName;
-      }
-      return null;
-    } catch (\Exception $e) {
-      error_log("API Upload Error: " . $e->getMessage());
-      return null;
+    $uploadDir = ROOT_PATH . "/public/storage/uploads/{$subFolder}/";
+    
+    if (!is_dir($uploadDir)) {
+      mkdir($uploadDir, 0777, true);
     }
+
+    $destPath = $uploadDir . $fileName;
+
+    if (move_uploaded_file($file['tmp_name'], $destPath)) {
+      return "storage/uploads/{$subFolder}/" . $fileName;
+    }
+
+    return null;
   }
 
   private function validateImageUpload($file)
@@ -130,7 +104,6 @@ class StudentProfileController extends Controller
 
       $data = $_POST;
       $profile = $this->studentRepo->getProfileByUserId($currentUserId);
-      $submittedLastName = $data['last_name'] ?? 'file';
 
       if ($profile && $profile['profile_updated'] == 1 && $profile['can_edit_profile'] == 0) {
         return $this->json(['success' => false, 'message' => 'Profile is locked.'], 403);
@@ -139,29 +112,26 @@ class StudentProfileController extends Controller
       $isNewProfilePicUploaded = (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === 0);
       $isNewRegFormUploaded = (isset($_FILES['reg_form']) && $_FILES['reg_form']['error'] === 0);
 
-      // 1. Profile Picture
       $finalProfilePicPath = $profile['profile_picture'];
       if ($isNewProfilePicUploaded) {
         $validation = $this->validateImageUpload($_FILES['profile_image']);
         if ($validation !== true) return $this->json(['success' => false, 'message' => $validation], 400);
 
-        $imagePath = $this->uploadToBackendAPI($_FILES['profile_image'], "profile_images", $submittedLastName);
+        $imagePath = $this->saveFileLocally($_FILES['profile_image'], "profile");
         if (!$imagePath) return $this->json(['success' => false, 'message' => 'Failed to upload picture.'], 500);
         $finalProfilePicPath = $imagePath;
       }
 
-      // 2. Reg Form
       $finalRegFormPath = $profile['registration_form'];
       if ($isNewRegFormUploaded) {
         $validation = $this->validatePDFUpload($_FILES['reg_form']);
         if ($validation !== true) return $this->json(['success' => false, 'message' => $validation], 400);
 
-        $pdfPath = $this->uploadToBackendAPI($_FILES['reg_form'], "reg_forms", $submittedLastName);
+        $pdfPath = $this->saveFileLocally($_FILES['reg_form'], "reg_form");
         if (!$pdfPath) return $this->json(['success' => false, 'message' => 'Failed to upload PDF.'], 500);
         $finalRegFormPath = $pdfPath;
       }
 
-      // 3. Update DB
       $fullName = trim($data['first_name'] . ' ' . $data['last_name']);
       
       $this->userRepo->updateUser($currentUserId, [

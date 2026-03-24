@@ -28,55 +28,31 @@ class FacultyProfileController extends Controller
   }
 
   /**
-   * BRIDGE: Nag-uupload ng file sa Laravel Backend via Universal API
+   * Save file locally to public/storage/uploads/
    */
-  private function uploadToBackendAPI($file, $folder)
+  private function saveFileLocally($file, $subFolder)
   {
     if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
       return null;
     }
 
-    $apiUrl = str_replace('/storage', '/api/upload-file', STORAGE_URL);
     $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    
-    // Gagamit ng Random Unique ID para sa security at privacy
     $uniqueId = uniqid();
-    $prefix = (strpos($folder, 'profile') !== false) ? 'profile_' : 'file_';
-    $fileName = "{$prefix}{$uniqueId}.{$extension}";
+    $fileName = "profile_{$uniqueId}.{$extension}";
 
-    $fileData = base64_encode(file_get_contents($file['tmp_name']));
-
-    try {
-      $ch = curl_init($apiUrl);
-      $postData = json_encode([
-        'filename' => $fileName,
-        'folder' => $folder,
-        'file' => $fileData
-      ]);
-
-      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-      curl_setopt($ch, CURLOPT_POST, true);
-      curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-      curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'Accept: application/json'
-      ]);
-
-      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-      curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-
-      $response = curl_exec($ch);
-      $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-      curl_close($ch);
-
-      if ($httpCode === 200) {
-          return "uploads/" . trim($folder, '/') . "/" . $fileName;
-      }
-      return null;
-    } catch (\Exception $e) {
-      error_log("API Upload Error (Faculty): " . $e->getMessage());
-      return null;
+    $uploadDir = ROOT_PATH . "/public/storage/uploads/{$subFolder}/";
+    
+    if (!is_dir($uploadDir)) {
+      mkdir($uploadDir, 0777, true);
     }
+
+    $destPath = $uploadDir . $fileName;
+
+    if (move_uploaded_file($file['tmp_name'], $destPath)) {
+      return "storage/uploads/{$subFolder}/" . $fileName;
+    }
+
+    return null;
   }
 
   private function validateImageUpload($file)
@@ -170,9 +146,9 @@ class FacultyProfileController extends Controller
         $validation = $this->validateImageUpload($_FILES['profile_image']);
         if ($validation !== true) return $this->json(['success' => false, 'message' => $validation], 400);
         
-        $imagePath = $this->uploadToBackendAPI($_FILES['profile_image'], "profile_images");
+        $imagePath = $this->saveFileLocally($_FILES['profile_image'], "profile");
         if (!$imagePath) {
-          return $this->json(['success' => false, 'message' => 'Failed to upload profile picture to mobile storage.'], 500);
+          return $this->json(['success' => false, 'message' => 'Failed to upload profile picture locally.'], 500);
         }
         $finalProfilePicPath = $imagePath;
       }

@@ -47,11 +47,12 @@ switch ($role) {
 
             <div class="w-9 h-9 rounded-full overflow-hidden flex-none border border-orange-300"> <!-- Outer div for shape -->
                 <div id="headerAvatarContainer" class="w-full h-full bg-orange-100 flex items-center justify-center text-orange-600 text-lg font-semibold">
-                    <?php if (!empty($profilePic)):
+                    <?php if (!empty($profilePic)): 
                         $cleanPath = ltrim($profilePic, '/');
+                        $finalSrc = BASE_URL . '/' . $cleanPath;
                     ?>
                         <img id="headerProfilePic"
-                            src="<?php echo STORAGE_URL . '/' . $cleanPath; ?>"
+                            src="<?= $finalSrc ?>"
                             alt="Profile"
                             class="w-full h-full object-cover">
                     <?php else: ?>

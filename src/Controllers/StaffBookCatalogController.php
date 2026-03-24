@@ -19,10 +19,10 @@ class StaffBookCatalogController extends Controller
   {
     $books = $this->bookRepo->getAllBooks();
 
-    // Transform paths para isama ang STORAGE_URL
+    // Transform paths para isama ang BASE_URL
     $books = array_map(function($book) {
       if (!empty($book['cover'])) {
-        $book['cover'] = STORAGE_URL . '/' . ltrim($book['cover'], '/');
+        $book['cover'] = BASE_URL . '/' . ltrim($book['cover'], '/');
       }
       return $book;
     }, $books);
@@ -151,10 +151,10 @@ class StaffBookCatalogController extends Controller
       $sort
     );
 
-    // Transform paths para isama ang STORAGE_URL
+    // Transform paths para isama ang BASE_URL
     $books = array_map(function($book) {
       if (!empty($book['cover'])) {
-        $book['cover'] = STORAGE_URL . '/' . ltrim($book['cover'], '/');
+        $book['cover'] = BASE_URL . '/' . ltrim($book['cover'], '/');
       }
       return $book;
     }, $books);
