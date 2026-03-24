@@ -79,8 +79,9 @@ class ForgotPasswordController extends Controller
     if ($user && !empty($user['email']) && in_array(strtolower($user['role'] ?? ''), $allowedRoles)) {
         $email = $user['email'];
         $_SESSION['reset_user_id'] = $user['user_id'];
+        $_SESSION['reset_last_name'] = $user['last_name'];
         
-        $result = $this->_sendCode($email, $user['first_name']);
+        $result = $this->_sendCode($email, $user['last_name']);
 
         if ($result) {
           $_SESSION['reset_email'] = $email;
@@ -90,7 +91,7 @@ class ForgotPasswordController extends Controller
     echo json_encode(['success' => true, 'message' => 'If an account with that username exists, a code has been sent to the registered email.']);
   }
 
-  private function _sendCode(string $email, string $firstName): bool
+  private function _sendCode(string $email, string $lastName): bool
   {
       try {
         $otp = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -100,10 +101,11 @@ class ForgotPasswordController extends Controller
 
         $subject = "Your LibSys Password Reset Code";
         $body = "
-              <p>Hello {$firstName},</p>
+              <p>Hello {$lastName},</p>
               <p>You requested to reset your password. Use the code below to verify your identity.</p>
               <h2 style='font-size: 24px; letter-spacing: 2px; font-weight: bold;'>{$otp}</h2>
               <p>This code is valid for 10 minutes.</p>
+              <p>Regards,<br>UCC Library Team</p>
           ";
 
         return $this->mailService->sendEmail($email, $subject, $body);
@@ -159,6 +161,7 @@ class ForgotPasswordController extends Controller
       if ($success) {
         unset($_SESSION['reset_email']);
         unset($_SESSION['reset_user_id']);
+        unset($_SESSION['reset_last_name']);
         unset($_SESSION['otp_verified']);
 
         echo json_encode(['success' => true, 'message' => 'Password has been reset successfully.']);
@@ -202,13 +205,15 @@ class ForgotPasswordController extends Controller
     }
 
     $email = $_SESSION['reset_email'] ?? null;
+    $lastName = $_SESSION['reset_last_name'] ?? 'User';
+
     if (!$email) {
       http_response_code(400);
       echo json_encode(['success' => false, 'message' => 'Session expired. Please start over.']);
       return;
     }
 
-    $this->_sendCode($email);
+    $this->_sendCode($email, $lastName);
 
     echo json_encode(['success' => true, 'message' => 'A new code has been sent to your email.']);
   }
