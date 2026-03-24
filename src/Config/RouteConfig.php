@@ -245,8 +245,8 @@ class RouteConfig
     $router->get('api/superadmin/reports/getActivityReport', 'ReportController@getActivityReport', ['superadmin', 'reports']);
     $router->get('api/superadmin/reports/getReportGraphData', 'ReportController@getReportGraphData', ['superadmin', 'reports']);
     $router->post('api/superadmin/reports/generate-report', 'DomPdfTemplateController@generateLibraryReport', ['superadmin', 'reports']);
-    $router->get('api/superadmin/myProfile/get', 'SuperadminController@getProfile', ['superadmin']);
-    $router->post('api/superadmin/myProfile/update', 'SuperadminController@updateProfile', ['superadmin']);
+    $router->get('api/superadmin/myProfile/get', 'SuperadminProfileController@getProfile', ['superadmin']);
+    $router->post('api/superadmin/myProfile/update', 'SuperadminProfileController@updateProfile', ['superadmin']);
     $router->post('api/superadmin/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['superadmin']);
     $router->get('api/superadmin/libraryPolicies/getAll', 'LibraryPolicyController@getAll', ['superadmin']);
     $router->post('api/superadmin/libraryPolicies/update', 'LibraryPolicyController@update', ['superadmin']);

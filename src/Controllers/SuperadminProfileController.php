@@ -42,11 +42,17 @@ class SuperadminProfileController extends Controller
 
     $data = json_decode(file_get_contents("php://input"), true);
 
+    $gender = $data['gender'] ?? null;
+    if ($gender === 'Other') {
+      $gender = trim($data['gender_other'] ?? 'Other');
+    }
+
     $userData = [
       'first_name' => trim($data['first_name'] ?? ''),
       'last_name' => trim($data['last_name'] ?? ''),
       'middle_name' => trim($data['middle_name'] ?? null),
       'suffix' => trim($data['suffix'] ?? null),
+      'gender' => $gender,
       'email' => trim($data['email'] ?? ''),
     ];
 

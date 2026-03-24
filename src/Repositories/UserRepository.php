@@ -329,6 +329,7 @@ class UserRepository
                 middle_name, 
                 last_name, 
                 suffix,
+                gender,
                 username, 
                 email,
                 role, 
