@@ -1,6 +1,6 @@
 RewriteEngine On
 
-RewriteBase /libsys-v2/public/
+RewriteBase /libsys-v3/public/
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
