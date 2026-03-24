@@ -200,6 +200,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const profileFacultyId = document.getElementById("profileFacultyId");
   const uploadLabel = document.getElementById("uploadLabel");
 
+  const genderSelect = document.getElementById("gender");
+  const genderOtherInput = document.getElementById("genderOther");
+
+  // Gender Logic: Toggle 'Other' input visibility
+  if (genderSelect) {
+    genderSelect.addEventListener("change", function () {
+      if (this.value === "Other") {
+        genderOtherInput.classList.remove("hidden");
+        genderOtherInput.disabled = false;
+        genderOtherInput.focus();
+      } else {
+        genderOtherInput.classList.add("hidden");
+        genderOtherInput.value = "";
+        genderOtherInput.disabled = true;
+      }
+    });
+  }
+
   const departmentSelect = document.getElementById("department");
   const allInputs = profileForm.querySelectorAll(
     'input[type="text"], input[type="email"], input[type="tel"], input[type="number"], select',
@@ -309,6 +327,30 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("facultyId").value =
           profile.unique_faculty_id || "";
 
+        // Gender Logic
+        if (genderSelect) {
+          const standardOptions = ["Male", "Female", "LGBTQIA+", "Prefer not to say", "Other"];
+          let genderValue = profile.gender || "";
+
+          if (standardOptions.includes(genderValue)) {
+            genderSelect.value = genderValue;
+            genderOtherInput.classList.add("hidden");
+            genderOtherInput.value = "";
+          } else if (genderValue) {
+            genderSelect.value = "Other";
+            genderOtherInput.value = genderValue;
+            genderOtherInput.classList.remove("hidden");
+          } else {
+            genderSelect.value = "";
+            genderOtherInput.classList.add("hidden");
+          }
+
+          if (!isEditing) {
+            genderSelect.disabled = true;
+            genderOtherInput.disabled = true;
+          }
+        }
+
         const currentCollegeId = String(profile.college_id || "");
         const collegeDisplayName = profile.college_code
           ? `${profile.college_code} - ${profile.college_name}`
@@ -375,6 +417,9 @@ document.addEventListener("DOMContentLoaded", () => {
       loadCollegeOptions(originalProfileData.college_id);
 
       editableInputs.forEach((input) => {
+        // Skip genderOtherInput if gender is not 'Other'
+        if (input.id === 'genderOther' && genderSelect && genderSelect.value !== 'Other') return;
+
         input.disabled = false;
         input.classList.remove("bg-gray-50", "border-gray-200");
         input.classList.add(
@@ -384,6 +429,14 @@ document.addEventListener("DOMContentLoaded", () => {
           "focus:ring-orange-500",
         );
       });
+
+      // Gender Select Styling
+      if (genderSelect) {
+        genderSelect.disabled = false;
+        genderSelect.classList.remove("bg-gray-50", "border-gray-200");
+        genderSelect.classList.add("bg-white", "border-gray-300", "focus:border-orange-500", "focus:ring-orange-500");
+      }
+
       formActions.classList.remove("hidden");
       editProfileBtn.classList.add("hidden");
       uploadLabel.classList.remove("hidden");
@@ -399,6 +452,18 @@ document.addEventListener("DOMContentLoaded", () => {
           "focus:ring-orange-500",
         );
       });
+
+      if (genderSelect) {
+        genderSelect.disabled = true;
+        genderSelect.classList.add("bg-gray-50", "border-gray-200");
+        genderSelect.classList.remove("bg-white", "border-gray-300", "focus:border-orange-500", "focus:ring-orange-500");
+      }
+      if (genderOtherInput) {
+        genderOtherInput.disabled = true;
+        genderOtherInput.classList.add("bg-gray-50", "border-gray-200");
+        genderOtherInput.classList.remove("bg-white", "border-gray-300");
+      }
+
       formActions.classList.add("hidden");
       editProfileBtn.classList.remove("hidden");
       uploadLabel.classList.add("hidden");

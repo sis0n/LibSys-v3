@@ -24,6 +24,7 @@ class StaffProfileRepository
                 u.middle_name,
                 u.last_name,
                 u.suffix,
+                u.gender,
                 u.email,
                 u.profile_picture,
                 u.role,

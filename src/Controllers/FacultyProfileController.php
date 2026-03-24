@@ -132,11 +132,18 @@ class FacultyProfileController extends Controller
       }
 
       $fullName = trim(implode(' ', array_filter([$data['first_name'], $data['middle_name'] ?? null, $data['last_name'], $data['suffix'] ?? null])));
+      
+      $gender = $data['gender'] ?? null;
+      if ($gender === 'Other') {
+        $gender = trim($data['gender_other'] ?? 'Other');
+      }
+
       $userData = [
         'first_name' => $data['first_name'],
         'middle_name' => $data['middle_name'] ?? null,
         'last_name' => $data['last_name'],
         'suffix' => $data['suffix'] ?? null,
+        'gender' => $gender,
         'full_name' => $fullName,
         'email' => $data['email']
       ];
