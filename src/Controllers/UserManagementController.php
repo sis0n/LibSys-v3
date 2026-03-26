@@ -163,7 +163,8 @@ class UserManagementController extends Controller
             $username,
             $courseId,
             $data['year_level'] ?? 1,
-            'enrolled'
+            'enrolled',
+            $data['campus'] ?? 'N/A'
           );
           break;
 
@@ -567,6 +568,7 @@ class UserManagementController extends Controller
           $courseCode = strtoupper(trim($data['course_code'] ?? ''));
           $contact    = trim($data['contact'] ?? 'N/A');
           $email      = trim($data['email'] ?? '');
+          $campus     = trim($data['campus'] ?? 'N/A');
 
           if ($studentId === '' || $firstName === '') {
             $errors[] = "Row $rowNumber: Skip - Missing First Name or Student Number.";
@@ -599,6 +601,7 @@ class UserManagementController extends Controller
             'course_id'      => $courseId,
             'year_level'     => 1,
             'status'         => 'enrolled',
+            'campus'         => $campus,
             'contact'        => $contact,
             'section'        => 'N/A'
           ];

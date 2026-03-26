@@ -41,7 +41,8 @@ class UserRepository
                 s.student_number, 
                 s.year_level, 
                 s.course_id,
-                s.section
+                s.section,
+                s.campus
             FROM students s
             LEFT JOIN users u ON u.user_id = s.user_id
             WHERE UPPER(s.student_number) = UPPER(:identifier)
@@ -303,7 +304,8 @@ class UserRepository
                     s.student_number, 
                     s.year_level, 
                     s.course,
-                    s.section
+                    s.section,
+                    s.campus
                 FROM users u
                 JOIN students s ON u.user_id = s.user_id
                 WHERE UPPER(s.student_number) = UPPER(:student_number)
@@ -506,8 +508,8 @@ class UserRepository
     ]);
 
     $stmt = $this->db->prepare("
-        INSERT INTO students (user_id, student_number, year_level, course, section)
-        VALUES (:user_id, :student_number, :year_level, :course, :section)
+        INSERT INTO students (user_id, student_number, year_level, course, section, campus)
+        VALUES (:user_id, :student_number, :year_level, :course, :section, :campus)
     ");
 
     $stmt->execute([
@@ -515,7 +517,8 @@ class UserRepository
       ':student_number' => $data['username'],
       ':year_level' => $data['year_level'] ?? 1,
       ':course' => $data['course'] ?? 'N/A',
-      ':section' => $data['section'] ?? 'N/A'
+      ':section' => $data['section'] ?? 'N/A',
+      ':campus' => $data['campus'] ?? 'N/A'
     ]);
 
     return $userId;
@@ -527,7 +530,7 @@ class UserRepository
       $stmt = $this->db->prepare("
             SELECT 
                 u.user_id, u.username, u.password, u.first_name, u.middle_name, u.last_name, u.suffix, 
-                u.profile_picture, s.student_number, s.course_id, s.year_level, s.section,
+                u.profile_picture, s.student_number, s.course_id, s.year_level, s.section, s.campus,
                 s.profile_updated, c.course_title, c.course_code
             FROM students s
             JOIN users u ON s.user_id = u.user_id
@@ -567,6 +570,7 @@ class UserRepository
                     s.year_level, 
                     s.course_id,
                     s.section,
+                    s.campus,
                     f.faculty_id,
                     f.college_id
                 FROM users u
