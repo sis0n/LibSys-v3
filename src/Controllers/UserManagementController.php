@@ -8,6 +8,7 @@ use App\Repositories\UserRepository;
 use App\Repositories\UserPermissionModuleRepository;
 use App\Repositories\FacultyRepository;
 use App\Repositories\StaffRepository;
+use App\Repositories\AuditLogRepository;
 
 class UserManagementController extends Controller
 {
@@ -16,7 +17,7 @@ class UserManagementController extends Controller
   private UserPermissionModuleRepository $userPermissionRepo;
   private FacultyRepository $facultyRepo;
   private StaffRepository $staffRepo;
-  private \App\Repositories\AuditLogRepository $auditRepo;
+  private AuditLogRepository $auditRepo;
 
   public function __construct()
   {
@@ -25,7 +26,7 @@ class UserManagementController extends Controller
     $this->userPermissionRepo = new UserPermissionModuleRepository();
     $this->facultyRepo = new FacultyRepository();
     $this->staffRepo = new StaffRepository();
-    $this->auditRepo = new \App\Repositories\AuditLogRepository();
+    $this->auditRepo = new AuditLogRepository();
   }
 
   public function index()
@@ -470,7 +471,6 @@ class UserManagementController extends Controller
       $currentUser = $this->userRepo->getUserById((int)$id);
       $currentRole = strtolower($currentUser['role'] ?? '');
 
-      // Role-specific fields
       $studentData = [];
       if ($currentRole === 'student') {
           if (isset($data['course_id'])) $studentData['course_id'] = $data['course_id'];
@@ -561,12 +561,19 @@ class UserManagementController extends Controller
     $userRepo = new \App\Repositories\UserRepository();
     $studentRepo = new \App\Repositories\StudentRepository();
     $courseRepo = new \App\Repositories\CollegeCourseRepository();
+    $campusRepo = new \App\Repositories\CampusRepository();
     $db = $userRepo->getDbConnection();
 
     $allCourses = $courseRepo->getAllCourses();
     $courseMap = [];
     foreach ($allCourses as $c) {
       $courseMap[strtoupper(trim($c['course_code']))] = $c['course_id'];
+    }
+
+    $allCampuses = $campusRepo->getAllCampuses();
+    $campusMap = [];
+    foreach ($allCampuses as $cp) {
+      $campusMap[strtoupper(trim($cp['campus_name']))] = $cp['campus_name'];
     }
 
     $existingUsernames = array_flip($userRepo->getAllUsernamesMap());
@@ -594,9 +601,10 @@ class UserManagementController extends Controller
           $lastName   = trim($data['last_name'] ?? '');
           $studentId  = trim($data['student_number'] ?? '');
           $courseCode = strtoupper(trim($data['course_code'] ?? ''));
-          $contact    = trim($data['contact'] ?? 'N/A');
-          $email      = trim($data['email'] ?? '');
-          $campus     = trim($data['campus'] ?? 'N/A');
+          $contact     = trim($data['contact'] ?? 'N/A');
+          $email       = trim($data['email'] ?? '');
+          $campusInput = strtoupper(trim($data['campus'] ?? ''));
+          $campus      = $campusMap[$campusInput] ?? 'N/A';
 
           if ($studentId === '' || $firstName === '') {
             $errors[] = "Row $rowNumber: Skip - Missing First Name or Student Number.";
