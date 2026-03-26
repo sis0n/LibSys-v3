@@ -67,11 +67,22 @@ class UserManagementController extends Controller
       return;
     }
 
+    $role = strtolower($user['role'] ?? '');
+    $extraDetails = null;
+
+    if ($role === 'student') {
+      $extraDetails = $this->studentRepo->getStudentByUserId((int)$id);
+    } elseif ($role === 'faculty') {
+      $extraDetails = $this->facultyRepo->getFacultyByUserId((int)$id);
+    } elseif ($role === 'staff') {
+      $extraDetails = $this->staffRepo->getStaffByUserId((int)$id);
+    }
+
     $modules = [];
-    if (in_array(strtolower($user['role']), ['admin', 'librarian'])) {
+    if (in_array($role, ['admin', 'librarian'])) {
       $modules = $this->userPermissionRepo->getModulesByUserId((int)$id);
     }
-    echo json_encode(['user' => $user, 'modules' => $modules]);
+    echo json_encode(['user' => $user, 'extra' => $extraDetails, 'modules' => $modules]);
   }
 
   public function search()
@@ -100,6 +111,7 @@ class UserManagementController extends Controller
     $first_name = trim($data['first_name'] ?? '');
     $middle_name = trim($data['middle_name'] ?? '');
     $last_name = trim($data['last_name'] ?? '');
+    $gender = trim($data['gender'] ?? '');
     $username = trim($data['username'] ?? '');
     $role = strtolower(trim($data['role'] ?? ''));
     $contact = $data['contact'] ?? 'N/A';
@@ -138,6 +150,7 @@ class UserManagementController extends Controller
         'first_name' => $first_name,
         'middle_name' => $middle_name,
         'last_name' => $last_name,
+        'gender' => $gender,
         'email' => $data['email'] ?? null,
         'role' => ucfirst($role),
         'is_active' => 1,
@@ -179,7 +192,6 @@ class UserManagementController extends Controller
             $userId,
             $collegeId,
             $contact,
-            $data['contact'] ?? 'N/A',
             'active'
           );
           break;
@@ -188,7 +200,6 @@ class UserManagementController extends Controller
           $staffRepo = new \App\Repositories\StaffRepository();
           $staffRepo->insertStaff(
             $userId,
-            $data['employee_id'] ?? 'N/A',
             $data['position'] ?? 'N/A',
             $contact,
             'active'
@@ -459,6 +470,17 @@ class UserManagementController extends Controller
       $currentUser = $this->userRepo->getUserById((int)$id);
       $currentRole = strtolower($currentUser['role'] ?? '');
 
+      // Role-specific fields
+      $studentData = [];
+      if ($currentRole === 'student') {
+          if (isset($data['course_id'])) $studentData['course_id'] = $data['course_id'];
+          if (isset($data['year_level'])) $studentData['year_level'] = $data['year_level'];
+          if (isset($data['section'])) $studentData['section'] = $data['section'];
+          if (isset($data['campus'])) $studentData['campus'] = $data['campus'];
+          
+          unset($data['course_id'], $data['year_level'], $data['section'], $data['campus']);
+      }
+
       unset($data['role']);
       unset($data['user_id']);
 
@@ -469,6 +491,12 @@ class UserManagementController extends Controller
       }
 
       $userUpdated = $this->userRepo->updateUser((int)$id, $data);
+      
+      if (!empty($studentData)) {
+          (new \App\Repositories\StudentProfileRepository())->updateStudentProfile((int)$id, $studentData);
+          $userUpdated = true; 
+      }
+
       $modulesUpdated = false;
 
       if ($currentRole === 'admin' || $currentRole === 'librarian') {

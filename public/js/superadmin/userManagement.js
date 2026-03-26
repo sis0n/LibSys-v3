@@ -264,19 +264,56 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
 
+    async function loadCampuses(targetSelectId, selectedValue = null) {
+        const select = document.getElementById(targetSelectId);
+        if (!select) return;
+
+        select.innerHTML = '<option value="">Loading Campuses...</option>';
+
+        try {
+            const res = await fetch('api/campuses/all');
+            const data = await res.json();
+
+            select.innerHTML = '<option value="">Select Campus</option>';
+
+            if (data.success && Array.isArray(data.campuses) && data.campuses.length > 0) {
+                data.campuses.forEach(campus => {
+                    const option = new Option(campus.campus_name, campus.campus_name);
+                    select.add(option);
+                });
+
+                if (selectedValue) {
+                    select.value = selectedValue;
+                }
+            } else {
+                select.innerHTML = '<option value="">No Campuses Found</option>';
+            }
+
+        } catch (err) {
+            console.error("Error loading campuses:", err);
+            select.innerHTML = '<option value="">Error loading campuses</option>';
+        }
+    }
+
     function updateProgramDepartmentDropdown(role, selectedValue = null) {
         const wrapper = document.getElementById('addUserSingleSelectWrapper');
         const label = document.getElementById('addUserSelectLabel');
+        const studentFieldsWrapper = document.getElementById('addUserStudentFieldsWrapper');
 
         if (!wrapper || !label) return;
 
         const normalizedRole = (role || "").trim().toLowerCase();
 
         wrapper.classList.add('hidden');
+        if (studentFieldsWrapper) studentFieldsWrapper.classList.add('hidden');
 
         if (normalizedRole === 'student') {
             label.innerHTML = 'Course/Program <span class="text-red-500">*</span>';
             wrapper.classList.remove('hidden');
+            if (studentFieldsWrapper) {
+                studentFieldsWrapper.classList.remove('hidden');
+                loadCampuses('addCampus');
+            }
             loadCoursesForStudent(selectedValue);
 
         } else if (normalizedRole === 'faculty') {
@@ -333,8 +370,8 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
 
-    async function loadCoursesForStudent(selectedValue = null) {
-        const select = document.getElementById('addUserSelectField');
+    async function loadCourses(targetSelectId, selectedValue = null) {
+        const select = document.getElementById(targetSelectId);
         if (!select) return;
 
         select.innerHTML = '<option value="">Loading Courses...</option>';
@@ -362,6 +399,10 @@ window.addEventListener("DOMContentLoaded", () => {
             console.error("Error loading courses:", err);
             select.innerHTML = '<option value="">Error loading courses</option>';
         }
+    }
+
+    async function loadCoursesForStudent(selectedValue = null) {
+        await loadCourses('addUserSelectField', selectedValue);
     }
 
     async function loadDepartments(selectedValue = null) {
@@ -846,6 +887,7 @@ window.addEventListener("DOMContentLoaded", () => {
             const first_name = document.getElementById("addFirstName").value.trim();
             const middle_name = document.getElementById("addMiddleName").value.trim();
             const last_name = document.getElementById("addLastName").value.trim();
+            const gender = document.getElementById("addGender").value;
             const username = document.getElementById("addUsername").value.trim();
             const role = document.getElementById("userRoleDropdownValue").textContent.trim();
 
@@ -854,8 +896,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
             let payloadData = {};
 
-            if (!first_name || !last_name || !username || role === "Select Role") {
-                return showErrorToast("Required Fields Missing", "Please fill in all required fields (First Name, Last Name, Username, Role).");
+            if (!first_name || !last_name || !username || !gender || role === "Select Role") {
+                return showErrorToast("Required Fields Missing", "Please fill in all required fields (First Name, Last Name, Gender, Username, Role).");
             }
 
             if (selectWrapper && !selectWrapper.classList.contains('hidden')) {
@@ -890,6 +932,7 @@ window.addEventListener("DOMContentLoaded", () => {
                         first_name: first_name,
                         middle_name: middle_name || null,
                         last_name: last_name,
+                        gender: gender,
                         username: username,
                         role: role,
                         ...(payloadData.course_id && {
@@ -959,42 +1002,87 @@ window.addEventListener("DOMContentLoaded", () => {
                 currentEditingUserId = user.user_id;
                 const userRole = user.role.toLowerCase();
 
-                document.getElementById("editFirstName").value = user.first_name || '';
-                document.getElementById("editMiddleName").value = user.middle_name || '';
-                document.getElementById("editLastName").value = user.last_name || '';
-                document.getElementById("editUsername").value = user.username || '';
-                document.getElementById("editEmail").value = user.email || '';
-                document.getElementById("editRoleDropdownValue").textContent = user.role;
-                document.getElementById("editStatusDropdownValue").textContent = user.status;
-                document.querySelector("#editUserTitle span").textContent = user.name;
+                // --- 1. SHOW LOADING MODAL ---
+                showLoadingModal("Fetching Details...", `Retrieving information for ${user.name}.`);
+                const fetchStartTime = Date.now();
 
-                const editModulesContainer = document.getElementById("editPermissionsContainer");
-                if (editModulesContainer) {
-                    if (userRole === 'admin' || userRole === 'librarian') {
-                        editModulesContainer.classList.remove("hidden");
+                try {
+                    // --- 2. FETCH FULL DETAILS FROM API ---
+                    const res = await fetch(`api/superadmin/userManagement/get/${user.user_id}`);
+                    const data = await res.json();
 
-                        if (editUserUserManagementModuleWrapper) {
-                            if (userRole === 'admin') {
-                                editUserUserManagementModuleWrapper.classList.remove('hidden');
-                            } else {
-                                editUserUserManagementModuleWrapper.classList.add('hidden');
-                            }
+                    // Mabilis na pagsara ng modal
+                    const elapsed = Date.now() - fetchStartTime;
+                    const minModalDisplay = 500;
+                    if (elapsed < minModalDisplay) await new Promise(r => setTimeout(r, minModalDisplay - elapsed));
+                    Swal.close();
+
+                    if (!data.user) throw new Error("User data not found.");
+
+                    const fullUser = data.user;
+                    const extra = data.extra; // Extra info (Student details)
+
+                    // --- 3. POPULATE BASIC FIELDS ---
+                    document.getElementById("editFirstName").value = fullUser.first_name || '';
+                    document.getElementById("editMiddleName").value = fullUser.middle_name || '';
+                    document.getElementById("editLastName").value = fullUser.last_name || '';
+                    document.getElementById("editUsername").value = fullUser.username || '';
+                    document.getElementById("editEmail").value = fullUser.email || '';
+                    document.getElementById("editGender").value = fullUser.gender || '';
+                    document.getElementById("editRoleDropdownValue").textContent = fullUser.role;
+                    document.getElementById("editStatusDropdownValue").textContent = fullUser.is_active == 1 ? "Active" : "Inactive";
+                    document.querySelector("#editUserTitle span").textContent = buildFullName(fullUser.first_name, fullUser.middle_name, fullUser.last_name);
+
+                    // --- 4. HANDLE STUDENT FIELDS ---
+                    const studentWrapper = document.getElementById("editStudentFieldsWrapper");
+                    if (studentWrapper) {
+                        if (userRole === 'student') {
+                            studentWrapper.classList.remove("hidden");
+                            
+                            await loadCourses('editCourseId', extra ? extra.course_id : null);
+                            
+                            await loadCampuses('editCampus', extra ? extra.campus : null);
+                            
+                            document.getElementById("editYearLevel").value = extra ? (extra.year_level || '1') : '1';
+                            document.getElementById("editSection").value = extra ? (extra.section || '') : '';
+                        } else {
+                            studentWrapper.classList.add("hidden");
                         }
-
-                        editModulesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                            cb.checked = user.modules?.some(
-                                m => m.toLowerCase().trim() === cb.value.toLowerCase().trim()
-                            ) || false;
-                        });
-
-                    } else {
-                        editModulesContainer.classList.add("hidden");
-                        editModulesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
                     }
-                }
 
-                editUserModal.classList.remove("hidden");
-                document.body.classList.add("overflow-hidden");
+                    const editModulesContainer = document.getElementById("editPermissionsContainer");
+                    if (editModulesContainer) {
+                        if (userRole === 'admin' || userRole === 'librarian') {
+                            editModulesContainer.classList.remove("hidden");
+
+                            if (editUserUserManagementModuleWrapper) {
+                                if (userRole === 'admin') {
+                                    editUserUserManagementModuleWrapper.classList.remove('hidden');
+                                } else {
+                                    editUserUserManagementModuleWrapper.classList.add('hidden');
+                                }
+                            }
+
+                            editModulesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                                cb.checked = data.modules?.some(
+                                    m => m.toLowerCase().trim() === cb.value.toLowerCase().trim()
+                                ) || false;
+                            });
+
+                        } else {
+                            editModulesContainer.classList.add("hidden");
+                            editModulesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                        }
+                    }
+
+                    editUserModal.classList.remove("hidden");
+                    document.body.classList.add("overflow-hidden");
+
+                } catch (err) {
+                    console.error("Error fetching user details:", err);
+                    Swal.close();
+                    showErrorToast("Fetch Failed", "Could not retrieve user details.");
+                }
             }
 
             if (e.target.closest(".deleteUserBtn")) {
@@ -1132,9 +1220,17 @@ window.addEventListener("DOMContentLoaded", () => {
                 last_name: document.getElementById("editLastName").value.trim(),
                 username: document.getElementById("editUsername").value.trim(),
                 email: document.getElementById("editEmail").value.trim(),
+                gender: document.getElementById("editGender").value,
                 role: role,
                 is_active: document.getElementById("editStatusDropdownValue").textContent.trim().toLowerCase() === 'active' ? 1 : 0
             };
+
+            if (role.toLowerCase() === 'student') {
+                payload.course_id = document.getElementById("editCourseId").value;
+                payload.campus = document.getElementById("editCampus").value.trim();
+                payload.year_level = document.getElementById("editYearLevel").value;
+                payload.section = document.getElementById("editSection").value.trim();
+            }
 
             if (!payload.first_name || !payload.last_name || !payload.email || !payload.username) {
                 return showErrorToast("Required Fields Missing", "First Name, Last Name, Username, and Email are required.");

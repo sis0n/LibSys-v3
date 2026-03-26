@@ -5,14 +5,17 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Repositories\CollegeCourseRepository;
+use App\Repositories\CampusRepository;
 
 class DataController extends Controller
 {
   private CollegeCourseRepository $collegeCourseRepo;
+  private CampusRepository $campusRepo;
 
   public function __construct()
   {
     $this->collegeCourseRepo = new CollegeCourseRepository();
+    $this->campusRepo = new CampusRepository();
   }
 
   public function getColleges()
@@ -59,6 +62,19 @@ class DataController extends Controller
     } catch (\Exception $e) {
       http_response_code(500);
       echo json_encode(['success' => false, 'message' => 'Error fetching courses: ' . $e->getMessage()]);
+    }
+    exit;
+  }
+
+  public function getAllCampuses()
+  {
+    header('Content-Type: application/json');
+    try {
+      $campuses = $this->campusRepo->getAllCampuses();
+      echo json_encode(['success' => true, 'campuses' => $campuses]);
+    } catch (\Exception $e) {
+      http_response_code(500);
+      echo json_encode(['success' => false, 'message' => 'Error fetching campuses: ' . $e->getMessage()]);
     }
     exit;
   }

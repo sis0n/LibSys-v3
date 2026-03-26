@@ -189,6 +189,7 @@ class RouteConfig
     $router->post('api/superadmin/userManagement/bulkImport', 'UserManagementController@bulkImport');
     $router->get('api/superadmin/userManagement/getAllCourses', 'DataController@getAllCourses', ['superadmin', 'student promotion']);
     $router->get('api/superadmin/userManagement/getColleges', 'DataController@getColleges', ['superadmin']);
+    $router->get('api/campuses/all', 'DataController@getAllCampuses');
     $router->get('api/superadmin/booksmanagement/fetch', 'BookManagementController@fetch', ['superadmin']);
     $router->get('api/superadmin/booksmanagement/get/{id}', 'BookManagementController@getDetails', ['superadmin']);
     $router->post('api/superadmin/booksmanagement/store', 'BookManagementController@store', ['superadmin']);
