@@ -278,7 +278,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
             if (data.success && Array.isArray(data.campuses) && data.campuses.length > 0) {
                 data.campuses.forEach(campus => {
-                    const option = new Option(campus.campus_name, campus.campus_name);
+                    const option = new Option(campus.campus_name, campus.campus_id); // Corrected line
                     select.add(option);
                 });
 
@@ -1041,7 +1041,7 @@ window.addEventListener("DOMContentLoaded", () => {
                             
                             await loadCourses('editCourseId', extra ? extra.course_id : null);
                             
-                            await loadCampuses('editCampus', extra ? extra.campus : null);
+                            await loadCampuses('editCampus', data.user && data.user.campus_id ? data.user.campus_id : null);
                             
                             document.getElementById("editYearLevel").value = extra ? (extra.year_level || '1') : '1';
                             document.getElementById("editSection").value = extra ? (extra.section || '') : '';
@@ -1227,7 +1227,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
             if (role.toLowerCase() === 'student') {
                 payload.course_id = document.getElementById("editCourseId").value;
-                payload.campus = document.getElementById("editCampus").value.trim();
+                payload.campus_id = document.getElementById("editCampus").value.trim();
                 payload.year_level = document.getElementById("editYearLevel").value;
                 payload.section = document.getElementById("editSection").value.trim();
             }

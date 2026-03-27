@@ -23,6 +23,11 @@ class AuthRepository
   {
     $user = $this->userRepo->findByIdentifier($username);
 
+    // Add debug logs here
+    error_log('AuthRepository::attemptLogin - User data retrieved: ' . print_r($user, true));
+    error_log('AuthRepository::attemptLogin - Submitted password: ' . $password); // Password from the login form
+    error_log('AuthRepository::attemptLogin - Stored hash: ' . ($user['password'] ?? 'not set')); // Password hash from DB
+
     if ($user && isset($user['password']) && password_verify($password, $user['password'])) {
       $firstName = $user['first_name'] ?? '';
       $middleName = $user['middle_name'] ?? '';
@@ -72,8 +77,11 @@ class AuthRepository
           'user_permissions' => $modules
         ]
       ];
+    } else {
+        // Log if password verification failed or user data was incomplete
+        error_log('AuthRepository::attemptLogin - Password verification failed or user data incomplete.');
+        return null;
     }
-    return null;
   }
 
   public function logout(): void

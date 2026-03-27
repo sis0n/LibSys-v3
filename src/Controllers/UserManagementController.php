@@ -83,6 +83,22 @@ class UserManagementController extends Controller
     if (in_array($role, ['admin', 'librarian'])) {
       $modules = $this->userPermissionRepo->getModulesByUserId((int)$id);
     }
+
+    // Fetch campus name if campus_id is available in the user object
+    if ($user && isset($user['campus_id'])) {
+      $campusRepo = new \App\Repositories\CampusRepository();
+      $campuses = $campusRepo->getAllCampuses();
+      $campusName = 'Unknown Campus'; // Default value
+
+      foreach ($campuses as $campus) {
+        if ($campus['campus_id'] === $user['campus_id']) {
+          $campusName = $campus['campus_name'];
+          break;
+        }
+      }
+      $user['campus_name'] = $campusName; // Add campus name to the user array
+    }
+
     echo json_encode(['user' => $user, 'extra' => $extraDetails, 'modules' => $modules]);
   }
 
@@ -463,8 +479,12 @@ class UserManagementController extends Controller
       return;
     }
 
+    $db = $this->userRepo->getDbConnection();
+
     try {
-      $modulesPayload = $data['modules'] ?? null;
+      $db->beginTransaction();
+
+      $modulesPayload       = $data['modules'] ?? null;
       $modulesKeyWasPresent = array_key_exists('modules', $data);
       unset($data['modules']);
 
@@ -473,62 +493,45 @@ class UserManagementController extends Controller
 
       $studentData = [];
       if ($currentRole === 'student') {
-        if (isset($data['course_id'])) $studentData['course_id'] = $data['course_id'];
+        if (isset($data['course_id']))  $studentData['course_id']  = $data['course_id'];
         if (isset($data['year_level'])) $studentData['year_level'] = $data['year_level'];
-        if (isset($data['section'])) $studentData['section'] = $data['section'];
-        if (isset($data['campus'])) $studentData['campus'] = $data['campus'];
+        if (isset($data['section']))    $studentData['section']    = $data['section'];
 
-        unset($data['course_id'], $data['year_level'], $data['section'], $data['campus']);
+        unset($data['course_id'], $data['year_level'], $data['section']);
       }
 
-      unset($data['role']);
-      unset($data['user_id']);
+      unset($data['role'], $data['user_id']);
 
-      if (isset($data['password']) && !empty($data['password'])) {
+      if (!empty($data['password'])) {
         $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
       } else {
         unset($data['password']);
       }
 
-      $userUpdated = $this->userRepo->updateUser((int)$id, $data);
+      $this->userRepo->updateUser((int)$id, $data);
 
       if (!empty($studentData)) {
         (new \App\Repositories\StudentProfileRepository())->updateStudentProfile((int)$id, $studentData);
-        $userUpdated = true;
       }
 
-      $modulesUpdated = false;
-
-      if ($currentRole === 'admin' || $currentRole === 'librarian') {
-        if ($modulesKeyWasPresent) {
-          $modulesToAssign = is_array($modulesPayload) ? $modulesPayload : [];
-          $this->userPermissionRepo->assignModules((int)$id, $modulesToAssign);
-          $modulesUpdated = true;
-        }
+      if (($currentRole === 'admin' || $currentRole === 'librarian') && $modulesKeyWasPresent) {
+        $modulesToAssign = is_array($modulesPayload) ? $modulesPayload : [];
+        $this->userPermissionRepo->assignModules((int)$id, $modulesToAssign);
       }
 
-      if ($userUpdated || $modulesUpdated) {
-        $details = "Updated details/permissions for {$currentUser['first_name']} {$currentUser['last_name']}";
-        if (!empty($data['password'])) {
-          $details .= " (Password was reset by Admin)";
-        }
-        $this->auditRepo->log($_SESSION['user_id'], 'UPDATE', 'USERS', $currentUser['username'], $details);
-        echo json_encode([
-          'success' => true,
-          'message' => 'User updated successfully.'
-        ]);
-      } else {
-        echo json_encode([
-          'success' => false,
-          'message' => 'Failed to update user or no changes were made.'
-        ]);
+      $details = "Updated details/permissions for {$currentUser['first_name']} {$currentUser['last_name']}";
+      if (!empty($data['password'])) {
+        $details .= " (Password was reset by Admin)";
       }
+      $this->auditRepo->log($_SESSION['user_id'], 'UPDATE', 'USERS', $currentUser['username'], $details);
+
+      $db->commit();
+
+      echo json_encode(['success' => true, 'message' => 'User updated successfully.']);
     } catch (\Exception $e) {
+      if ($db->inTransaction()) $db->rollBack();
       error_log("[UserManagementController::updateUser] " . $e->getMessage());
-      echo json_encode([
-        'success' => false,
-        'message' => 'An internal server error occurred.'
-      ]);
+      echo json_encode(['success' => false, 'message' => 'An internal server error occurred.']);
     }
   }
 

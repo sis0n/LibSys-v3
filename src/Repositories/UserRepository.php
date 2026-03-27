@@ -41,8 +41,7 @@ class UserRepository
                 s.student_number, 
                 s.year_level, 
                 s.course_id,
-                s.section,
-                s.campus
+                s.section
             FROM students s
             LEFT JOIN users u ON u.user_id = s.user_id
             WHERE UPPER(s.student_number) = UPPER(:identifier)
@@ -138,7 +137,7 @@ class UserRepository
   public function bulkInsertUsers(array $usersBatch)
   {
     if (empty($usersBatch)) return [];
-    
+
     $columns = ['username', 'password', 'first_name', 'middle_name', 'last_name', 'email', 'role', 'is_active', 'created_at', 'campus_id'];
     $colString = implode(',', $columns);
 
@@ -233,6 +232,10 @@ class UserRepository
       $fields[] = "profile_picture = :profile_picture";
       $params[':profile_picture'] = $data['profile_picture'];
     }
+    if (isset($data['campus_id'])) {
+      $fields[] = "campus_id = :campus_id";
+      $params[':campus_id'] = $data['campus_id'];
+    }
 
     if (empty($fields)) {
       return false;
@@ -243,7 +246,8 @@ class UserRepository
     $query = "UPDATE users SET " . implode(', ', $fields) . " WHERE user_id = :id";
     try {
       $stmt = $this->db->prepare($query);
-      return $stmt->execute($params);
+      $stmt->execute($params);
+      return true;
     } catch (\PDOException $e) {
       error_log("[UserRepository::updateUser] " . $e->getMessage());
       return false;
@@ -602,8 +606,8 @@ class UserRepository
     $params = [];
 
     if ($excludeUserId !== null) {
-        $baseQuery .= " AND u.user_id != ?";
-        $params[] = $excludeUserId;
+      $baseQuery .= " AND u.user_id != ?";
+      $params[] = $excludeUserId;
     }
 
     if ($search !== '') {
@@ -653,8 +657,8 @@ class UserRepository
     $params = [];
 
     if ($excludeUserId !== null) {
-        $query .= " AND u.user_id != ?";
-        $params[] = $excludeUserId;
+      $query .= " AND u.user_id != ?";
+      $params[] = $excludeUserId;
     }
 
     if ($search !== '') {

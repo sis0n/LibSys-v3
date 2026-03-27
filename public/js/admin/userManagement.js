@@ -278,7 +278,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
             if (data.success && Array.isArray(data.campuses) && data.campuses.length > 0) {
                 data.campuses.forEach(campus => {
-                    const option = new Option(campus.campus_name, campus.campus_name);
+                    const option = new Option(campus.campus_name, campus.campus_id); // Corrected line
                     select.add(option);
                 });
 
@@ -1041,7 +1041,7 @@ window.addEventListener("DOMContentLoaded", () => {
                             
                             await loadCourses('editCourseId', extra ? extra.course_id : null);
                             
-                            await loadCampuses('editCampus', extra ? extra.campus : null);
+                            await loadCampuses('editCampus', data.user && data.user.campus_id ? data.user.campus_id : null);
                             
                             document.getElementById("editYearLevel").value = extra ? (extra.year_level || '1') : '1';
                             document.getElementById("editSection").value = extra ? (extra.section || '') : '';
@@ -1126,7 +1126,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
             // TOGGLE STATUS
             if (e.target.closest(".toggle-status-btn")) {
-                if (user.role.toLowerCase() === 'superadmin') return showErrorToast("Action Denied", "Superadmin status cannot be changed!");
+                if (user.role.toLowerCase() === 'admin') return showErrorToast("Action Denied", "admin status cannot be changed!");
                 if (user.role.toLowerCase() === 'scanner') return showErrorToast("Action Denied", "Scanner status cannot be changed!");
 
                 const newStatus = user.status === 'Active' ? 'Inactive' : 'Active';
@@ -1227,7 +1227,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
             if (role.toLowerCase() === 'student') {
                 payload.course_id = document.getElementById("editCourseId").value;
-                payload.campus = document.getElementById("editCampus").value.trim();
+                payload.campus_id = document.getElementById("editCampus").value.trim();
                 payload.year_level = document.getElementById("editYearLevel").value;
                 payload.section = document.getElementById("editSection").value.trim();
             }
@@ -1321,7 +1321,7 @@ window.addEventListener("DOMContentLoaded", () => {
                 return `<span class="bg-emerald-600 text-white ${base}">${role}</span>`;
             case "staff":
                 return `<span class="bg-teal-600 text-white ${base}">${role}</span>`;
-            case "superadmin":
+            case "admin":
                 return `<span class="bg-purple-600 text-white ${base}">${role}</span>`;
             default:
                 return `<span class="bg-gray-300 text-gray-800 ${base}">${role}</span>`;
@@ -1513,5 +1513,4 @@ window.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
-    // end
 });
