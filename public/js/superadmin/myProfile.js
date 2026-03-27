@@ -9,6 +9,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
   const genderSelect = document.getElementById("gender");
   const genderOtherInput = document.getElementById("genderOther");
+  const campusSelect = document.getElementById("campus");
 
   // Gender Logic: Toggle 'Other' input visibility
   if (genderSelect) {
@@ -25,7 +26,7 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  const fields = ['lastName', 'firstName', 'middleName', 'suffix', 'email', 'gender', 'genderOther'];
+  const fields = ['lastName', 'firstName', 'middleName', 'suffix', 'email', 'gender', 'genderOther', 'campus'];
   const inputElements = {};
   fields.forEach(id => inputElements[id] = document.getElementById(id));
 
@@ -45,6 +46,28 @@ window.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
       element.classList.add('hidden');
     }, 3000);
+  }
+
+  async function loadCampuses(currentCampusId = null) {
+      if (!campusSelect) return;
+      try {
+          const res = await fetch('api/campuses/all');
+          const data = await res.json();
+          if (data.success) {
+              campusSelect.innerHTML = '<option value="" disabled selected>Select Campus</option>';
+              data.campuses.forEach(campus => {
+                  const option = document.createElement('option');
+                  option.value = campus.campus_id;
+                  option.textContent = campus.campus_name;
+                  campusSelect.appendChild(option);
+              });
+              if (currentCampusId) {
+                  campusSelect.value = currentCampusId;
+              }
+          }
+      } catch (err) {
+          console.error("Failed to load campuses:", err);
+      }
   }
 
   function toggleEditMode(isEditing) {
@@ -99,6 +122,8 @@ window.addEventListener("DOMContentLoaded", () => {
       document.getElementById('profileName').textContent = profileName || profile.username;
       document.getElementById('profileStudentId').textContent = profile.username;
       
+      await loadCampuses(profile.campus_id);
+
       // Gender Logic
       let genderValue = profile.gender || "";
       let genderOtherValue = "";
@@ -118,7 +143,8 @@ window.addEventListener("DOMContentLoaded", () => {
           'suffix': profile.suffix,
           'email': profile.email,
           'gender': genderValue,
-          'genderOther': genderOtherValue
+          'genderOther': genderOtherValue,
+          'campus': profile.campus_id
       };
       
       fields.forEach(id => {
@@ -164,7 +190,8 @@ window.addEventListener("DOMContentLoaded", () => {
         'suffix': document.getElementById("suffix").value,
         'email': document.getElementById("email").value,
         'gender': document.getElementById("gender").value,
-        'gender_other': document.getElementById("genderOther").value
+        'gender_other': document.getElementById("genderOther").value,
+        'campus_id': document.getElementById("campus").value
     };
 
     try {
@@ -194,7 +221,8 @@ window.addEventListener("DOMContentLoaded", () => {
             'suffix': payload.suffix,
             'email': payload.email,
             'gender': payload.gender,
-            'genderOther': payload.gender_other
+            'genderOther': payload.gender_other,
+            'campus': payload.campus_id
         };
         
         toggleEditMode(false); 

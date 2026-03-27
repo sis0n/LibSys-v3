@@ -147,6 +147,14 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <div>
+                        <label class="text-sm text-gray-500" for="campus">Campus</label>
+                        <input type="text" id="campus" name="campus"
+                            class="font-medium text-gray-800 bg-gray-100 border-gray-300 border rounded-md px-2 py-1 w-full"
+                            disabled>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div>
                         <label class="text-sm text-gray-500" for="position">Position</label>
                         <input type="text" id="position" name="position"
                             class="font-medium text-gray-800 bg-gray-50 border-gray-200 border rounded-md px-2 py-1 w-full"

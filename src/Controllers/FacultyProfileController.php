@@ -80,6 +80,20 @@ class FacultyProfileController extends Controller
       $profile = $this->facultyRepo->getProfileByUserId($currentUserId);
       if (!$profile) return $this->json(['success' => false, 'message' => 'Profile not found.'], 404);
 
+      // Map campus name if campus_id is available
+      if (isset($profile['campus_id']) && empty($profile['campus_name'])) {
+        $campusRepo = new \App\Repositories\CampusRepository();
+        $campuses = $campusRepo->getAllCampuses();
+        $campusName = 'N/A';
+        foreach ($campuses as $campus) {
+          if ($campus['campus_id'] == $profile['campus_id']) {
+            $campusName = $campus['campus_name'];
+            break;
+          }
+        }
+        $profile['campus_name'] = $campusName;
+      }
+
       $profile['allow_edit'] = 1;
       $this->json(['success' => true, 'profile' => $profile]);
     } catch (\Exception $e) {

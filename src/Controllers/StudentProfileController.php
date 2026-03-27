@@ -90,6 +90,21 @@ class StudentProfileController extends Controller
       if (!$currentUserId) return $this->json(['success' => false, 'message' => 'Unauthorized'], 401);
       $profile = $this->studentRepo->getProfileByUserId($currentUserId);
       if (!$profile) return $this->json(['success' => false, 'message' => 'Profile not found.'], 404);
+
+      // Map campus name if campus_id is available
+      if (isset($profile['campus_id']) && empty($profile['campus_name'])) {
+        $campusRepo = new \App\Repositories\CampusRepository();
+        $campuses = $campusRepo->getAllCampuses();
+        $campusName = 'N/A';
+        foreach ($campuses as $campus) {
+          if ($campus['campus_id'] == $profile['campus_id']) {
+            $campusName = $campus['campus_name'];
+            break;
+          }
+        }
+        $profile['campus_name'] = $campusName;
+      }
+
       $this->json(['success' => true, 'profile' => $profile], 200);
     } catch (\Exception $e) {
       $this->json(['success' => false, 'message' => $e->getMessage()], 500);

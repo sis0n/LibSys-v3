@@ -162,8 +162,8 @@ class UserRepository
   public function insertUser(array $data): int
   {
     $stmt = $this->db->prepare("
-            INSERT INTO users (username, password, first_name, middle_name, last_name, suffix, gender, email, role, is_active, created_at)
-            VALUES (:username, :password, :first_name, :middle_name, :last_name, :suffix, :gender, :email, :role, :is_active, :created_at)
+            INSERT INTO users (username, password, first_name, middle_name, last_name, suffix, campus_id, email, role, is_active, created_at)
+            VALUES (:username, :password, :first_name, :middle_name, :last_name, :suffix, :campus_id, :email, :role, :is_active, :created_at)
         ");
 
     $stmt->execute([
@@ -173,7 +173,7 @@ class UserRepository
       ':middle_name' => $data['middle_name'] ?? null,
       ':last_name' => $data['last_name'],
       ':suffix' => $data['suffix'] ?? null,
-      ':gender' => $data['gender'] ?? null,
+      ':campus_id' => $data['campus_id'] ?? null,
       ':email' => $data['email'] ?? null,
       ':role' => $data['role'],
       ':is_active' => $data['is_active'] ?? 1,

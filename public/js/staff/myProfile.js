@@ -235,9 +235,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const allInputs = profileForm.querySelectorAll(
     'input[type="text"], input[type="email"], input[type="tel"], input[type="number"]',
   );
-  // Ensure 'facultyId' remains read-only as per original Staff code structure
+  // Ensure 'facultyId' and 'campus' remain read-only
   const editableInputs = Array.from(allInputs).filter(
-    (input) => input.id !== "facultyId",
+    (input) => input.id !== "facultyId" && input.id !== "campus",
   );
 
   const MAX_FILE_SIZE = 1 * 1024 * 1024;
@@ -293,6 +293,15 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("email").value = profile.email || "";
         document.getElementById("contact").value = profile.contact || "";
         document.getElementById("facultyId").value = profile.employee_id || ""; // Staff ID Input
+
+        // Campus Name Display
+        const campusInput = document.getElementById("campus");
+        if (campusInput) {
+            campusInput.value = profile.campus_name || "N/A";
+            if (!isEditing) {
+                campusInput.disabled = true;
+            }
+        }
 
         // Gender Logic
         if (genderSelect) {

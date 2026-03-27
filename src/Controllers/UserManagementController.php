@@ -128,15 +128,15 @@ class UserManagementController extends Controller
     $first_name = trim($data['first_name'] ?? '');
     $middle_name = trim($data['middle_name'] ?? '');
     $last_name = trim($data['last_name'] ?? '');
-    $gender = trim($data['gender'] ?? '');
+    $campus_id = $data['campus_id'] ?? null;
     $username = trim($data['username'] ?? '');
     $role = strtolower(trim($data['role'] ?? ''));
     $contact = $data['contact'] ?? 'N/A';
 
-    if (!$first_name || !$last_name || !$username || !$role) {
+    if (!$first_name || !$last_name || !$username || !$role || !$campus_id) {
       echo json_encode([
         'success' => false,
-        'message' => 'First Name, Last Name, Username, and Role are required.'
+        'message' => 'First Name, Last Name, Campus, Username, and Role are required.'
       ]);
       return;
     }
@@ -167,7 +167,7 @@ class UserManagementController extends Controller
         'first_name' => $first_name,
         'middle_name' => $middle_name,
         'last_name' => $last_name,
-        'gender' => $gender,
+        'campus_id' => $campus_id,
         'email' => $data['email'] ?? null,
         'role' => ucfirst($role),
         'is_active' => 1,
@@ -188,13 +188,25 @@ class UserManagementController extends Controller
             echo json_encode(['success' => false, 'message' => 'Course/Program selection is required']);
             return;
           }
+          
+          // Get campus name for student record compatibility if needed
+          $campusRepo = new \App\Repositories\CampusRepository();
+          $campuses = $campusRepo->getAllCampuses();
+          $campusName = 'N/A';
+          foreach($campuses as $cp) {
+              if($cp['campus_id'] == $campus_id) {
+                  $campusName = $cp['campus_name'];
+                  break;
+              }
+          }
+
           $this->studentRepo->insertStudent(
             $userId,
             $username,
             $courseId,
             $data['year_level'] ?? 1,
             'enrolled',
-            $data['campus'] ?? 'N/A'
+            $campusName
           );
           break;
 

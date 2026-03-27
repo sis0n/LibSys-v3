@@ -70,6 +70,14 @@
                     </select>
                     <input type="text" id="genderOther" name="gender_other" placeholder="Please specify" class="hidden font-medium text-gray-800 bg-gray-50 border-gray-200 border rounded-md px-2 py-1 w-full mt-2" disabled>
                 </div>
+                <div class="min-w-[200px]">
+                    <label class="text-sm text-gray-500" for="campus">Campus</label>
+                    <select id="campus" name="campus_id"
+                        class="font-medium text-gray-800 bg-gray-50 border-gray-200 border rounded-md px-2 py-1 w-full"
+                        disabled>
+                        <option value="" disabled selected>Loading campuses...</option>
+                    </select>
+                </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-x-6 gap-y-6 ml-9">
                     <div class="sm:col-span-2">
                         <label class="text-sm text-gray-500" for="email">Email</label>

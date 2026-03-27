@@ -228,14 +228,11 @@
                                 class="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm focus-visible:ring-[var(--color-ring)] focus-visible:border-[var(--color-ring)] outline-none">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Gender <span
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Campus <span
                                     class="text-red-500">*</span></label>
-                            <select id="addGender"
+                            <select id="addCampus"
                                 class="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm focus-visible:ring-[var(--color-ring)] focus-visible:border-[var(--color-ring)] outline-none">
-                                <option value="">Select Gender</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                                <option value="Other">Other</option>
+                                <option value="">Select Campus</option>
                             </select>
                         </div>
                         <div class="relative w-full">
@@ -434,13 +431,10 @@
                             placeholder="username">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                        <select id="editGender"
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Campus</label>
+                        <select id="editCampusField"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
-                            <option value="">Select Gender</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                            <option value="Other">Other</option>
+                            <option value="">Select Campus</option>
                         </select>
                     </div>
                 </div>
@@ -448,18 +442,11 @@
                 <div id="editStudentFieldsWrapper" class="hidden space-y-4 pt-4 border-t border-orange-100">
                     <h3 class="font-medium text-orange-600">Student Details</h3>
                     <div class="grid grid-cols-2 gap-4">
-                        <div>
+                        <div class="col-span-2">
                             <label class="block text-sm text-gray-700 mb-1 font-medium">Course/Program</label>
                             <select id="editCourseId" 
                                 class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
                                 <option value="">Select Course</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm text-gray-700 mb-1 font-medium">Campus</label>
-                            <select id="editCampus" 
-                                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
-                                <option value="">Select Campus</option>
                             </select>
                         </div>
                     </div>
