@@ -17,7 +17,8 @@ class StaffBookCatalogController extends Controller
 
   public function index()
   {
-    $books = $this->bookRepo->getAllBooks();
+    $campusId = $_SESSION['user_data']['campus_id'] ?? null;
+    $books = $this->bookRepo->getAllBooks($campusId);
 
     // Transform paths para isama ang BASE_URL
     $books = array_map(function($book) {
@@ -142,13 +143,16 @@ class StaffBookCatalogController extends Controller
     $status   = $_GET['status'] ?? '';
     $sort     = $_GET['sort'] ?? 'default';
 
+    $campusId = $_SESSION['user_data']['campus_id'] ?? null;
+
     $books = $this->bookRepo->getPaginatedFiltered(
       $limit,
       $offset,
       $search,
       $category,
       $status,
-      $sort
+      $sort,
+      $campusId
     );
 
     // Transform paths para isama ang BASE_URL
@@ -159,7 +163,7 @@ class StaffBookCatalogController extends Controller
       return $book;
     }, $books);
 
-    $totalCount = $this->bookRepo->countPaginatedFiltered($search, $category, $status);
+    $totalCount = $this->bookRepo->countPaginatedFiltered($search, $category, $status, $campusId);
 
     $response = [
       'books' => $books,
@@ -172,7 +176,8 @@ class StaffBookCatalogController extends Controller
 
   public function getAvailableCount()
   {
-    $count = $this->bookRepo->countAvailableBooks();
+    $campusId = $_SESSION['user_data']['campus_id'] ?? null;
+    $count = $this->bookRepo->countAvailableBooks($campusId);
     header('Content-Type: application/json');
     echo json_encode(['available' => $count]);
   }

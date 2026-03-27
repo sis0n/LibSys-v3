@@ -68,6 +68,7 @@ class AuthRepository
             'role' => $role,
             'fullname' => $finalFullname,
             'profile_picture' => $user['profile_picture'] ?? null,
+            'campus_id' => $user['campus_id'] ?? null,
             'is_active' => $user['is_active'] ?? 0,
             'modules' => $modules,
           ],

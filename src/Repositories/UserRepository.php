@@ -37,6 +37,7 @@ class UserRepository
                 u.is_active, 
                 u.role,
                 u.email,
+                u.campus_id,
                 s.student_id, 
                 s.student_number, 
                 s.year_level, 
@@ -69,6 +70,7 @@ class UserRepository
                 u.is_active, 
                 u.role,
                 u.email,
+                u.campus_id,
                 s.student_id, 
                 s.student_number, 
                 s.year_level, 
@@ -100,6 +102,7 @@ class UserRepository
                 u.is_active,
                 u.role,
                 u.email,
+                u.campus_id,
                 f.faculty_id,
                 f.college_id
             FROM faculty f

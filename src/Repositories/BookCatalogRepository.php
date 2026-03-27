@@ -13,10 +13,17 @@ class BookCatalogRepository
     $this->db = Database::getInstance()->getConnection();
   }
 
-  public function getAllBooks()
+  public function getAllBooks(?int $campusId = null)
   {
-    $stmt = $this->db->prepare("SELECT * FROM books WHERE deleted_at IS NULL ORDER BY created_at DESC");
-    $stmt->execute();
+    $query = "SELECT * FROM books WHERE deleted_at IS NULL";
+    $params = [];
+    if ($campusId !== null) {
+      $query .= " AND campus_id = ?";
+      $params[] = $campusId;
+    }
+    $query .= " ORDER BY created_at DESC";
+    $stmt = $this->db->prepare($query);
+    $stmt->execute($params);
     return $stmt->fetchAll(\PDO::FETCH_ASSOC);
   }
 
@@ -130,12 +137,18 @@ class BookCatalogRepository
     string $search = '',
     string $category = '',
     string $status = '',
-    string $sort = 'default'
+    string $sort = 'default',
+    ?int $campusId = null
   ): array {
     $limit = max(1, min($limit, 100));
     $offset = max(0, min($offset, 10000));
     $query = "SELECT * FROM books WHERE deleted_at IS NULL AND availability NOT IN ('lost', 'damaged')";
     $params = [];
+
+    if ($campusId !== null) {
+      $query .= " AND campus_id = ?";
+      $params[] = $campusId;
+    }
 
     if ($search !== '') {
       $query .= " AND (title LIKE ? OR author LIKE ? OR book_isbn LIKE ? OR accession_number LIKE ?)";
@@ -179,19 +192,32 @@ class BookCatalogRepository
     return $stmt->fetchAll(\PDO::FETCH_ASSOC);
   }
 
-  public function countAvailableBooks(): int
+  public function countAvailableBooks(?int $campusId = null): int
   {
-    $stmt = $this->db->query("SELECT COUNT(*) FROM books WHERE availability = 'available' AND deleted_at IS NULL");
+    $query = "SELECT COUNT(*) FROM books WHERE availability = 'available' AND deleted_at IS NULL";
+    $params = [];
+    if ($campusId !== null) {
+        $query .= " AND campus_id = ?";
+        $params[] = $campusId;
+    }
+    $stmt = $this->db->prepare($query);
+    $stmt->execute($params);
     return (int) $stmt->fetchColumn();
   }
 
   public function countPaginatedFiltered(
     string $search = '',
     string $category = '',
-    string $status = ''
+    string $status = '',
+    ?int $campusId = null
   ): int {
     $query = "SELECT COUNT(*) FROM books WHERE deleted_at IS NULL AND availability NOT IN ('lost', 'damaged')";
     $params = [];
+
+    if ($campusId !== null) {
+        $query .= " AND campus_id = ?";
+        $params[] = $campusId;
+    }
 
     if ($search !== '') {
       $query .= " AND (title LIKE ? OR author LIKE ? OR book_isbn LIKE ? OR accession_number LIKE ?)";
