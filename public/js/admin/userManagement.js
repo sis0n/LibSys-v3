@@ -307,19 +307,13 @@ window.addEventListener("DOMContentLoaded", () => {
         wrapper.classList.add('hidden');
         if (studentFieldsWrapper) studentFieldsWrapper.classList.add('hidden');
 
+        // Always load campuses for the general field since it replaced gender
+        loadCampuses('addCampus');
+
         if (normalizedRole === 'student') {
             label.innerHTML = 'Course/Program <span class="text-red-500">*</span>';
             wrapper.classList.remove('hidden');
-            if (studentFieldsWrapper) {
-                studentFieldsWrapper.classList.remove('hidden');
-                loadCampuses('addCampus');
-            }
             loadCoursesForStudent(selectedValue);
-
-        } else if (normalizedRole === 'faculty') {
-            label.innerHTML = 'College/Department <span class="text-red-500">*</span>';
-            wrapper.classList.remove('hidden');
-            loadDepartments(selectedValue);
 
         } else {
             wrapper.classList.add('hidden');
@@ -887,7 +881,7 @@ window.addEventListener("DOMContentLoaded", () => {
             const first_name = document.getElementById("addFirstName").value.trim();
             const middle_name = document.getElementById("addMiddleName").value.trim();
             const last_name = document.getElementById("addLastName").value.trim();
-            const gender = document.getElementById("addGender").value;
+            const campus_id = document.getElementById("addCampus").value;
             const username = document.getElementById("addUsername").value.trim();
             const role = document.getElementById("userRoleDropdownValue").textContent.trim();
 
@@ -896,8 +890,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
             let payloadData = {};
 
-            if (!first_name || !last_name || !username || !gender || role === "Select Role") {
-                return showErrorToast("Required Fields Missing", "Please fill in all required fields (First Name, Last Name, Gender, Username, Role).");
+            if (!first_name || !last_name || !username || !campus_id || role === "Select Role") {
+                return showErrorToast("Required Fields Missing", "Please fill in all required fields (First Name, Last Name, Campus, Username, Role).");
             }
 
             if (selectWrapper && !selectWrapper.classList.contains('hidden')) {
@@ -932,7 +926,7 @@ window.addEventListener("DOMContentLoaded", () => {
                         first_name: first_name,
                         middle_name: middle_name || null,
                         last_name: last_name,
-                        gender: gender,
+                        campus_id: campus_id,
                         username: username,
                         role: role,
                         ...(payloadData.course_id && {
@@ -1028,7 +1022,9 @@ window.addEventListener("DOMContentLoaded", () => {
                     document.getElementById("editLastName").value = fullUser.last_name || '';
                     document.getElementById("editUsername").value = fullUser.username || '';
                     document.getElementById("editEmail").value = fullUser.email || '';
-                    document.getElementById("editGender").value = fullUser.gender || '';
+                    
+                    await loadCampuses('editCampusField', fullUser.campus_id || null);
+
                     document.getElementById("editRoleDropdownValue").textContent = fullUser.role;
                     document.getElementById("editStatusDropdownValue").textContent = fullUser.is_active == 1 ? "Active" : "Inactive";
                     document.querySelector("#editUserTitle span").textContent = buildFullName(fullUser.first_name, fullUser.middle_name, fullUser.last_name);
@@ -1040,8 +1036,6 @@ window.addEventListener("DOMContentLoaded", () => {
                             studentWrapper.classList.remove("hidden");
                             
                             await loadCourses('editCourseId', extra ? extra.course_id : null);
-                            
-                            await loadCampuses('editCampus', data.user && data.user.campus_id ? data.user.campus_id : null);
                             
                             document.getElementById("editYearLevel").value = extra ? (extra.year_level || '1') : '1';
                             document.getElementById("editSection").value = extra ? (extra.section || '') : '';
@@ -1220,14 +1214,13 @@ window.addEventListener("DOMContentLoaded", () => {
                 last_name: document.getElementById("editLastName").value.trim(),
                 username: document.getElementById("editUsername").value.trim(),
                 email: document.getElementById("editEmail").value.trim(),
-                gender: document.getElementById("editGender").value,
+                campus_id: document.getElementById("editCampusField").value,
                 role: role,
                 is_active: document.getElementById("editStatusDropdownValue").textContent.trim().toLowerCase() === 'active' ? 1 : 0
             };
 
             if (role.toLowerCase() === 'student') {
                 payload.course_id = document.getElementById("editCourseId").value;
-                payload.campus_id = document.getElementById("editCampus").value.trim();
                 payload.year_level = document.getElementById("editYearLevel").value;
                 payload.section = document.getElementById("editSection").value.trim();
             }
@@ -1513,4 +1506,5 @@ window.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
+    // end
 });

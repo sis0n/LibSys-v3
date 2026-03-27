@@ -72,7 +72,7 @@
             </div>
         </div>
     </div>
-
+    <!-- Updated -->
     <div class="flex items-center justify-between my-4">
 
         <h4 id="resultsIndicator" class="text-sm text-gray-600">
@@ -82,12 +82,12 @@
         <div class="inline-flex items-center gap-2">
             <div id="multiSelectActions" class="hidden items-center gap-2">
                 <button id="multiDeleteBtn" title="Delete selected users"
-                    class="hidden items-center gap-2 bg-red-600 text-white rounded-lg px-3 py-2 text-sm font-medium hover:bg-red-700 transition">
+                    class=" hidden inline-flex items-center gap-2 bg-red-600 text-white rounded-lg px-3 py-2 text-sm font-medium hover:bg-red-700 transition">
                     <i class="ph ph-trash text-base"></i>
                     Delete (<span id="selectionCount">0</span>)
                 </button>
                 <button id="multiAllowEditBtn" title="Allow edit for selected students"
-                    class="hidden items-center gap-2 bg-blue-600 text-white rounded-lg px-3 py-2 text-sm font-medium hover:bg-blue-700 transition">
+                    class="hidden inline-flex items-center gap-2 bg-blue-600 text-white rounded-lg px-3 py-2 text-sm font-medium hover:bg-blue-700 transition">
                     <i class="ph ph-user-plus text-base"></i>
                     Allow Edit
                 </button>
@@ -114,7 +114,7 @@
         </div>
 
     </div>
-
+    <!-- end -->
     <div class="overflow-x-auto rounded-lg border border-orange-200">
         <table class="w-full text-sm border-collapse">
             <thead class="bg-orange-50 text-gray-700 border border-orange-100">
@@ -228,14 +228,11 @@
                                 class="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm focus-visible:ring-[var(--color-ring)] focus-visible:border-[var(--color-ring)] outline-none">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Gender <span
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Campus <span
                                     class="text-red-500">*</span></label>
-                            <select id="addGender"
+                            <select id="addCampus"
                                 class="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm focus-visible:ring-[var(--color-ring)] focus-visible:border-[var(--color-ring)] outline-none">
-                                <option value="">Select Gender</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                                <option value="Other">Other</option>
+                                <option value="">Select Campus</option>
                             </select>
                         </div>
                         <div class="relative w-full">
@@ -303,7 +300,8 @@
                 </div>
 
                 <div id="addUserDepartmentWrapper" class="hidden">
-                    <label id="addUserDepartmentLabel" class="block text-sm font-medium text-gray-700 mb-1">Department <span class="text-red-500">*</span></label>
+                    <label id="addUserDepartmentLabel" class="block text-sm font-medium text-gray-700 mb-1">Department
+                        <span class="text-red-500">*</span></label>
                     <select id="addUserDepartment" required
                         class="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm focus-visible:ring-[var(--color-ring)] focus-visible:border-[var(--color-ring)] outline-none">
                         <option value="">Select Department</option>
@@ -343,13 +341,14 @@
                             $wrapperId = $isUserManagement ? 'id="addUserUserManagementModuleWrapper"' : '';
                             $restoreId = $isRestoreUser ? 'id="addUserRestoreUserModuleWrapper"' : '';
                         ?>
-                            <div <?= $wrapperId ?> <?= $restoreId ?> class="border rounded-md p-3 bg-orange-50/50 border-orange-200">
-                                <label class="inline-flex items-center text-sm text-gray-700">
-                                    <input type="checkbox" class="mr-2 accent-orange-500" name="modules[]"
-                                        value="<?= $module ?>">
-                                    <?= ucwords($module) ?>
-                                </label>
-                            </div>
+                        <div <?= $wrapperId ?> <?= $restoreId ?>
+                            class="border rounded-md p-3 bg-orange-50/50 border-orange-200">
+                            <label class="inline-flex items-center text-sm text-gray-700">
+                                <input type="checkbox" class="mr-2 accent-orange-500" name="modules[]"
+                                    value="<?= $module ?>">
+                                <?= ucwords($module) ?>
+                            </label>
+                        </div>
                         <?php endforeach; ?>
                     </div>
                 </div>
@@ -432,13 +431,10 @@
                             placeholder="username">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                        <select id="editGender"
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Campus</label>
+                        <select id="editCampusField"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
-                            <option value="">Select Gender</option>
-                            <option value="Male">Male</option>
-                            <option value="Female">Female</option>
-                            <option value="Other">Other</option>
+                            <option value="">Select Campus</option>
                         </select>
                     </div>
                 </div>
@@ -446,18 +442,11 @@
                 <div id="editStudentFieldsWrapper" class="hidden space-y-4 pt-4 border-t border-orange-100">
                     <h3 class="font-medium text-orange-600">Student Details</h3>
                     <div class="grid grid-cols-2 gap-4">
-                        <div>
+                        <div class="col-span-2">
                             <label class="block text-sm text-gray-700 mb-1 font-medium">Course/Program</label>
                             <select id="editCourseId" 
                                 class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
                                 <option value="">Select Course</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm text-gray-700 mb-1 font-medium">Campus</label>
-                            <select id="editCampus" 
-                                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
-                                <option value="">Select Campus</option>
                             </select>
                         </div>
                     </div>
@@ -604,20 +593,20 @@
                         'restore users',
                         'student promotion'
                     ];
-
                     foreach ($modules as $module):
                         $isUserManagement = ($module === 'user management');
                         $isRestoreUser = ($module === 'restore users');
                         $wrapperId = $isUserManagement ? 'id="editUserUserManagementModuleWrapper"' : '';
                         $restoreId = $isRestoreUser ? 'id="editUserRestoreUserModuleWrapper"' : '';
                     ?>
-                        <div <?= $wrapperId ?> <?= $restoreId ?> class="border rounded-md p-3 bg-orange-50/50 border-orange-200">
-                            <label class="inline-flex items-center text-sm text-gray-700">
-                                <input type="checkbox" class="mr-2 accent-orange-500" name="editModules[]"
-                                    value="<?= $module ?>">
-                                <?= ucwords($module) ?>
-                            </label>
-                        </div>
+                    <div <?= $wrapperId ?> <?= $restoreId ?>
+                        class="border rounded-md p-3 bg-orange-50/50 border-orange-200">
+                        <label class="inline-flex items-center text-sm text-gray-700">
+                            <input type="checkbox" class="mr-2 accent-orange-500" name="editModules[]"
+                                value="<?= $module ?>">
+                            <?= ucwords($module) ?>
+                        </label>
+                    </div>
                     <?php endforeach; ?>
                 </div>
             </div>

@@ -81,11 +81,12 @@ class BookManagementController extends Controller
             $search   = $_GET['search'] ?? '';
             $status   = $_GET['status'] ?? 'All Status';
             $sort     = $_GET['sort'] ?? 'default';
+            $campusId = isset($_GET['campus_id']) ? (int)$_GET['campus_id'] : null;
             $limit    = (int)($_GET['limit'] ?? 30);
             $offset   = (int)($_GET['offset'] ?? 0);
 
-            $books = $this->bookRepo->getPaginatedBooks($limit, $offset, $search, $status, $sort);
-            $totalCount = $this->bookRepo->countPaginatedBooks($search, $status);
+            $books = $this->bookRepo->getPaginatedBooks($limit, $offset, $search, $status, $sort, $campusId);
+            $totalCount = $this->bookRepo->countPaginatedBooks($search, $status, $campusId);
 
             $this->json(['success' => true, 'books' => $books, 'totalCount' => $totalCount]);
         } catch (\Exception $e) {
@@ -118,6 +119,10 @@ class BookManagementController extends Controller
         if (empty($data['title']) || empty($data['author']) || empty($data['accession_number']) || empty($data['call_number'])) {
             return $this->json(['success' => false, 'message' => 'Required fields are missing.'], 400);
         }
+        
+        // Ensure campus_id is handled
+        $data['campus_id'] = !empty($data['campus_id']) ? (int)$data['campus_id'] : null;
+
         if (isset($_FILES['book_image']) && $_FILES['book_image']['error'] == 0) {
             $imagePath = $this->handleImageUpload($_FILES['book_image']);
             if ($imagePath) {
@@ -153,6 +158,9 @@ class BookManagementController extends Controller
         if ($currentUserId === null) {
             return $this->json(['success' => false, 'message' => 'Authentication required.'], 401);
         }
+
+        // Ensure campus_id is handled
+        $data['campus_id'] = !empty($data['campus_id']) ? (int)$data['campus_id'] : null;
 
         if (isset($_FILES['book_image']) && $_FILES['book_image']['error'] == 0) {
             $imagePath = $this->handleImageUpload($_FILES['book_image']);
@@ -334,6 +342,7 @@ class BookManagementController extends Controller
                     'book_isbn' => trim($row[9] ?? '') ?: null,
                     'book_supplementary' => trim($row[10] ?? '') ?: null,
                     'subject' => trim($row[11] ?? '') ?: null,
+                    'campus_id' => trim($row[12] ?? '') ?: null,
                     'availability' => 'available',
                 ];
 

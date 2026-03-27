@@ -8,7 +8,7 @@ use PDO;
 class BookManagementRepository
 {
     private $db;
-    private $baseQuery = "SELECT * FROM books WHERE deleted_at IS NULL";
+    private $baseQuery = "SELECT b.*, c.campus_name FROM books b LEFT JOIN campuses c ON b.campus_id = c.campus_id WHERE b.deleted_at IS NULL";
     private $countQuery = "SELECT COUNT(*) FROM books WHERE deleted_at IS NULL";
 
     public function __construct()
@@ -16,7 +16,7 @@ class BookManagementRepository
         $this->db = Database::getInstance()->getConnection();
     }
 
-    public function getPaginatedBooks(int $limit, int $offset, string $search, string $status, string $sort): array
+    public function getPaginatedBooks(int $limit, int $offset, string $search, string $status, string $sort, int $campus_id = null): array
     {
         $limit = max(1, min($limit, 1000));
         $offset = max(0, $offset);
@@ -25,7 +25,7 @@ class BookManagementRepository
         $params = [];
 
         if ($search !== '') {
-            $query .= " AND (title LIKE ? OR author LIKE ? OR book_isbn LIKE ? OR accession_number LIKE ? OR call_number LIKE ? OR subject LIKE ?)";
+            $query .= " AND (b.title LIKE ? OR b.author LIKE ? OR b.book_isbn LIKE ? OR b.accession_number LIKE ? OR b.call_number LIKE ? OR b.subject LIKE ?)";
             $searchTerm = "%$search%";
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -36,23 +36,28 @@ class BookManagementRepository
         }
 
         if ($status !== '' && strtolower($status) !== 'all status') {
-            $query .= " AND availability = ?";
+            $query .= " AND b.availability = ?";
             $params[] = strtolower($status);
         }
 
-        $orderBy = "ORDER BY created_at DESC";
+        if ($campus_id !== null && $campus_id > 0) {
+            $query .= " AND b.campus_id = ?";
+            $params[] = $campus_id;
+        }
+
+        $orderBy = "ORDER BY b.created_at DESC";
         switch ($sort) {
             case 'title_asc':
-                $orderBy = "ORDER BY title ASC";
+                $orderBy = "ORDER BY b.title ASC";
                 break;
             case 'title_desc':
-                $orderBy = "ORDER BY title DESC";
+                $orderBy = "ORDER BY b.title DESC";
                 break;
             case 'year_asc':
-                $orderBy = "ORDER BY year ASC, title ASC";
+                $orderBy = "ORDER BY b.year ASC, b.title ASC";
                 break;
             case 'year_desc':
-                $orderBy = "ORDER BY year DESC, title ASC";
+                $orderBy = "ORDER BY b.year DESC, b.title ASC";
                 break;
         }
 
@@ -63,7 +68,7 @@ class BookManagementRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function countPaginatedBooks(string $search, string $status): int
+    public function countPaginatedBooks(string $search, string $status, int $campus_id = null): int
     {
         $query = $this->countQuery;
         $params = [];
@@ -82,6 +87,10 @@ class BookManagementRepository
             $query .= " AND availability = ?";
             $params[] = strtolower($status);
         }
+        if ($campus_id !== null && $campus_id > 0) {
+            $query .= " AND campus_id = ?";
+            $params[] = $campus_id;
+        }
 
         $stmt = $this->db->prepare($query);
         $stmt->execute($params);
@@ -90,7 +99,7 @@ class BookManagementRepository
 
     public function findBookById($id)
     {
-        $stmt = $this->db->prepare("SELECT * FROM books WHERE book_id = ? AND deleted_at IS NULL");
+        $stmt = $this->db->prepare("SELECT b.*, c.campus_name FROM books b LEFT JOIN campuses c ON b.campus_id = c.campus_id WHERE b.book_id = ? AND b.deleted_at IS NULL");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -106,6 +115,7 @@ class BookManagementRepository
             'author',
             'book_place',
             'book_publisher',
+            'campus_id',
             'year',
             'book_edition',
             'description',
@@ -142,6 +152,7 @@ class BookManagementRepository
             'author',
             'book_place',
             'book_publisher',
+            'campus_id',
             'year',
             'book_edition',
             'description',
@@ -177,7 +188,7 @@ class BookManagementRepository
             ':updated_by' => $updated_by_user_id
         ];
 
-        $allowedFields = ['accession_number', 'call_number', 'title', 'author', 'book_place', 'book_publisher', 'year', 'book_edition', 'description', 'book_isbn', 'book_supplementary', 'subject', 'availability', 'cover'];
+        $allowedFields = ['accession_number', 'call_number', 'title', 'author', 'book_place', 'book_publisher', 'campus_id', 'year', 'book_edition', 'description', 'book_isbn', 'book_supplementary', 'subject', 'availability', 'cover'];
 
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $data)) {
@@ -199,7 +210,6 @@ class BookManagementRepository
     public function deleteBook(int $bookId, int $deletedByUserId): array
     {
         try {
-            // 1️⃣ Check if book exists
             $stmt = $this->db->prepare("SELECT deleted_at FROM books WHERE book_id = :book_id");
             $stmt->execute([':book_id' => $bookId]);
             $book = $stmt->fetch();
@@ -208,12 +218,10 @@ class BookManagementRepository
                 return ['success' => false, 'message' => 'Book not found.'];
             }
 
-            // 2️⃣ Check if already deleted
             if ($book['deleted_at'] !== null) {
                 return ['success' => false, 'message' => 'Book already deleted.'];
             }
 
-            // 3️⃣ Soft delete
             $stmt = $this->db->prepare("
             UPDATE books 
             SET deleted_at = CURRENT_TIMESTAMP, 

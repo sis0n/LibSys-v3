@@ -1,7 +1,7 @@
 <div class="flex items-center justify-between mb-6">
     <div>
         <h2 class="text-2xl font-bold mb-4">Book Management</h2>
-        <p class="text-gray-700">Manage library books, availability, and inventory.</p>
+        <p class="text-gray-700">Manage library books across all campuses, availability, and inventory.</p>
     </div>
     <div class="flex gap-2 text-sm">
         <button
@@ -14,7 +14,7 @@
             <div
                 class="bg-[var(--color-card)] rounded-xl shadow-lg border border-[var(--color-border)] w-full max-w-md p-6 animate-fadeIn">
                 <div class="flex justify-between items-start mb-4">
-                    <h2 class="text-lg font-semibold">Bulk Import Users</h2>
+                    <h2 class="text-lg font-semibold">Bulk Import Books</h2>
                     <button id="closeImportModal" class="text-gray-500 hover:text-red-700 transition">
                         <i class="ph ph-x text-2xl"></i>
                     </button>
@@ -27,7 +27,7 @@
                         class="block border-2 border-dashed border-[var(--color-border)] rounded-lg p-8 text-center cursor-pointer hover:border-[var(--color-ring)]/60 transition">
                         <i class="ph ph-upload text-[var(--color-ring)] text-3xl mb-2 block"></i>
                         <p class="font-medium text-[var(--color-ring)]">Drop CSV file here or click to browse</p>
-                        <p class="text-xs text-gray-500 mt-1">Expected format: accession_number,call_number,title</p>
+                        <p class="text-xs text-gray-500 mt-1">Expected format: accession_number,call_number,title,author,place,publisher,year,edition,desc,isbn,supp,subj,campus_id</p>
                         <input type="file" id="csvFile" name="csv_file" accept=".csv" class="hidden" />
                     </label>
                 </form>
@@ -73,6 +73,13 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1"> Author <span class="text-red-500">*</span> </label>
                         <input type="text" name="author" required class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1"> Campus <span class="text-red-500">*</span> </label>
+                        <select name="campus_id" required class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
+                            <option value="">Select Campus</option>
+                            <!-- Options loaded by JS -->
+                        </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1"> ISBN </label>
@@ -135,14 +142,31 @@
     <div class="flex items-center justify-between mb-4">
         <div>
             <h3 class="text-lg font-semibold text-gray-800">Book Catalog</h3>
-            <p class="text-sm text-gray-600">Registered Books in the system</p>
+            <p class="text-sm text-gray-600">Registered Books across all campuses</p>
         </div>
         <div class="flex items-center text-sm">
-            <div class="relative w-[330px]">
+            <div class="relative w-[300px]">
                 <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
                 <input type="text" id="bookSearchInput" placeholder="Search by title, author, isbn..."
                     class="bg-orange-50 border border-orange-200 rounded-lg pl-9 pr-3 py-2 outline-none transition text-sm w-full focus:ring-1 focus:ring-orange-300 shadow-sm">
             </div>
+            
+            <div class="relative inline-block text-left ml-3">
+                <button id="campusDropdownBtn"
+                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition shadow-sm">
+                    <span class="flex items-center gap-2 text-gray-700">
+                        <i class="ph ph-buildings text-gray-500"></i>
+                        <span id="campusDropdownValue">All Campuses</span>
+                    </span>
+                    <i class="ph ph-caret-down text-xs"></i>
+                </button>
+                <div id="campusDropdownMenu"
+                    class="absolute mt-1 w-full bg-white border border-orange-200 rounded-lg shadow-md hidden z-20">
+                    <div class="campus-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectCampus(this, 0, 'All Campuses')">All Campuses</div>
+                    <!-- Campuses will be loaded here via JS -->
+                </div>
+            </div>
+
             <div class="relative inline-block text-left ml-3">
                 <button id="sortDropdownBtn"
                     class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition shadow-sm">
@@ -220,17 +244,15 @@
                 <tr>
                     <th id="multi-select-header" class="py-3 px-4 font-medium hidden w-10"></th>
                     <th class="py-3 px-4 font-medium">Book Title</th>
+                    <th class="py-3 px-4 font-medium text-center">Campus</th>
                     <th class="py-3 px-4 font-medium">Author</th>
-                    <th class="py-3 px-4 font-medium">Accession Number</th>
-                    <th class="py-3 px-4 font-medium">Call Number</th>
-                    <th class="py-3 px-4 font-medium">ISBN</th>
                     <th class="py-3 px-4 font-medium text-center">Status</th>
                     <th class="py-3 px-4 font-medium text-center">Actions</th>
                 </tr>
             </thead>
             <tbody id="bookTableBody" class="divide-y divide-orange-100 bg-white">
                 <tr data-placeholder="true">
-                    <td colspan="8" class="py-10 text-center text-gray-500">
+                    <td colspan="6" class="py-10 text-center text-gray-500">
                         <i class="ph ph-spinner animate-spin text-2xl"></i>
                     </td>
                 </tr>
@@ -287,6 +309,14 @@
                     <option value="damaged">Damaged</option>
                     <option value="lost">Lost</option>
                     <option value="borrowed" disabled>Borrowed (System Managed)</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Campus <span class="text-red-500">*</span></label>
+                <select id="edit_campus_id" name="campus_id" required
+                    class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
+                    <option value="">Select Campus</option>
+                    <!-- Options loaded by JS -->
                 </select>
             </div>
             <div>
@@ -383,13 +413,14 @@
                     <p id="viewModalStatus" class="font-bold text-sm text-gray-800 uppercase">AVAILABLE</p>
                 </div>
                 <div class="p-3 shadow-sm border border-orange-100 bg-white rounded flex flex-col items-start">
-                    <p class="text-xs text-orange-500 font-semibold mb-1 uppercase tracking-wider">Call Number</p>
-                    <p id="viewModalCallNumber" class="text-sm font-bold text-gray-800">N/A</p>
+                    <p class="text-xs text-orange-500 font-semibold mb-1 uppercase tracking-wider">Campus</p>
+                    <p id="viewModalCampus" class="font-bold text-sm text-gray-800 uppercase">N/A</p>
                 </div>
             </div>
             <div class="text-sm bg-white rounded-xl border border-orange-100 p-4 space-y-2 shadow-sm">
                 <p class="font-bold text-gray-700 text-sm mb-2 border-b border-orange-50 pb-1">Book Information</p>
                 <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Accession #:</span> <span id="viewModalAccessionNumber" class="font-mono text-sm font-semibold text-orange-600 break-words"></span></p>
+                <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Call Number:</span> <span id="viewModalCallNumber" class="text-gray-800 font-semibold"></span></p>
                 <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">ISBN:</span> <span id="viewModalIsbn" class="break-words text-gray-800"></span></p>
                 <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Subject:</span> <span id="viewModalSubject" class="break-words text-gray-800"></span></p>
                 <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Place:</span> <span id="viewModalPlace" class="break-words text-gray-800"></span></p>
@@ -451,4 +482,5 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="js/admin/bookManagement.js" defer></script>
+<script src="<?= BASE_URL ?>/js/admin/bookManagement.js" defer></script>
+
