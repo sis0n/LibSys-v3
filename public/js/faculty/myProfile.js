@@ -223,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
     'input[type="text"], input[type="email"], input[type="tel"], input[type="number"], select',
   );
   const editableInputs = Array.from(allInputs).filter(
-    (input) => input.id !== "facultyId",
+    (input) => input.id !== "facultyId" && input.id !== "campus",
   );
 
   const MAX_FILE_SIZE = 1 * 1024 * 1024;
@@ -326,6 +326,25 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("contact").value = profile.contact || "";
         document.getElementById("facultyId").value =
           profile.unique_faculty_id || "";
+
+        // Campus Name Display
+        const campusInput = document.getElementById("campus");
+        if (campusInput) {
+            campusInput.value = profile.campus_name || "N/A";
+            if (!isEditing) {
+                campusInput.disabled = true;
+            }
+        }
+
+        // Department/College Name Display
+        const departmentNameInput = document.getElementById("departmentName");
+        if (departmentNameInput) {
+            // Assuming 'college_name' is available in the profile data from the backend
+            departmentNameInput.value = profile.college_name || "N/A";
+            if (!isEditing) {
+                departmentNameInput.disabled = true;
+            }
+        }
 
         // Gender Logic
         if (genderSelect) {
