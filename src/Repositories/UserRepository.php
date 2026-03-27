@@ -138,8 +138,8 @@ class UserRepository
   public function bulkInsertUsers(array $usersBatch)
   {
     if (empty($usersBatch)) return [];
-
-    $columns = ['username', 'password', 'first_name', 'middle_name', 'last_name', 'email', 'role', 'is_active', 'created_at'];
+    
+    $columns = ['username', 'password', 'first_name', 'middle_name', 'last_name', 'email', 'role', 'is_active', 'created_at', 'campus_id'];
     $colString = implode(',', $columns);
 
     $placeholders = [];
@@ -335,7 +335,8 @@ class UserRepository
                 username, 
                 email,
                 role, 
-                is_active 
+                is_active,
+                campus_id
             FROM users 
             WHERE user_id = :id AND deleted_at IS NULL
         ");

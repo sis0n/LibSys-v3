@@ -57,18 +57,19 @@ class StudentRepository
     $values = [];
 
     foreach ($studentsBatch as $s) {
-      $placeholders[] = '(?, ?, ?, ?, ?, ?, ?, ?, 1)';
+      $placeholders[] = '(?, ?, ?, ?, ?, ?, ?, 1)'; // Removed 'campus' placeholder
       $values[] = $s['user_id'];
       $values[] = $s['student_number'];
       $values[] = $s['course_id'];
       $values[] = $s['year_level'];
       $values[] = $s['status'];
-      $values[] = $s['campus'] ?? 'N/A';
+      // $values[] = $s['campus'] ?? 'N/A'; // Removed campus value
       $values[] = $s['contact'] ?? 'N/A';
       $values[] = $s['section'] ?? 'N/A';
     }
 
-    $sql = "INSERT IGNORE INTO students (user_id, student_number, course_id, year_level, status, campus, contact, section, can_edit_profile) VALUES " . implode(',', $placeholders);
+    // Removed 'campus' from the SQL columns list
+    $sql = "INSERT IGNORE INTO students (user_id, student_number, course_id, year_level, status, contact, section, can_edit_profile) VALUES " . implode(',', $placeholders);
     $this->db->prepare($sql)->execute($values);
   }
 

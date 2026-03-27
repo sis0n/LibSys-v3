@@ -161,7 +161,7 @@ class UserManagementController extends Controller
       $userId = $this->userRepo->insertUser($userData);
 
       if ($userId) {
-          $this->auditRepo->log($_SESSION['user_id'], 'CREATE', 'USERS', $username, "Added new user: $first_name $last_name as " . ucfirst($role));
+        $this->auditRepo->log($_SESSION['user_id'], 'CREATE', 'USERS', $username, "Added new user: $first_name $last_name as " . ucfirst($role));
       }
 
       switch ($role) {
@@ -277,7 +277,7 @@ class UserManagementController extends Controller
       $deleted = $this->userRepo->deleteUserWithCascade((int)$id, $deletedBy);
 
       if ($deleted && $user) {
-          $this->auditRepo->log($deletedBy, 'DELETE', 'USERS', $user['username'], "Deleted user: {$user['first_name']} {$user['last_name']}");
+        $this->auditRepo->log($deletedBy, 'DELETE', 'USERS', $user['username'], "Deleted user: {$user['first_name']} {$user['last_name']}");
       }
 
       echo json_encode([
@@ -473,12 +473,12 @@ class UserManagementController extends Controller
 
       $studentData = [];
       if ($currentRole === 'student') {
-          if (isset($data['course_id'])) $studentData['course_id'] = $data['course_id'];
-          if (isset($data['year_level'])) $studentData['year_level'] = $data['year_level'];
-          if (isset($data['section'])) $studentData['section'] = $data['section'];
-          if (isset($data['campus'])) $studentData['campus'] = $data['campus'];
-          
-          unset($data['course_id'], $data['year_level'], $data['section'], $data['campus']);
+        if (isset($data['course_id'])) $studentData['course_id'] = $data['course_id'];
+        if (isset($data['year_level'])) $studentData['year_level'] = $data['year_level'];
+        if (isset($data['section'])) $studentData['section'] = $data['section'];
+        if (isset($data['campus'])) $studentData['campus'] = $data['campus'];
+
+        unset($data['course_id'], $data['year_level'], $data['section'], $data['campus']);
       }
 
       unset($data['role']);
@@ -491,10 +491,10 @@ class UserManagementController extends Controller
       }
 
       $userUpdated = $this->userRepo->updateUser((int)$id, $data);
-      
+
       if (!empty($studentData)) {
-          (new \App\Repositories\StudentProfileRepository())->updateStudentProfile((int)$id, $studentData);
-          $userUpdated = true; 
+        (new \App\Repositories\StudentProfileRepository())->updateStudentProfile((int)$id, $studentData);
+        $userUpdated = true;
       }
 
       $modulesUpdated = false;
@@ -510,7 +510,7 @@ class UserManagementController extends Controller
       if ($userUpdated || $modulesUpdated) {
         $details = "Updated details/permissions for {$currentUser['first_name']} {$currentUser['last_name']}";
         if (!empty($data['password'])) {
-            $details .= " (Password was reset by Admin)";
+          $details .= " (Password was reset by Admin)";
         }
         $this->auditRepo->log($_SESSION['user_id'], 'UPDATE', 'USERS', $currentUser['username'], $details);
         echo json_encode([
@@ -552,118 +552,121 @@ class UserManagementController extends Controller
   public function bulkImport()
   {
     header('Content-Type: application/json');
+
     if (!isset($_FILES['csv_file'])) {
       echo json_encode(['success' => false, 'message' => 'No file uploaded.']);
       exit;
     }
 
-    $file = $_FILES['csv_file']['tmp_name'];
-    $userRepo = new \App\Repositories\UserRepository();
+    $file       = $_FILES['csv_file']['tmp_name'];
+    $userRepo   = new \App\Repositories\UserRepository();
     $studentRepo = new \App\Repositories\StudentRepository();
     $courseRepo = new \App\Repositories\CollegeCourseRepository();
     $campusRepo = new \App\Repositories\CampusRepository();
-    $db = $userRepo->getDbConnection();
+    $db         = $userRepo->getDbConnection();
 
-    $allCourses = $courseRepo->getAllCourses();
     $courseMap = [];
-    foreach ($allCourses as $c) {
+    foreach ($courseRepo->getAllCourses() as $c) {
       $courseMap[strtoupper(trim($c['course_code']))] = $c['course_id'];
     }
 
-    $allCampuses = $campusRepo->getAllCampuses();
     $campusMap = [];
-    foreach ($allCampuses as $cp) {
-      $campusMap[strtoupper(trim($cp['campus_name']))] = $cp['campus_name'];
+    foreach ($campusRepo->getAllCampuses() as $cp) {
+      $campusMap[strtoupper(trim($cp['campus_name']))] = $cp['campus_id'];
     }
 
     $existingUsernames = array_flip($userRepo->getAllUsernamesMap());
 
-    $imported = 0;
-    $errors = [];
-    $batchSize = 500;
-    $usersBuffer = [];
+    $imported          = 0;
+    $errors            = [];
+    $batchSize         = 500;
+    $usersBuffer       = [];
     $studentDataBuffer = [];
+    $defaultPassword   = password_hash('12345', PASSWORD_DEFAULT);
+    $timestamp         = date('Y-m-d H:i:s');
 
-    $defaultPassword = password_hash('12345', PASSWORD_DEFAULT);
-    $timestamp = date('Y-m-d H:i:s');
+    if (($handle = fopen($file, 'r')) === false) {
+      echo json_encode(['success' => false, 'message' => 'Failed to open uploaded file.']);
+      exit;
+    }
 
-    if (($handle = fopen($file, 'r')) !== false) {
-      $header = array_map('strtolower', array_map('trim', fgetcsv($handle)));
+    $header    = array_map('strtolower', array_map('trim', fgetcsv($handle)));
+    $rowNumber = 2;
 
-      $rowNumber = 2;
-      $db->beginTransaction();
+    $db->beginTransaction();
 
-      try {
-        while (($row = fgetcsv($handle)) !== false) {
-          $data = array_combine($header, array_pad($row, count($header), ''));
+    try {
+      while (($row = fgetcsv($handle)) !== false) {
+        $data = array_combine($header, array_pad($row, count($header), ''));
 
-          $firstName  = trim($data['first_name'] ?? '');
-          $lastName   = trim($data['last_name'] ?? '');
-          $studentId  = trim($data['student_number'] ?? '');
-          $courseCode = strtoupper(trim($data['course_code'] ?? ''));
-          $contact     = trim($data['contact'] ?? 'N/A');
-          $email       = trim($data['email'] ?? '');
-          $campusInput = strtoupper(trim($data['campus'] ?? ''));
-          $campus      = $campusMap[$campusInput] ?? 'N/A';
+        $firstName  = trim($data['first_name']     ?? '');
+        $lastName   = trim($data['last_name']      ?? '');
+        $studentId  = trim($data['student_number'] ?? '');
+        $courseCode = strtoupper(trim($data['course_code'] ?? ''));
+        $contact    = trim($data['contact']        ?? 'N/A');
+        $email      = trim($data['email']          ?? '');
+        $campusInput = strtoupper(trim($data['campus'] ?? ''));
 
-          if ($studentId === '' || $firstName === '') {
-            $errors[] = "Row $rowNumber: Skip - Missing First Name or Student Number.";
-            $rowNumber++;
-            continue;
-          }
-
-          if (isset($existingUsernames[$studentId])) {
-            $errors[] = "Row $rowNumber: Skip - Student ID ($studentId) already exists.";
-            $rowNumber++;
-            continue;
-          }
-
-          $courseId = $courseMap[$courseCode] ?? null;
-
-          $usersBuffer[] = [
-            'username'    => $studentId,
-            'password'    => $defaultPassword,
-            'first_name'  => $firstName,
-            'middle_name' => null,
-            'last_name'   => $lastName,
-            'email'       => !empty($email) ? $email : null,
-            'role'        => 'Student',
-            'is_active'   => 1,
-            'created_at'  => $timestamp
-          ];
-
-          $studentDataBuffer[] = [
-            'student_number' => $studentId,
-            'course_id'      => $courseId,
-            'year_level'     => 1,
-            'status'         => 'enrolled',
-            'campus'         => $campus,
-            'contact'        => $contact,
-            'section'        => 'N/A'
-          ];
-
-          if (count($usersBuffer) >= $batchSize) {
-            $this->processBatch($userRepo, $studentRepo, $usersBuffer, $studentDataBuffer);
-            $imported += count($usersBuffer);
-            $usersBuffer = [];
-            $studentDataBuffer = [];
-          }
+        if ($studentId === '' || $firstName === '') {
+          $errors[] = "Row $rowNumber: Skip - Missing First Name or Student Number.";
           $rowNumber++;
+          continue;
         }
 
-        if (!empty($usersBuffer)) {
+        if (isset($existingUsernames[$studentId])) {
+          $errors[] = "Row $rowNumber: Skip - Student ID ($studentId) already exists.";
+          $rowNumber++;
+          continue;
+        }
+
+        $campusId = $campusMap[$campusInput] ?? null;
+
+        $usersBuffer[] = [
+          'username'    => $studentId,
+          'password'    => $defaultPassword,
+          'first_name'  => $firstName,
+          'middle_name' => null,
+          'last_name'   => $lastName,
+          'email'       => !empty($email) ? $email : null,
+          'role'        => 'Student',
+          'is_active'   => 1,
+          'created_at'  => $timestamp,
+          'campus_id'   => $campusId,
+        ];
+
+        $studentDataBuffer[] = [
+          'student_number' => $studentId,
+          'course_id'      => $courseMap[$courseCode] ?? null,
+          'year_level'     => 1,
+          'status'         => 'enrolled',
+          'contact'        => $contact,
+          'section'        => 'N/A',
+        ];
+
+        if (count($usersBuffer) >= $batchSize) {
           $this->processBatch($userRepo, $studentRepo, $usersBuffer, $studentDataBuffer);
           $imported += count($usersBuffer);
+          $usersBuffer       = [];
+          $studentDataBuffer = [];
         }
 
-        $db->commit();
-      } catch (\Exception $e) {
-        if ($db->inTransaction()) $db->rollBack();
-        echo json_encode(['success' => false, 'message' => "Database Error: " . $e->getMessage()]);
-        exit;
+        $rowNumber++;
       }
+
+      if (!empty($usersBuffer)) {
+        $this->processBatch($userRepo, $studentRepo, $usersBuffer, $studentDataBuffer);
+        $imported += count($usersBuffer);
+      }
+
+      $db->commit();
+    } catch (\Exception $e) {
+      if ($db->inTransaction()) $db->rollBack();
+      echo json_encode(['success' => false, 'message' => 'Database Error: ' . $e->getMessage()]);
+      exit;
+    } finally {
       fclose($handle);
     }
+
     echo json_encode(['success' => $imported > 0, 'imported' => $imported, 'errors' => $errors]);
   }
 
@@ -692,6 +695,7 @@ class UserManagementController extends Controller
       }
     } catch (\Exception $e) {
       error_log("Bulk Process Error: " . $e->getMessage());
+      throw $e;
     }
   }
 }
