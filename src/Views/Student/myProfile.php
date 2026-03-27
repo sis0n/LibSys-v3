@@ -123,6 +123,13 @@
                     </select>
                     <input type="text" id="genderOther" name="gender_other" placeholder="Please specify" class="hidden font-medium text-gray-800 bg-gray-50 border-gray-200 border rounded-md px-2 py-1 w-full mt-2" disabled>
                 </div>
+                <!-- Campus -->
+                <div class="sm:col-span-2">
+                    <label class="text-sm text-gray-500" for="campusName">Campus</label>
+                    <input type="text" id="campusName" name="campus_name"
+                        class="font-medium text-gray-800 bg-gray-100 border-gray-300 border rounded-md px-2 py-1 w-full"
+                        disabled>
+                </div>
             </div>
         </section>
 
@@ -219,6 +226,13 @@
                             Remove
                         </button>
                     </div>
+                </div>
+                <!-- Campus -->
+                <div class="sm:col-span-2">
+                    <label class="text-sm text-gray-500" for="campusName">Campus</label>
+                    <input type="text" id="campusName" name="campus_name"
+                        class="font-medium text-gray-800 bg-gray-100 border-gray-300 border rounded-md px-2 py-1 w-full"
+                        disabled>
                 </div>
             </div>
         </section>

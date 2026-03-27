@@ -29,21 +29,23 @@ class StudentProfileRepository
             u.profile_picture,
             u.role,
             u.is_active,
+            u.campus_id,
+            c.campus_name,
             s.student_id,
             s.student_number,
             s.course_id, 
             s.year_level,
             s.section,
-            s.campus,
             s.contact,
             s.registration_form,
             s.profile_updated,
             s.can_edit_profile,
-            c.course_code,
-            c.course_title
+            co.course_code,
+            co.course_title
         FROM users u
         LEFT JOIN students s ON u.user_id = s.user_id
-        LEFT JOIN courses c ON s.course_id = c.course_id
+        LEFT JOIN courses co ON s.course_id = co.course_id
+        LEFT JOIN campuses c ON u.campus_id = c.campus_id
         WHERE u.user_id = :userId AND u.deleted_at IS NULL
     ");
     $stmt->execute([':userId' => $userId]);

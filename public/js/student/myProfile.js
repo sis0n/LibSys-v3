@@ -337,6 +337,15 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("email").value = profile.email || "";
         document.getElementById("contact").value = profile.contact || "";
 
+        // Campus name
+        const campusNameInput = document.getElementById("campusName");
+        if (campusNameInput) {
+            campusNameInput.value = profile.campus_name || "N/A";
+            if (!isEditing) {
+                campusNameInput.disabled = true;
+            }
+        }
+
         if (genderSelect) {
           const standardOptions = ["Male", "Female", "LGBTQIA+", "Prefer not to say", "Other"];
           let genderValue = profile.gender || "";
@@ -462,12 +471,21 @@ document.addEventListener("DOMContentLoaded", () => {
         genderSelect.classList.add("bg-white", "border-gray-300", "focus:border-orange-500", "focus:ring-orange-500");
       }
 
-      formActions.classList.remove("hidden");
-      editProfileBtn.classList.add("hidden");
+      // Ensure campus input is disabled and styled like User ID
+      const campusNameInput = document.getElementById("campusName");
+      if (campusNameInput) {
+          campusNameInput.disabled = true;
+          // Explicitly set styles for disabled state to match User ID field
+          campusNameInput.classList.remove("bg-white", "border-gray-300", "focus:border-orange-500", "focus:ring-orange-500"); // Remove editing styles
+          campusNameInput.classList.add("bg-gray-100", "border-gray-300"); // Apply disabled styles
+      }
+
+      formActions.classList.remove("hidden"); // Show Save/Cancel
+      editProfileBtn.classList.add("hidden"); // Hide Edit button when editing starts
       uploadLabel.classList.remove("hidden");
       uploadBtn.classList.remove("hidden");
       regFormUpload.disabled = false;
-      viewRegForm.classList.remove("hidden"); 
+      viewRegForm.classList.remove("hidden");
 
       if (originalProfileData.registration_form) {
         if (removeRegForm) removeRegForm.classList.remove("hidden");
@@ -477,10 +495,11 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         viewRegForm.classList.add("hidden");
         if (removeRegForm) removeRegForm.classList.add("hidden");
-        uploadBtn.classList.remove("hidden"); 
+        uploadBtn.classList.remove("hidden");
       }
-    } else {
-      loadProfile();
+
+    } else { // !shouldEdit
+      loadProfile(); // Re-load profile to set initial states correctly, including editProfileBtn visibility
 
       editableInputs.forEach((input) => {
         input.disabled = true;
@@ -504,22 +523,14 @@ document.addEventListener("DOMContentLoaded", () => {
         genderOtherInput.classList.remove("bg-white", "border-gray-300");
       }
 
-      formActions.classList.add("hidden");
+      formActions.classList.add("hidden"); // Hide Save/Cancel
       regFormUpload.disabled = true;
       if (removeRegForm) removeRegForm.classList.add("hidden");
 
-      if (originalProfileData.profile_updated == 1) {
-        editProfileBtn.classList.add("hidden");
-        uploadLabel.classList.add("hidden");
-        uploadBtn.classList.add("hidden");
-        profileLockedInfo.classList.remove("hidden");
-      } else {
-        editProfileBtn.classList.remove("hidden");
-        uploadLabel.classList.add("hidden");
-        uploadBtn.classList.add("hidden");
-      }
+      // Rely on loadProfile() for editProfileBtn visibility when not editing.
+      // The redundant visibility logic for editProfileBtn in this else block is removed.
 
-      if (originalProfileData.registration_form) {
+      if (originalProfileData.registration_form) { // Handles viewRegForm visibility
         viewRegForm.classList.remove("hidden");
       }
     }
