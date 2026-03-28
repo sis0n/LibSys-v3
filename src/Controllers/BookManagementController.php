@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Repositories\BookManagementRepository;
 use App\Core\Controller;
+use App\Repositories\CampusRepository; // Added use statement
 
 class BookManagementController extends Controller
 {
@@ -38,7 +39,7 @@ class BookManagementController extends Controller
         $fileName = "book_{$uniqueId}.{$extension}";
 
         $uploadDir = ROOT_PATH . "/public/storage/uploads/{$subFolder}/";
-        
+
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0777, true);
         }
@@ -119,7 +120,7 @@ class BookManagementController extends Controller
         if (empty($data['title']) || empty($data['author']) || empty($data['accession_number']) || empty($data['call_number'])) {
             return $this->json(['success' => false, 'message' => 'Required fields are missing.'], 400);
         }
-        
+
         // Ensure campus_id is handled
         $data['campus_id'] = !empty($data['campus_id']) ? (int)$data['campus_id'] : null;
 
@@ -304,72 +305,233 @@ class BookManagementController extends Controller
 
         return $this->json($response);
     }
-    // end
 
     public function bulkImport()
     {
         header('Content-Type: application/json');
-        $imported = 0;
-        $errors = [];
-        $batchSize = 500;
+
+        if (!isset($_FILES['csv_file'])) {
+            echo json_encode(['success' => false, 'message' => 'No file uploaded.']);
+            return;
+        }
+
+        $imported     = 0;
+        $errors       = [];
+        $batchSize    = 500;
         $booksToInsert = [];
 
-        $file = $_FILES['csv_file']['tmp_name'];
-        $bookRepo = new \App\Repositories\BookManagementRepository();
+        $file      = $_FILES['csv_file']['tmp_name'];
+        $bookRepo  = new \App\Repositories\BookManagementRepository();
+        $campusRepo = new \App\Repositories\CampusRepository();
 
-        if (($handle = fopen($file, 'r')) !== false) {
-            fgetcsv($handle); // Skip header
-            $rowNumber = 2;
+        $campusMap = [];
+        foreach ($campusRepo->getAllCampuses() as $cp) {
+            $campusMap[strtoupper(trim($cp['campus_name']))] = $cp['campus_id'];
+        }
 
-            while (($row = fgetcsv($handle)) !== false) {
-                $accessionNumber = trim($row[0] ?? '');
-                if (!$accessionNumber) {
-                    $errors[] = "Row $rowNumber: Missing accession_number.";
-                    $rowNumber++;
-                    continue;
-                }
+        $existingAccessions = [];
+        foreach ($bookRepo->getAllAccessionNumbers() as $acc) {
+            $existingAccessions[strtoupper(trim($acc['accession_number'])) . '|' . $acc['campus_id']] = true;
+        }
 
-                $booksToInsert[] = [
-                    'accession_number' => $accessionNumber,
-                    'call_number' => trim($row[1] ?? '') ?: null,
-                    'title' => trim($row[2] ?? '') ?: null,
-                    'author' => trim($row[3] ?? '') ?: null,
-                    'book_place' => trim($row[4] ?? '') ?: null,
-                    'book_publisher' => trim($row[5] ?? '') ?: null,
-                    'year' => trim($row[6] ?? '') ?: null,
-                    'book_edition' => trim($row[7] ?? '') ?: null,
-                    'description' => trim($row[8] ?? '') ?: null,
-                    'book_isbn' => trim($row[9] ?? '') ?: null,
-                    'book_supplementary' => trim($row[10] ?? '') ?: null,
-                    'subject' => trim($row[11] ?? '') ?: null,
-                    'campus_id' => trim($row[12] ?? '') ?: null,
-                    'availability' => 'available',
-                ];
+        $seenAccessions = [];
 
-                if (count($booksToInsert) >= $batchSize) {
-                    try {
-                        $bookRepo->bulkCreateBooks($booksToInsert);
-                        $imported += count($booksToInsert);
-                        $booksToInsert = []; // Reset ang collection
-                    } catch (\Exception $e) {
-                        $errors[] = "Batch error near row $rowNumber: " . $e->getMessage();
-                    }
-                }
-                $rowNumber++;
+        if (($handle = fopen($file, 'r')) === false) {
+            echo json_encode(['success' => false, 'message' => 'Failed to open CSV file.']);
+            return;
+        }
+
+        $header = fgetcsv($handle);
+        if ($header === false) {
+            fclose($handle);
+            echo json_encode(['success' => false, 'message' => 'Could not read CSV header.']);
+            return;
+        }
+
+        $header[0] = preg_replace('/^\xEF\xBB\xBF/', '', $header[0]);
+        foreach ($header as $index => $headerName) {
+            $headerMap[trim(strtolower($headerName))] = $index;
+        }
+
+        // echo json_encode(['debug_headers' => array_keys($headerMap)]);
+        // exit;
+
+        $columnMapping = [
+            'accession_number' => $headerMap['accession_number'] ?? null,
+            'call_number'      => $headerMap['call_number']      ?? null,
+            'title'            => $headerMap['title']            ?? null,
+            'author'           => $headerMap['author']           ?? null,
+            'place'            => $headerMap['book_place']       ?? null,
+            'publisher'        => $headerMap['book_publisher']   ?? null,
+            'year'             => $headerMap['year']             ?? null,
+            'edition'          => $headerMap['book_edition']     ?? null,
+            'desc'             => $headerMap['description']      ?? null,
+            'isbn'             => $headerMap['book_isbn']        ?? null,
+            'supp'             => $headerMap['book_supplementary'] ?? null,
+            'subj'             => $headerMap['subject']          ?? null,
+            'campus'           => $headerMap['campus']           ?? null,
+        ];
+
+        $missingHeaders = [];
+        foreach (['accession_number', 'title', 'author', 'campus'] as $required) {
+            if ($columnMapping[$required] === null) {
+                $missingHeaders[] = $required;
+            }
+        }
+
+        if (!empty($missingHeaders)) {
+            fclose($handle);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Missing required CSV headers: ' . implode(', ', $missingHeaders) . '.'
+            ]);
+            return;
+        }
+
+        $rowNumber = 2;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            // 1. Missing accession number — PANATILIHIN
+            $accessionNumber = trim($row[$columnMapping['accession_number']] ?? '');
+            if ($accessionNumber === '') {
+                fclose($handle);
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Import aborted: Row $rowNumber has a missing or empty accession number. Please check your CSV and try again.",
+                    'imported' => 0,
+                    'errors'   => []
+                ]);
+                return;
             }
 
-            if (!empty($booksToInsert)) {
+            // 2. Missing campus check
+            $campusInput = strtoupper(trim($row[$columnMapping['campus']] ?? ''));
+            if ($campusInput === '') {
+                fclose($handle);
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Import aborted: Row $rowNumber (Accession No: $accessionNumber) has a missing campus name. Please fix your CSV and try again.",
+                    'imported' => 0,
+                    'errors'   => []
+                ]);
+                return;
+            }
+
+            // 3. Invalid campus check
+            $campusId = $campusMap[$campusInput] ?? null;
+            if ($campusId === null) {
+                fclose($handle);
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Import aborted: Row $rowNumber (Accession No: $accessionNumber) has an invalid campus '$campusInput'. Please fix your CSV and try again.",
+                    'imported' => 0,
+                    'errors'   => []
+                ]);
+                return;
+            }
+
+            // 4. Duplicate check sa database — BAGO: may campus_id na
+            $accessionKey = strtoupper($accessionNumber) . '|' . $campusId;
+            if (isset($existingAccessions[$accessionKey])) {
+                fclose($handle);
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Import aborted: Row $rowNumber (Accession No: $accessionNumber) already exists in the same campus. Please fix your CSV and try again.",
+                    'imported' => 0,
+                    'errors'   => []
+                ]);
+                return;
+            }
+
+            // 5. Duplicate check sa CSV — BAGO: may campus_id na
+            if (isset($seenAccessions[$accessionKey])) {
+                fclose($handle);
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Import aborted: Row $rowNumber (Accession No: $accessionNumber) is a duplicate within the CSV file for the same campus. Please fix your CSV and try again.",
+                    'imported' => 0,
+                    'errors'   => []
+                ]);
+                return;
+            }
+
+            $seenAccessions[$accessionKey] = true;
+
+            $campusInput = strtoupper(trim($row[$columnMapping['campus']] ?? ''));
+            if ($campusInput === '') {
+                fclose($handle);
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Import aborted: Row $rowNumber (Accession No: $accessionNumber) has a missing campus name. Please fix your CSV and try again.",
+                    'imported' => 0,
+                    'errors'   => []
+                ]);
+                return;
+            }
+
+            $campusId = $campusMap[$campusInput] ?? null;
+            if ($campusId === null) {
+                fclose($handle);
+                echo json_encode([
+                    'success' => false,
+                    'message' => "Import aborted: Row $rowNumber (Accession No: $accessionNumber) has an invalid campus '$campusInput'. Please fix your CSV and try again.",
+                    'imported' => 0,
+                    'errors'   => []
+                ]);
+                return;
+            }
+
+            $booksToInsert[] = [
+                'accession_number'    => $accessionNumber,
+                'call_number'         => trim($row[$columnMapping['call_number']] ?? '') ?: null,
+                'title'               => trim($row[$columnMapping['title']]       ?? '') ?: null,
+                'author'              => trim($row[$columnMapping['author']]      ?? '') ?: null,
+                'book_place'          => trim($row[$columnMapping['place']]       ?? '') ?: null,
+                'book_publisher'      => trim($row[$columnMapping['publisher']]   ?? '') ?: null,
+                'year'                => trim($row[$columnMapping['year']]        ?? '') ?: null,
+                'book_edition'        => trim($row[$columnMapping['edition']]     ?? '') ?: null,
+                'description'         => trim($row[$columnMapping['desc']]        ?? '') ?: null,
+                'book_isbn'           => trim($row[$columnMapping['isbn']]        ?? '') ?: null,
+                'book_supplementary'  => trim($row[$columnMapping['supp']]        ?? '') ?: null,
+                'subject'             => trim($row[$columnMapping['subj']]        ?? '') ?: null,
+                'campus_id'           => $campusId,
+                'availability'        => 'available',
+            ];
+
+            if (count($booksToInsert) >= $batchSize) {
                 try {
                     $bookRepo->bulkCreateBooks($booksToInsert);
                     $imported += count($booksToInsert);
+                    $booksToInsert = [];
                 } catch (\Exception $e) {
-                    $errors[] = "Final batch error: " . $e->getMessage();
+                    $errors[] = "Batch error near row $rowNumber: " . $e->getMessage();
+                    $booksToInsert = [];
                 }
             }
-            fclose($handle);
+
+            $rowNumber++;
         }
 
-        echo json_encode(['success' => true, 'imported' => $imported, 'errors' => $errors]);
+        if (!empty($booksToInsert)) {
+            try {
+                $bookRepo->bulkCreateBooks($booksToInsert);
+                $imported += count($booksToInsert);
+            } catch (\Exception $e) {
+                $errors[] = "Final batch error: " . $e->getMessage();
+            }
+        }
+
+        fclose($handle);
+
+        if ($imported === 0 && !empty($errors)) {
+            echo json_encode(['success' => false, 'message' => 'Import failed.', 'errors' => $errors]);
+        } else {
+            $message = "Successfully imported $imported book(s).";
+            if (!empty($errors)) {
+                $message = "Partially imported: " . $message . " Errors encountered.";
+            }
+            echo json_encode(['success' => true, 'message' => $message, 'imported' => $imported, 'errors' => $errors]);
+        }
     }
 
     public function getBorrowingHistory($id)

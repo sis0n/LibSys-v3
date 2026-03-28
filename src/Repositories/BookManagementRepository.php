@@ -271,4 +271,10 @@ class BookManagementRepository
         $stmt->execute([':book_id' => $bookId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function getAllAccessionNumbers(): array
+    {
+        $stmt = $this->db->query("SELECT accession_number, campus_id FROM books");
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
 }

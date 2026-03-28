@@ -27,7 +27,9 @@
                         class="block border-2 border-dashed border-[var(--color-border)] rounded-lg p-8 text-center cursor-pointer hover:border-[var(--color-ring)]/60 transition">
                         <i class="ph ph-upload text-[var(--color-ring)] text-3xl mb-2 block"></i>
                         <p class="font-medium text-[var(--color-ring)]">Drop CSV file here or click to browse</p>
-                        <p class="text-xs text-gray-500 mt-1">Expected format: accession_number,call_number,title,author,place,publisher,year,edition,desc,isbn,supp,subj,campus_id</p>
+                        <p class="text-xs text-gray-500 mt-1">Expected format:</p>
+                        <p class="text-xs text-gray-500 mt-1">accession_number, call_number, title, author, place, publisher,</p>
+                        <p class="text-xs text-gray-500 mt-1">year, edition, desc, isbn, supp, subj, campus</p>
                         <input type="file" id="csvFile" name="csv_file" accept=".csv" class="hidden" />
                     </label>
                 </form>
