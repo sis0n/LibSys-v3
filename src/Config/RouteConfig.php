@@ -39,6 +39,11 @@ class RouteConfig
     $router->get('api/faculty/qrBorrowingTicket/checkStatus', 'FacultyTicketController@checkStatus');
     $router->get('api/faculty/bookCatalog/availableCount', 'FacultyBookCatalogController@getAvailableCount', ['faculty']);
     $router->get('api/faculty/bookCatalog/fetch', 'FacultyBookCatalogController@fetch', ['faculty']);
+    
+    // Consolidated Book Catalog Route
+    $router->get('bookCatalog', 'BookCatalogController@index', ['faculty', 'staff', 'student']);
+
+    $router->get('api/faculty/cart', 'FacultyCartController@index', ['faculty']);
     $router->get('api/faculty/cart', 'FacultyCartController@index', ['faculty']);
     $router->get('api/faculty/cart/add/{id}', 'FacultyCartController@add', ['faculty']);
     $router->post('api/faculty/cart/remove/{id}', 'FacultyCartController@remove', ['faculty']);

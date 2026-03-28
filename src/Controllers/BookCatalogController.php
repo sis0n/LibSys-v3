@@ -4,21 +4,36 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Repositories\BookCatalogRepository;
+use App\Repositories\CampusRepository;
 use PDO;
 
 class BookCatalogController extends Controller
 {
   private $bookRepo;
+  private $campusRepo;
 
   public function __construct()
   {
     $this->bookRepo = new BookCatalogRepository();
+    $this->campusRepo = new CampusRepository();
   }
 
   public function index()
   {
     $campusId = $_SESSION['user_data']['campus_id'] ?? null;
     $books = $this->bookRepo->getAllBooks($campusId);
+    $campuses = $this->campusRepo->getAllCampuses();
+
+    // Get current campus name for default display
+    $currentCampusName = "All Campuses";
+    if ($campusId) {
+        foreach ($campuses as $c) {
+            if ($c['campus_id'] == $campusId) {
+                $currentCampusName = $c['campus_name'];
+                break;
+            }
+        }
+    }
     
     // Transform paths para isama ang BASE_URL
     $books = array_map(function($book) {
@@ -28,9 +43,22 @@ class BookCatalogController extends Controller
       return $book;
     }, $books);
 
-    $this->view("Student/bookCatalog", [
+    $role = strtolower($_SESSION['role'] ?? '');
+    
+    $view_path = "Student/bookCatalog";
+    if ($role === 'faculty') {
+        $view_path = "Faculty/bookCatalog";
+    } elseif ($role === 'staff') {
+        $view_path = "staff/bookCatalog";
+    }
+
+    $this->view($view_path, [
       "books" => $books,
-      "title" => "Books Inventory"
+      "campuses" => $campuses,
+      "currentCampusId" => $campusId,
+      "currentCampusName" => $currentCampusName,
+      "title" => "Books Inventory",
+      "currentPage" => "bookCatalog"
     ]);
   }
 
@@ -143,8 +171,17 @@ class BookCatalogController extends Controller
     $category = $_GET['category'] ?? '';
     $status   = $_GET['status'] ?? '';
     $sort     = $_GET['sort'] ?? 'default';
+    
+    $campusIdParam = $_GET['campus_id'] ?? null;
+    $campusId = null;
 
-    $campusId = $_SESSION['user_data']['campus_id'] ?? null;
+    if ($campusIdParam === 'all') {
+        $campusId = null;
+    } elseif ($campusIdParam !== null) {
+        $campusId = (int)$campusIdParam;
+    } else {
+        $campusId = $_SESSION['user_data']['campus_id'] ?? null;
+    }
 
     $books = $this->bookRepo->getPaginatedFiltered(
       $limit,
@@ -177,7 +214,17 @@ class BookCatalogController extends Controller
 
   public function getAvailableCount()
   {
-    $campusId = $_SESSION['user_data']['campus_id'] ?? null;
+    $campusIdParam = $_GET['campus_id'] ?? null;
+    $campusId = null;
+
+    if ($campusIdParam === 'all') {
+        $campusId = null;
+    } elseif ($campusIdParam !== null) {
+        $campusId = (int)$campusIdParam;
+    } else {
+        $campusId = $_SESSION['user_data']['campus_id'] ?? null;
+    }
+
     $count = $this->bookRepo->countAvailableBooks($campusId);
     header('Content-Type: application/json');
     echo json_encode(['available' => $count]);

@@ -17,17 +17,45 @@
                     class="w-full pl-10 pr-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-input-background)] focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition text-sm" />
             </div>
 
+            <!-- Campus Filter -->
+            <div class="relative">
+                <input type="hidden" id="userHomeCampusId" value="<?= $currentCampusId ?>">
+                <input type="hidden" id="userHomeCampusName" value="<?= htmlspecialchars($currentCampusName) ?>">
+                <button id="campusDropdownBtn"
+                    class="w-full sm:w-48 flex items-center justify-between px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-input-background)] hover:bg-[var(--color-orange-50)] transition text-sm">
+                    <span class="flex items-center gap-2 text-gray-700 pointer-events-none">
+                        <i class="ph ph-buildings text-gray-500"></i>
+                        <span id="campusDropdownValue"><?= htmlspecialchars($currentCampusName) ?></span>
+                    </span>
+                    <i class="ph ph-caret-down text-gray-500 pointer-events-none"></i>
+                </button>
+                <div id="campusDropdownMenu"
+                    class="absolute mt-1 w-full sm:w-48 bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg shadow-lg hidden z-[100] text-sm">
+                    <ul class="py-1">
+                        <li><button class="campus-item w-full text-left px-4 py-2 hover:bg-[var(--color-orange-100)]"
+                                onclick="selectCampus(this,'all', 'All Campuses')">All Campuses</button></li>
+                        <?php if (isset($campuses)): ?>
+                            <?php foreach ($campuses as $campus): ?>
+                                <li><button class="campus-item w-full text-left px-4 py-2 hover:bg-[var(--color-orange-100)]"
+                                        onclick="selectCampus(this,'<?= $campus['campus_id'] ?>', '<?= htmlspecialchars($campus['campus_name']) ?>')"><?= htmlspecialchars($campus['campus_name']) ?></button></li>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Sort Filter -->
             <div class="relative">
                 <button id="sortDropdownBtn"
                     class="w-full sm:w-48 flex items-center justify-between px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-input-background)] hover:bg-[var(--color-orange-50)] transition text-sm">
-                    <span class="flex items-center gap-2 text-gray-700">
+                    <span class="flex items-center gap-2 text-gray-700 pointer-events-none">
                         <i class="ph ph-sort-ascending text-gray-500"></i>
                         <span id="sortDropdownValue">Default Order</span>
                     </span>
-                    <i class="ph ph-caret-down text-gray-500"></i>
+                    <i class="ph ph-caret-down text-gray-500 pointer-events-none"></i>
                 </button>
                 <div id="sortDropdownMenu"
-                    class="absolute mt-1 w-full sm:w-48 bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg shadow-lg hidden z-20 text-sm">
+                    class="absolute mt-1 w-full sm:w-48 bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg shadow-lg hidden z-[100] text-sm">
                     <ul class="py-1">
                         <li><button class="sort-item w-full text-left px-4 py-2 hover:bg-[var(--color-orange-100)]"
                                 onclick="selectSort(this,'default', 'Default Order')">Default Order</button></li>
@@ -42,17 +70,19 @@
                     </ul>
                 </div>
             </div>
+
+            <!-- Status Filter -->
             <div class="relative">
                 <button id="statusDropdownBtn"
                     class="w-full sm:w-40 flex items-center justify-between px-4 py-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-input-background)] hover:bg-[var(--color-orange-50)] transition text-sm">
-                    <span class="flex items-center gap-2 text-gray-700">
+                    <span class="flex items-center gap-2 text-gray-700 pointer-events-none">
                         <i class="ph ph-check-circle text-gray-500"></i>
                         <span id="statusDropdownValue">All Status</span>
                     </span>
-                    <i class="ph ph-caret-down text-gray-500"></i>
+                    <i class="ph ph-caret-down text-gray-500 pointer-events-none"></i>
                 </button>
                 <div id="statusDropdownMenu"
-                    class="absolute mt-1 w-full sm:w-40 bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg shadow-lg hidden z-20 text-sm">
+                    class="absolute mt-1 w-full sm:w-40 bg-[var(--color-card)] border border-[var(--color-border)] rounded-lg shadow-lg hidden z-[100] text-sm">
                     <ul class="py-1">
                         <li><button class="status-item w-full text-left px-4 py-2 hover:bg-[var(--color-orange-100)]"
                                 onclick="selectStatus(this,'All Status')">All Status</button></li>
@@ -92,15 +122,14 @@
 
     <div id="loadingSkeletons" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 w-full">
         <?php for ($i = 0; $i < 12; $i++): ?>
-        <div
-            class="animate-pulse bg-[var(--color-card)] shadow-sm rounded-xl overflow-hidden border border-[var(--color-border)]">
-            <div class="w-full aspect-[2/3] bg-gray-200"></div>
-            <div class="p-2 space-y-2">
-                <div class="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div class="h-3 bg-gray-200 rounded w-1/2"></div>
-                <div class="h-3 bg-gray-200 rounded w-2/3"></div>
+            <div class="animate-pulse bg-[var(--color-card)] shadow-sm rounded-xl overflow-hidden border border-[var(--color-border)]">
+                <div class="w-full aspect-[2/3] bg-gray-200"></div>
+                <div class="p-2 space-y-2">
+                    <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                    <div class="h-3 bg-gray-200 rounded w-2/3"></div>
+                </div>
             </div>
-        </div>
         <?php endfor; ?>
     </div>
 
@@ -110,7 +139,7 @@
 
 
     <div id="bookModal"
-        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300 ease-out">
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[1000] hidden opacity-0 transition-opacity duration-300 ease-out">
         <div id="bookModalContent"
             class="bg-[var(--color-card)] w-full max-w-lg rounded-2xl shadow-lg overflow-hidden transform scale-95 transition-transform duration-300 ease-out">
             <div
@@ -152,6 +181,7 @@
                     <p><span class="text-amber-700">Year:</span> <span id="modalYear"></span></p>
                     <p><span class="text-amber-700">Book Edition:</span> <span id="modalEdition"></span></p>
                     <p><span class="text-amber-700">Book Supplementary:</span> <span id="modalSupplementary"></span></p>
+                    <p><span class="text-amber-700">Campus:</span> <span id="modalCampus" class="font-semibold text-orange-600"></span></p>
                 </div>
 
                 <div class="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg p-3 border border-orange-200">
@@ -170,4 +200,4 @@
     </div>
 
     <script src="<?= BASE_URL ?>/js/staff/bookCatalog.js" defer></script>
-</div>        
+</div>

@@ -6,12 +6,16 @@ window.addEventListener("DOMContentLoaded", () => {
     const noBooksFound = document.getElementById("noBooksFound");
     const resultsIndicator = document.getElementById("resultsIndicator");
 
+    // Dropdown Elements
     const statusBtn = document.getElementById("statusDropdownBtn");
     const statusMenu = document.getElementById("statusDropdownMenu");
     const statusValue = document.getElementById("statusDropdownValue");
     const sortBtn = document.getElementById("sortDropdownBtn");
     const sortMenu = document.getElementById("sortDropdownMenu");
     const sortValue = document.getElementById("sortDropdownValue");
+    const campusBtn = document.getElementById("campusDropdownBtn");
+    const campusMenu = document.getElementById("campusDropdownMenu");
+    const campusValue = document.getElementById("campusDropdownValue");
 
     // Modal Elements
     const modal = document.getElementById("bookModal");
@@ -31,8 +35,8 @@ window.addEventListener("DOMContentLoaded", () => {
     const modalEdition = document.getElementById("modalEdition");
     const modalSupplementary = document.getElementById("modalSupplementary");
     const modalStatus = document.getElementById("modalStatus");
+    const modalCampus = document.getElementById("modalCampus");
     const addToCartBtn = document.getElementById("addToCartBtn");
-
 
     const paginationControls = document.getElementById("paginationControls");
     const paginationList = document.getElementById("paginationList");
@@ -44,72 +48,112 @@ window.addEventListener("DOMContentLoaded", () => {
     let searchValue = "";
     let statusValueFilter = "All Status";
     let sortValueFilter = "default";
+    let campusValueFilter = "all";
     let cart = [];
 
     let currentPage = 1;
     try {
-        const savedPage = sessionStorage.getItem('bookCatalogPage');
+        const savedPage = sessionStorage.getItem('bookCatalogPage_staff');
         if (savedPage) {
             const parsedPage = parseInt(savedPage, 10);
             if (!isNaN(parsedPage) && parsedPage > 0) currentPage = parsedPage;
-            else sessionStorage.removeItem('bookCatalogPage');
+            else sessionStorage.removeItem('bookCatalogPage_staff');
+        }
+
+        const savedCampus = sessionStorage.getItem('bookCatalogCampus_staff');
+        const savedCampusText = sessionStorage.getItem('bookCatalogCampusText_staff');
+        if (savedCampus && savedCampusText) {
+            campusValueFilter = savedCampus;
+            if (campusValue) campusValue.textContent = savedCampusText;
+        } else {
+            const homeId = document.getElementById("userHomeCampusId")?.value;
+            const homeName = document.getElementById("userHomeCampusName")?.value;
+            if (homeId && homeName) {
+                campusValueFilter = homeId;
+                if (campusValue) campusValue.textContent = homeName;
+            }
         }
     } catch (e) {
         console.error("SessionStorage Error:", e);
-        currentPage = 1;
     }
 
-    if (statusBtn && statusMenu && statusValue) {
+    // --- DROPDOWN LOGIC ---
+    function closeAllMenus() {
+        if (statusMenu) statusMenu.classList.add("hidden");
+        if (sortMenu) sortMenu.classList.add("hidden");
+        if (campusMenu) campusMenu.classList.add("hidden");
+    }
+
+    if (campusBtn && campusMenu) {
+        campusBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const isHidden = campusMenu.classList.contains("hidden");
+            closeAllMenus();
+            if (isHidden) campusMenu.classList.remove("hidden");
+        });
+
+        window.selectCampus = function (el, value, text) {
+            if (campusValue) campusValue.textContent = text;
+            campusValueFilter = value;
+            document.querySelectorAll("#campusDropdownMenu .campus-item").forEach(i => i.classList.remove("bg-[var(--color-orange-200)]", "font-semibold"));
+            if (el) el.classList.add("bg-[var(--color-orange-200)]", "font-semibold");
+            closeAllMenus();
+            currentPage = 1;
+            try {
+                sessionStorage.setItem('bookCatalogCampus_staff', value);
+                sessionStorage.setItem('bookCatalogCampusText_staff', text);
+                sessionStorage.removeItem('bookCatalogPage_staff');
+            } catch (e) { }
+            loadBooks(1);
+            loadAvailableCount();
+        }
+    }
+
+    if (statusBtn && statusMenu) {
         statusBtn.addEventListener("click", (e) => {
             e.stopPropagation();
-            if (sortMenu) sortMenu.classList.add("hidden");
-            statusMenu.classList.toggle("hidden");
+            const isHidden = statusMenu.classList.contains("hidden");
+            closeAllMenus();
+            if (isHidden) statusMenu.classList.remove("hidden");
         });
-        // Gamitin ang loadBooks (walang popup)
         window.selectStatus = function (el, value) {
-            statusValue.textContent = value;
+            if (statusValue) statusValue.textContent = value;
             statusValueFilter = value;
             document.querySelectorAll("#statusDropdownMenu .status-item").forEach(i => i.classList.remove("bg-[var(--color-orange-200)]", "font-semibold"));
             if (el) el.classList.add("bg-[var(--color-orange-200)]", "font-semibold");
-            statusMenu.classList.add("hidden");
+            closeAllMenus();
             currentPage = 1;
-            try {
-                sessionStorage.removeItem('bookCatalogPage');
-            } catch (e) { }
-            loadBooks(1); // Gumagamit ng loadBooks na walang Swal.fire
+            try { sessionStorage.removeItem('bookCatalogPage_staff'); } catch (e) { }
+            loadBooks(1);
         }
-        const defaultStatus = statusMenu.querySelector(".status-item");
-        if (defaultStatus) defaultStatus.classList.add("bg-[var(--color-orange-200)]", "font-semibold");
-    } else console.warn("Status dropdown missing");
+    }
 
-    if (sortBtn && sortMenu && sortValue) {
+    if (sortBtn && sortMenu) {
         sortBtn.addEventListener("click", (e) => {
             e.stopPropagation();
-            if (statusMenu) statusMenu.classList.add("hidden");
-            sortMenu.classList.toggle("hidden");
+            const isHidden = sortMenu.classList.contains("hidden");
+            closeAllMenus();
+            if (isHidden) sortMenu.classList.remove("hidden");
         });
-        // Gamitin ang loadBooks (walang popup)
         window.selectSort = function (el, value, text) {
-            sortValue.textContent = text;
+            if (sortValue) sortValue.textContent = text;
             sortValueFilter = value;
             document.querySelectorAll("#sortDropdownMenu .sort-item").forEach(i => i.classList.remove("bg-[var(--color-orange-200)]", "font-semibold"));
             if (el) el.classList.add("bg-[var(--color-orange-200)]", "font-semibold");
-            sortMenu.classList.add("hidden");
+            closeAllMenus();
             currentPage = 1;
-            try {
-                sessionStorage.removeItem('bookCatalogPage');
-            } catch (e) { }
-            loadBooks(1); // Gumagamit ng loadBooks na walang Swal.fire
+            try { sessionStorage.removeItem('bookCatalogPage_staff'); } catch (e) { }
+            loadBooks(1);
         }
-        const defaultSort = sortMenu.querySelector(".sort-item");
-        if (defaultSort) defaultSort.classList.add("bg-[var(--color-orange-200)]", "font-semibold");
-    } else console.warn("Sort dropdown missing");
+    }
 
     document.addEventListener("click", (e) => {
         if (statusMenu && statusBtn && !statusBtn.contains(e.target) && !statusMenu.contains(e.target)) statusMenu.classList.add("hidden");
         if (sortMenu && sortBtn && !sortBtn.contains(e.target) && !sortMenu.contains(e.target)) sortMenu.classList.add("hidden");
+        if (campusMenu && campusBtn && !campusBtn.contains(e.target) && !campusMenu.contains(e.target)) campusMenu.classList.add("hidden");
     });
 
+    // --- CART LOGIC ---
     async function loadCart() {
         try {
             const r = await fetch("api/staff/cart/json");
@@ -128,7 +172,7 @@ window.addEventListener("DOMContentLoaded", () => {
         const i = document.createElement("i");
         i.className = "ph ph-shopping-cart text-xs mr-1";
         cartCount.appendChild(i);
-        const c = (cart?.length) ? cart.length : 0;
+        const c = (cart && cart.length) ? cart.length : 0;
         cartCount.appendChild(document.createTextNode(`${c} item(s)`));
     }
 
@@ -138,38 +182,27 @@ window.addEventListener("DOMContentLoaded", () => {
             const r = await fetch(`api/staff/cart/add/${id}`);
             if (!r.ok) throw Error((await r.json()).message || `Err ${r.status}`);
             const d = await r.json();
-
             if (d.success) {
                 cart = d.cart || [];
                 updateCartBadge();
             }
-
             if (typeof Swal != "undefined") {
                 const isSuccess = d.success;
                 const mainTitle = d.message || (isSuccess ? "Added to Cart" : "Already in Cart");
-                const bodyText = isSuccess
-                    ? "The book has been successfully added to your request cart."
-                    : "This book is already in your cart or not available for request.";
+                const bodyText = isSuccess ? "The book has been successfully added to your request cart." : "This book is already in your cart or not available for request.";
                 const icon = isSuccess ? "ph-check-circle" : "ph-warning";
-
                 const accentColor = isSuccess ? "text-green-600" : "text-orange-600";
                 const accentBg = isSuccess ? "bg-green-100" : "bg-orange-100";
-                
-                // --- DYNAMIC BORDER/SHADOW LOGIC ---
                 const borderColor = isSuccess ? "!border-green-400" : "!border-orange-400";
                 const popupBgGradient = isSuccess ? "!to-[#f0fff5]" : "!to-[#fff6ef]";
                 const shadowColor = isSuccess ? "shadow-[0_0_8px_#22c55e70]" : "shadow-[0_0_8px_#ffb34770]";
-                // ---------------------------------
 
-                const duration = 3000;
-
-                // 🟢/🟠 Custom Toast Alert 
                 Swal.fire({
                     toast: true,
                     position: "bottom-end",
                     showConfirmButton: false,
-                    timer: duration,
-                    width: "360px", 
+                    timer: 3000,
+                    width: "360px",
                     background: "transparent",
                     html: `
                         <div class="flex flex-col text-left">
@@ -185,531 +218,136 @@ window.addEventListener("DOMContentLoaded", () => {
                         </div>
                     `,
                     customClass: {
-                        // Applying the dynamic styling
                         popup: `!rounded-xl !shadow-md !border-2 ${borderColor} !p-4 !bg-gradient-to-b !from-[#fffdfb] ${popupBgGradient} backdrop-blur-sm ${shadowColor}`,
                     },
                 });
-
-                // 💡 Automatically close modal after adding to cart
-                if (typeof closeModal === "function") closeModal();
-
+                closeModal();
             } else {
                 alert(d.message || (d.success ? "Added to Cart!" : "Already in Cart / Not Available"));
-                if (typeof closeModal === "function") closeModal(); 
+                closeModal(); 
             }
-
         } catch (e) {
             console.error("Add cart err:", e);
-            if (typeof Swal != "undefined") {
-                // 🔴 Error Toast (Network or generic failure)
-                Swal.fire({
-                    toast: true,
-                    position: "bottom-end",
-                    showConfirmButton: false,
-                    timer: 3000,
-                    background: "transparent",
-                    width: "360px", 
-                    html: `
-                        <div class="flex flex-col text-left">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600">
-                                    <i class="ph ph-x-circle text-lg"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-[15px] font-semibold text-red-600">Failed to Add Book</h3>
-                                    <p class="text-[13px] text-gray-700 mt-0.5">Please try again later or check your connection.</p>
-                                </div>
-                            </div>
-                        </div>
-                    `,
-                    customClass: {
-                        // Correct Red border and shadow
-                        popup: "!rounded-xl !shadow-md !border-2 !border-red-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ff6b6b70]",
-                    },
-                });
-            }
         }
     }
 
-
-    async function removeFromCart(id) {
-        if (!id) return;
-
-        // 🟠 Loading Animation (Orange themed loading)
-        Swal.fire({
-            background: "transparent",
-            html: `
-                <div class="flex flex-col items-center justify-center gap-2">
-                    <div class="animate-spin rounded-full h-10 w-10 border-4 border-orange-200 border-t-orange-600"></div>
-                    <p class="text-gray-700 text-[14px]">Removing item...<br><span class="text-sm text-gray-500">Just a moment.</span></p>
-                </div>
-            `,
-            allowOutsideClick: false,
-            showConfirmButton: false,
-            customClass: {
-                // Orange border and shadow for cart loading
-                popup: "!rounded-xl !shadow-md !border-2 !border-orange-400 !p-6 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ffb34770]",
-            },
-        });
-
-        try {
-            const r = await fetch(`api/staff/cart/remove/${id}`, {
-                method: "POST"
-            });
-            if (!r.ok) throw Error(`Err ${r.status}`);
-            cart = cart.filter(i => i.book_id != id);
-            updateCartBadge();
-
-            // Slight delay before closing for smooth transition
-            await new Promise((resolve) => setTimeout(resolve, 300));
-            Swal.close();
-
-            if (typeof Swal != 'undefined') {
-                // 🟢 Success Toast 
-                Swal.fire({
-                    toast: true,
-                    position: "bottom-end",
-                    showConfirmButton: false,
-                    timer: 2000,
-                    width: "360px", 
-                    background: "transparent",
-                    html: `
-                        <div class="flex flex-col text-left">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-600">
-                                    <i class="ph ph-check-circle text-lg"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-[15px] font-semibold text-green-600">Removed!</h3>
-                                    <p class="text-[13px] text-gray-700 mt-0.5">Item removed from cart.</p>
-                                </div>
-                            </div>
-                        </div>
-                    `,
-                    customClass: {
-                        // Correct Green border and shadow
-                        popup: "!rounded-xl !shadow-md !border-2 !border-green-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#f0fff5] shadow-[0_0_8px_#22c55e70]",
-                    },
-                });
-            } else alert("Removed.");
-        } catch (e) {
-            console.error("Remove cart err:", e);
-            Swal.close();
-            // 🔴 Error Toast 
-            if (typeof Swal != 'undefined') {
-                Swal.fire({
-                    toast: true,
-                    position: "bottom-end",
-                    showConfirmButton: false,
-                    timer: 3000,
-                    width: "360px", 
-                    background: "transparent",
-                    html: `
-                        <div class="flex flex-col text-left">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600">
-                                    <i class="ph ph-x-circle text-lg"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-[15px] font-semibold text-red-600">Removal Failed</h3>
-                                    <p class="text-[13px] text-gray-700 mt-0.5">An error occurred while removing the item.</p>
-                                </div>
-                            </div>
-                        </div>
-                    `,
-                    customClass: {
-                        // Correct Red border and shadow
-                        popup: "!rounded-xl !shadow-md !border-2 !border-red-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ff6b6b70]",
-                    },
-                });
-            } else alert("Removed.");
-        }
-    }
-
-    async function clearCart() {
-        if (typeof Swal != 'undefined') {
-            // 🟠 Confirmation Alert (Modal)
-            const confirmationResult = await Swal.fire({
-                background: "transparent",
-                html: `
-                    <div class="flex flex-col text-center">
-                        <div class="flex justify-center mb-3">
-                            <div class="flex items-center justify-center w-14 h-14 rounded-full bg-orange-100 text-orange-600">
-                                <i class="ph ph-trash text-2xl"></i>
-                            </div>
-                        </div>
-                        <h3 class="text-[17px] font-semibold text-orange-700">Clear Cart?</h3>
-                        <p class="text-[14px] text-gray-700 mt-1">
-                            Are you sure you want to remove all items from your cart?
-                        </p>
-                    </div>
-                `,
-                showCancelButton: true,
-                confirmButtonText: "Yes, Clear!",
-                cancelButtonText: "Cancel",
-                customClass: {
-                    popup:
-                        "!rounded-xl !shadow-md !p-6 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] !border-2 !border-orange-400 shadow-[0_0_8px_#ffb34770]",
-                    confirmButton:
-                        "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700",
-                    cancelButton:
-                        "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300",
-                },
-            });
-
-            if (confirmationResult.isConfirmed) await performClearCart();
-            else {
-                // ❌ Cancel toast 
-                Swal.fire({
-                    toast: true,
-                    position: "bottom-end",
-                    showConfirmButton: false,
-                    timer: 2000,
-                    width: "360px", 
-                    background: "transparent",
-                    html: `
-                        <div class="flex flex-col text-left">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600">
-                                    <i class="ph ph-x-circle text-lg"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-[15px] font-semibold text-red-600">Cancelled</h3>
-                                    <p class="text-[13px] text-gray-700 mt-0.5">The cart was not cleared.</p>
-                                </div>
-                            </div>
-                        </div>
-                    `,
-                    customClass: {
-                        // Correct Red border and shadow
-                        popup:
-                            "!rounded-xl !shadow-md !border-2 !border-red-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ff6b6b70]",
-                    },
-                });
-            }
-        }
-        else {
-            if (confirm("Clear cart?")) await performClearCart();
-        }
-    }
-
-    async function performClearCart() {
-        // 🟠 Loading Animation
-        Swal.fire({
-            background: "transparent",
-            html: `
-                <div class="flex flex-col items-center justify-center gap-2">
-                    <div class="animate-spin rounded-full h-10 w-10 border-4 border-orange-200 border-t-orange-600"></div>
-                    <p class="text-gray-700 text-[14px]">Clearing cart...<br><span class="text-sm text-gray-500">Just a moment.</span></p>
-                </div>
-            `,
-            allowOutsideClick: false,
-            showConfirmButton: false,
-            customClass: {
-                popup:
-                    "!rounded-xl !shadow-md !border-2 !border-orange-400 !p-6 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ffb34770]",
-            },
-        });
-
-        try {
-            const r = await fetch("api/staff/cart/clear", {
-                method: "POST"
-            });
-            if (!r.ok) throw Error("Failed to clear cart");
-
-            // Simulate delay
-            await new Promise((resolve) => setTimeout(resolve, 300));
-            Swal.close();
-
-            cart = [];
-            updateCartBadge();
-
-            if (typeof Swal != 'undefined') {
-                // 🟢 Success Toast 
-                Swal.fire({
-                    toast: true,
-                    position: "bottom-end",
-                    showConfirmButton: false,
-                    timer: 2000,
-                    width: "360px", 
-                    background: "transparent",
-                    html: `
-                        <div class="flex flex-col text-left">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-600">
-                                    <i class="ph ph-check-circle text-lg"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-[15px] font-semibold text-green-600">Cart Cleared!</h3>
-                                    <p class="text-[13px] text-gray-700 mt-0.5">All items removed successfully.</p>
-                                </div>
-                            </div>
-                        </div>
-                    `,
-                    customClass: {
-                        // Correct Green border and shadow
-                        popup: "!rounded-xl !shadow-md !border-2 !border-green-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#f0fff5] shadow-[0_0_8px_#22c55e70]",
-                    },
-                });
-            } else alert("Cleared!");
-        } catch (e) {
-            console.error("Clear cart err:", e);
-            Swal.close();
-            // 🔴 Error Toast 
-            Swal.fire({
-                toast: true,
-                position: "bottom-end",
-                showConfirmButton: false,
-                timer: 3000,
-                width: "360px", 
-                background: "transparent",
-                html: `
-                    <div class="flex flex-col text-left">
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600">
-                                <i class="ph ph-x-circle text-lg"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-[15px] font-semibold text-red-600">Clear Failed</h3>
-                                <p class="text-[13px] text-gray-700 mt-0.5">There was an issue clearing the cart.</p>
-                            </div>
-                        </div>
-                    </div>
-                `,
-                customClass: {
-                    // Correct Red border and shadow
-                    popup: "!rounded-xl !shadow-md !border-2 !border-red-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ff6b6b70]",
-                },
-            });
-        }
-    }
-
-    if (addToCartBtn) addToCartBtn.addEventListener("click", () => {
-        const id = addToCartBtn.dataset.id;
-        if (id) addToCart(id);
-    });
-    
-    // =========================================================================
-    // BAGONG FUNCTION PARA SA INITIAL/REFRESH LOAD (May Swal.fire)
-    // =========================================================================
+    // --- DATA LOADING ---
     async function loadBooksInitial(page = 1) {
         if (isLoading || typeof page !== 'number' || page < 1) return;
         isLoading = true;
         currentPage = page;
-        grid.innerHTML = "";
-        noBooksFound.classList.add("hidden");
-        skeletons.style.display = "grid";
-        paginationControls.style.display = "none";
-        resultsIndicator.textContent = 'Loading...';
+        if (grid) grid.innerHTML = "";
+        if (noBooksFound) noBooksFound.classList.add("hidden");
+        if (skeletons) skeletons.style.display = "grid";
+        if (paginationControls) paginationControls.style.display = "none";
+        if (resultsIndicator) resultsIndicator.textContent = 'Loading...';
         const start = Date.now();
         const offset = (page - 1) * limit;
 
-        // 🟠 LOADING POPUP PARA SA INITIAL LOAD/REFRESH ONLY
-        Swal.fire({
-            background: "transparent",
-            html: `
-                <div class="flex flex-col items-center justify-center gap-2">
-                    <div class="animate-spin rounded-full h-10 w-10 border-4 border-orange-200 border-t-orange-600"></div>
-                    <p class="text-gray-700 text-[14px]">Loading books...<br><span class="text-sm text-gray-500">Please wait.</span></p>
-                </div>
-            `,
-            allowOutsideClick: false,
-            showConfirmButton: false,
-            customClass: {
-                popup: "!rounded-xl !shadow-md !border-2 !border-orange-400 !p-6 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ffb34770]",
-            },
-        });
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                background: "transparent",
+                html: `
+                    <div class="flex flex-col items-center justify-center gap-2">
+                        <div class="animate-spin rounded-full h-10 w-10 border-4 border-orange-200 border-t-orange-600"></div>
+                        <p class="text-gray-700 text-[14px]">Loading books...<br><span class="text-sm text-gray-500">Please wait.</span></p>
+                    </div>
+                `,
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                customClass: {
+                    popup: "!rounded-xl !shadow-md !border-2 !border-orange-400 !p-6 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ffb34770]",
+                },
+            });
+        }
         
         try {
-            const params = new URLSearchParams({
-                limit, offset, search: searchValue
-            });
+            const params = new URLSearchParams({ limit, offset, search: searchValue });
             if (statusValueFilter !== "All Status") params.set('status', statusValueFilter.toLowerCase());
             if (sortValueFilter !== "default") params.set('sort', sortValueFilter);
+            if (campusValueFilter !== "all") params.set('campus_id', campusValueFilter);
+            
             const res = await fetch(`api/staff/bookCatalog/fetch?${params.toString()}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             
-            
-            // Tiyakin na may minimal delay bago isara ang popup
             const elapsed = Date.now() - start;
             if (elapsed < 1000) await new Promise(r => setTimeout(r, 1000 - elapsed));
-            Swal.close(); 
-            
+            if (typeof Swal !== 'undefined') Swal.close(); 
 
-            let books;
-            if (data?.books && Array.isArray(data.books) && typeof data.totalCount === 'number') {
-                books = data.books;
-                totalCount = data.totalCount;
-            } else {
-                console.error("Bad response:", data);
-                books = [];
-                totalCount = 0;
-                noBooksFound.textContent = "Invalid data.";
-                noBooksFound.classList.remove("hidden");
-            }
+            let books = (data && data.books && Array.isArray(data.books)) ? data.books : [];
+            totalCount = data.totalCount || 0;
             totalPages = Math.ceil(totalCount / limit) || 1;
-            if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
 
-            skeletons.style.display = "none";
-            if (!books || books.length === 0) {
-                noBooksFound.classList.add("hidden");
+            if (skeletons) skeletons.style.display = "none";
+            if (books.length === 0) {
+                if (noBooksFound) noBooksFound.classList.remove("hidden");
                 updateResultsIndicator(0, totalCount);
             } else {
-                noBooksFound.classList.add("hidden");
+                if (noBooksFound) noBooksFound.classList.add("hidden");
                 renderBooks(books);
                 updateResultsIndicator(books.length, totalCount);
             }
             renderPagination(totalPages, currentPage);
-            try {
-                sessionStorage.setItem('bookCatalogPage', currentPage);
-            } catch (e) { 
-                console.error("SessionStorage error:", e.message); 
-            }
+            try { sessionStorage.setItem('bookCatalogPage_staff', currentPage); } catch(e){}
         } catch (err) {
             console.error("LoadBooksInitial error:", err);
-            Swal.close(); // Ensure loading closes on error
-            skeletons.style.display = "none";
-            noBooksFound.classList.remove("hidden");
-            noBooksFound.textContent = "Error loading.";
-            resultsIndicator.textContent = 'Error!';
-            
-            // 🔴 Error Toast for LoadBooks failure
-            Swal.fire({
-                toast: true,
-                position: "bottom-end",
-                showConfirmButton: false,
-                timer: 4000,
-                width: "360px",
-                background: "transparent",
-                html: `
-                    <div class="flex flex-col text-left">
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600">
-                                <i class="ph ph-x-circle text-lg"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-[15px] font-semibold text-red-600">Loading Failed</h3>
-                                <p class="text-[13px] text-gray-700 mt-0.5">Could not retrieve book catalog data.</p>
-                            </div>
-                        </div>
-                    </div>
-                `,
-                customClass: {
-                    popup: "!rounded-xl !shadow-md !border-2 !border-red-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ff6b6b70]",
-                },
-            });
-            
-            try {
-                sessionStorage.removeItem('bookCatalogPage');
-            } catch (e) { }
+            if (typeof Swal !== 'undefined') Swal.close();
+            if (skeletons) skeletons.style.display = "none";
+            if (noBooksFound) noBooksFound.classList.remove("hidden");
         } finally {
             isLoading = false;
         }
     }
     
-    // =========================================================================
-    // ORIGINAL loadBooks FUNCTION (Walang Swal.fire, gamit lang ang skeleton)
-    // =========================================================================
     async function loadBooks(page = 1) {
         if (isLoading || typeof page !== 'number' || page < 1) return;
         isLoading = true;
         currentPage = page;
-        grid.innerHTML = "";
-        noBooksFound.classList.add("hidden");
-        // Gumamit lang ng skeleton at indicator loading
-        skeletons.style.display = "grid"; 
-        paginationControls.style.display = "none";
-        resultsIndicator.textContent = 'Loading...';
+        if (grid) grid.innerHTML = "";
+        if (noBooksFound) noBooksFound.classList.add("hidden");
+        if (skeletons) skeletons.style.display = "grid"; 
+        if (paginationControls) paginationControls.style.display = "none";
+        if (resultsIndicator) resultsIndicator.textContent = 'Loading...';
         const offset = (page - 1) * limit;
 
         try {
-            const params = new URLSearchParams({
-                limit, offset, search: searchValue
-            });
+            const params = new URLSearchParams({ limit, offset, search: searchValue });
             if (statusValueFilter !== "All Status") params.set('status', statusValueFilter.toLowerCase());
             if (sortValueFilter !== "default") params.set('sort', sortValueFilter);
+            if (campusValueFilter !== "all") params.set('campus_id', campusValueFilter);
+
             const res = await fetch(`api/staff/bookCatalog/fetch?${params.toString()}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             
-            let books;
-            if (data?.books && Array.isArray(data.books) && typeof data.totalCount === 'number') {
-                books = data.books;
-                totalCount = data.totalCount;
-            } else {
-                console.error("Bad response:", data);
-                books = [];
-                totalCount = 0;
-                noBooksFound.textContent = "Invalid data.";
-                noBooksFound.classList.remove("hidden");
-            }
+            let books = (data && data.books && Array.isArray(data.books)) ? data.books : [];
+            totalCount = data.totalCount || 0;
             totalPages = Math.ceil(totalCount / limit) || 1;
-            if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
 
-            skeletons.style.display = "none";
-            if (!books || books.length === 0) {
-                noBooksFound.classList.add("hidden");
+            if (skeletons) skeletons.style.display = "none";
+            if (books.length === 0) {
+                if (noBooksFound) noBooksFound.classList.remove("hidden");
                 updateResultsIndicator(0, totalCount);
             } else {
-                noBooksFound.classList.add("hidden");
+                if (noBooksFound) noBooksFound.classList.add("hidden");
                 renderBooks(books);
                 updateResultsIndicator(books.length, totalCount);
             }
             renderPagination(totalPages, currentPage);
-            try {
-                sessionStorage.setItem('bookCatalogPage', currentPage);
-            } catch (e) { 
-                console.error("SessionStorage error:", e.message); 
-            }
+            try { sessionStorage.setItem('bookCatalogPage_staff', currentPage); } catch(e){}
         } catch (err) {
             console.error("LoadBooks error:", err);
-            // Walang Swal.close() dahil walang Swal.fire
-            skeletons.style.display = "none";
-            noBooksFound.classList.remove("hidden");
-            noBooksFound.textContent = "Error loading.";
-            resultsIndicator.textContent = 'Error!';
-            
-            // 🔴 Error Toast for LoadBooks failure (Hindi inalis dahil kailangan pa rin)
-            if (typeof Swal != 'undefined') {
-                 Swal.fire({
-                    toast: true,
-                    position: "bottom-end",
-                    showConfirmButton: false,
-                    timer: 4000,
-                    width: "360px",
-                    background: "transparent",
-                    html: `
-                        <div class="flex flex-col text-left">
-                            <div class="flex items-center gap-3 mb-2">
-                                <div class="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600">
-                                    <i class="ph ph-x-circle text-lg"></i>
-                                </div>
-                                <div>
-                                    <h3 class="text-[15px] font-semibold text-red-600">Loading Failed</h3>
-                                    <p class="text-[13px] text-gray-700 mt-0.5">Could not retrieve book catalog data.</p>
-                                </div>
-                            </div>
-                        </div>
-                    `,
-                    customClass: {
-                        popup: "!rounded-xl !shadow-md !border-2 !border-red-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ff6b6b70]",
-                    },
-                });
-            }
-            
-            try {
-                sessionStorage.removeItem('bookCatalogPage');
-            } catch (e) { }
+            if (skeletons) skeletons.style.display = "none";
+            if (noBooksFound) noBooksFound.classList.remove("hidden");
         } finally {
             isLoading = false;
         }
     }
-    // =========================================================================
 
     function updateResultsIndicator(booksLength, currentTotal) {
+        if (!resultsIndicator) return;
         if (typeof currentTotal !== 'number') currentTotal = 0;
-        totalPages = Math.ceil(currentTotal / limit) || 1;
         if (currentTotal === 0) {
             resultsIndicator.textContent = 'No books found.';
             return;
@@ -717,11 +355,11 @@ window.addEventListener("DOMContentLoaded", () => {
         const startItem = Math.max(1, (currentPage - 1) * limit + 1);
         const endItem = (currentPage - 1) * limit + booksLength;
         const totalFormatted = currentTotal.toLocaleString('en-US');
-        if (booksLength === 0 && currentTotal > 0) resultsIndicator.innerHTML = `Page ${currentPage}. No results. (Total: <span class="font-bold">${totalFormatted}</span>)`;
-        else resultsIndicator.innerHTML = `Results: <span class="font-bold text-gray-900">${startItem}-${endItem}</span> of <span class="font-bold text-gray-900">${totalFormatted}</span>`;
+        resultsIndicator.innerHTML = `Results: <span class="font-bold text-gray-900">${startItem}-${endItem}</span> of <span class="font-bold text-gray-900">${totalFormatted}</span>`;
     }
 
     function renderPagination(totalPages, page) {
+        if (!paginationControls || !paginationList) return;
         if (totalPages <= 1) {
             paginationControls.style.display = "none";
             return;
@@ -734,86 +372,67 @@ window.addEventListener("DOMContentLoaded", () => {
             const a = document.createElement("a");
             a.href = "#";
             a.setAttribute("data-page", String(pageNum));
-
             let baseClasses = `flex items-center justify-center min-w-[32px] h-9 text-sm font-medium transition-all duration-200`;
-
             if (type === "prev" || type === "next") {
                 a.innerHTML = text;
                 baseClasses += ` text-gray-700 hover:text-orange-600 px-3`;
-                if (isDisabled)
-                    baseClasses += ` opacity-50 cursor-not-allowed pointer-events-none`;
+                if (isDisabled) baseClasses += ` opacity-50 cursor-not-allowed pointer-events-none`;
             } else if (type === "ellipsis") {
                 a.textContent = text;
                 baseClasses += ` text-gray-400 cursor-default px-2`;
             } else {
                 a.textContent = text;
-                if (isActive) {
-                    baseClasses += ` text-white bg-orange-600 rounded-full shadow-sm px-3`;
-                } else {
-                    baseClasses += ` text-gray-700 hover:text-orange-600 hover:bg-orange-100 rounded-full px-3`;
-                }
+                if (isActive) baseClasses += ` text-white bg-orange-600 rounded-full shadow-sm px-3`;
+                else baseClasses += ` text-gray-700 hover:text-orange-600 hover:bg-orange-100 rounded-full px-3`;
             }
-
             a.className = baseClasses;
             li.appendChild(a);
             paginationList.appendChild(li);
         };
 
-        paginationControls.className = `
-            flex items-center justify-center bg-white border border-gray-200 
-                rounded-full shadow-md px-4 py-2 mt-6 w-fit mx-auto gap-3
-            `;
-
-        createPageLink("prev", `<i class="flex ph ph-caret-left text-lg gap-2s"></i> Previous`, page - 1, page === 1);
-
-    // Responsive page window size
-    const isMobile = window.innerWidth < 640; 
-    let pagesToShow = new Set();
-
-    // Desktop: show first, last, current, ±2
-    // Mobile: show current ±1 only
-    if (isMobile) {
-      for (let i = -1; i <= 1; i++) {
-        const p = page + i;
-        if (p > 0 && p <= totalPages) pagesToShow.add(p);
-      }
-    } else {
-      pagesToShow.add(1);
-      pagesToShow.add(totalPages);
-      for (let i = -2; i <= 2; i++) {
-        const p = page + i;
-        if (p > 0 && p <= totalPages) pagesToShow.add(p);
-      }
+        createPageLink("prev", `<i class="ph ph-caret-left text-lg"></i> Previous`, page - 1, page === 1);
+        const isMobile = window.innerWidth < 640; 
+        let pagesToShow = new Set();
+        if (isMobile) {
+            for (let i = -1; i <= 1; i++) {
+                const p = page + i;
+                if (p > 0 && p <= totalPages) pagesToShow.add(p);
+            }
+        } else {
+            pagesToShow.add(1);
+            pagesToShow.add(totalPages);
+            for (let i = -2; i <= 2; i++) {
+                const p = page + i;
+                if (p > 0 && p <= totalPages) pagesToShow.add(p);
+            }
+        }
+        const sortedPagesList = [...pagesToShow].sort((a, b) => a - b);
+        let lastPage = 0;
+        for (const p of sortedPagesList) {
+            if (!isMobile && p > lastPage + 1) createPageLink("ellipsis", "…", "...", true);
+            createPageLink("number", p, p, false, p === page);
+            lastPage = p;
+        }
+        createPageLink("next", `Next <i class="ph ph-caret-right text-lg"></i>`, page + 1, page === totalPages);
     }
 
-    const sortedPages = [...pagesToShow].sort((a, b) => a - b);
-    let lastPage = 0;
-    for (const p of sortedPages) {
-      // Hide ellipsis on mobile for simplicity
-      if (!isMobile && p > lastPage + 1)
-        createPageLink("ellipsis", "…", "...", true);
-      createPageLink("number", p, p, false, p === page);
-      lastPage = p;
+    if (paginationList) {
+        paginationList.addEventListener("click", (e) => {
+            e.preventDefault();
+            const target = e.target.closest("a[data-page]");
+            if (!target) return;
+            const pageStr = target.dataset.page;
+            if (pageStr === "...") return;
+            const pageNum = parseInt(pageStr, 10);
+            if (!isNaN(pageNum) && pageNum !== currentPage) loadBooks(pageNum); 
+        });
     }
-
-        createPageLink("next", `Next <i class="flex ph ph-caret-right text-lg gap-2"></i>`, page + 1, page === totalPages);
-    }
-
-    paginationList.addEventListener("click", (e) => {
-        e.preventDefault();
-        const target = e.target.closest("a[data-page]");
-        if (!target) return;
-        const pageStr = target.dataset.page;
-        if (pageStr === "...") return;
-        const page = parseInt(pageStr, 10);
-        // Gumagamit ng loadBooks na walang Swal.fire
-        if (!isNaN(page) && page !== currentPage) loadBooks(page); 
-    });
-
 
     async function loadAvailableCount() {
         try {
-            const r = await fetch("api/staff/bookCatalog/availableCount");
+            const params = new URLSearchParams();
+            if (campusValueFilter !== "all") params.set('campus_id', campusValueFilter);
+            const r = await fetch(`api/staff/bookCatalog/availableCount?${params.toString()}`);
             if (!r.ok) throw Error();
             const d = await r.json();
             const el = document.getElementById("availableCount");
@@ -826,35 +445,25 @@ window.addEventListener("DOMContentLoaded", () => {
             }
         } catch (e) {
             console.error("Err count:", e);
-            const el = document.getElementById("availableCount");
-            if (el) el.textContent = 'Available: Error';
         }
     }
 
     function renderBooks(books) {
+        if (!grid) return;
         grid.innerHTML = '';
         if (!books || books.length === 0) return;
         books.forEach(book => {
             const card = document.createElement("div");
             card.className = "book-card relative bg-[var(--color-card)] shadow-sm rounded-xl overflow-hidden group transform transition duration-400 hover:-translate-y-1 hover:shadow-lg max-w-[230px] cursor-pointer";
-            try {
-                card.dataset.book = JSON.stringify(book);
-            } catch (e) {
-                console.error("Strf err:", book, e);
-                return;
-            }
+            card.dataset.book = JSON.stringify(book);
             const imgWrap = document.createElement("div");
             imgWrap.className = "w-full aspect-[2/3] bg-white flex items-center justify-center overflow-hidden";
             const coverUrl = book.cover || null;
             if (coverUrl) {
                 const img = document.createElement("img");
                 img.src = coverUrl;
-                img.alt = book.title || 'Cover';
-                img.loading = 'lazy';
                 img.className = "h-full w-auto object-contain group-hover:scale-105 transition duration-300";
-                img.onerror = () => {
-                    imgWrap.innerHTML = `<i class="ph ph-img-brkn text-5xl text-gray-300"></i>`;
-                };
+                img.onerror = () => { imgWrap.innerHTML = `<i class="ph ph-img-brkn text-5xl text-gray-300"></i>`; };
                 imgWrap.appendChild(img);
             } else {
                 imgWrap.innerHTML = `<i class="ph ph-book text-5xl text-gray-400"></i>`;
@@ -872,7 +481,7 @@ window.addEventListener("DOMContentLoaded", () => {
             card.appendChild(imgWrap);
             card.appendChild(statusBadge);
             card.appendChild(info);
-            if (cart?.some(c => c.book_id == book.book_id)) {
+            if (cart && cart.some(c => c.book_id == book.book_id)) {
                 const badge = document.createElement("span");
                 badge.className = "absolute bottom-2 left-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full shadow";
                 badge.textContent = "In Cart";
@@ -883,101 +492,87 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     function openModal(book) {
-        if (!book || typeof book !== 'object') {
-            console.error("Invalid book data");
-            return;
+        if (!book || !modal) return;
+        if (addToCartBtn) {
+            addToCartBtn.dataset.id = book.book_id || '';
+            const availabilityText = (book.availability || "unknown").toUpperCase();
+            addToCartBtn.disabled = availabilityText !== "AVAILABLE";
         }
-        if (!modal || !modalContent || !closeModalBtn || !modalImg || !modalTitle || !modalAuthor || !modalCallNumber || !modalAccessionNumber || !modalIsbn || !modalSubject || !modalPlace || !modalPublisher || !modalYear || !modalEdition || !modalSupplementary || !modalStatus || !addToCartBtn) {
-            console.error("Modal elements missing!");
-            return;
+        if (modalImg) {
+            const coverUrl = book.cover || null;
+            if (coverUrl) {
+                modalImg.src = coverUrl;
+                modalImg.classList.remove("hidden");
+            } else {
+                modalImg.classList.add("hidden");
+            }
         }
-        addToCartBtn.dataset.id = book.book_id || '';
-        const coverUrl = book.cover || null;
-        if (coverUrl) {
-            modalImg.src = coverUrl;
-            modalImg.alt = book.title || 'Cover';
-            modalImg.classList.remove("hidden");
-        } else {
-            modalImg.classList.add("hidden");
-            modalImg.src = '';
-            modalImg.alt = '';
+        if (modalTitle) modalTitle.textContent = book.title || 'No Title';
+        if (modalAuthor) modalAuthor.textContent = "by " + (book.author || "Unknown");
+        if (modalCallNumber) modalCallNumber.textContent = book.call_number || "N/A";
+        if (modalAccessionNumber) modalAccessionNumber.textContent = book.accession_number || "N/A";
+        if (modalIsbn) modalIsbn.textContent = book.book_isbn || "N/A";
+        if (modalSubject) modalSubject.textContent = book.subject || "N/A";
+        if (modalPlace) modalPlace.textContent = book.book_place || "N/A";
+        if (modalPublisher) modalPublisher.textContent = book.book_publisher || "N/A";
+        if (modalYear) modalYear.textContent = book.year || "N/A";
+        if (modalEdition) modalEdition.textContent = book.book_edition || "N/A";
+        if (modalSupplementary) modalSupplementary.textContent = book.book_supplementary || "N/A";
+        if (modalCampus) modalCampus.textContent = book.campus_name || "Main";
+        if (modalDescription) modalDescription.textContent = book.description || "No description.";
+        
+        if (modalStatus) {
+            const availabilityText = (book.availability || "unknown").toUpperCase();
+            modalStatus.textContent = availabilityText;
+            modalStatus.className = `font-semibold text-xs ${availabilityText === "AVAILABLE" ? "text-green-600" : "text-orange-600"}`;
         }
-        modalTitle.textContent = book.title || 'No Title';
-        modalAuthor.textContent = "by " + (book.author || "Unknown");
-        modalCallNumber.textContent = book.call_number || "N/A";
-        modalAccessionNumber.textContent = book.accession_number || "N/A";
-        modalIsbn.textContent = book.book_isbn || "N/A";
-        modalSubject.textContent = book.subject || "N/A";
-        modalPlace.textContent = book.book_place || "N/A";
-        modalPublisher.textContent = book.book_publisher || "N/A";
-        modalYear.textContent = book.year || "N/A";
-        modalEdition.textContent = book.book_edition || "N/A";
-        modalSupplementary.textContent = book.book_supplementary || "N/A";
-        modalDescription.textContent = book.description || "No description.";
-        const availabilityText = (book.availability || "unknown").toUpperCase();
-        modalStatus.textContent = availabilityText;
-        modalStatus.className = `font-semibold text-xs ${availabilityText === "AVAILABLE" ? "text-green-600" : "text-orange-600"}`;
-        addToCartBtn.disabled = availabilityText !== "AVAILABLE";
+
         modal.classList.remove("hidden");
         requestAnimationFrame(() => {
-            modal.classList.remove("opacity-0");
-            modalContent.classList.remove("scale-95");
             modal.classList.add("opacity-100");
-            modalContent.classList.add("scale-100");
+            if (modalContent) modalContent.classList.add("scale-100");
         });
     }
 
     function closeModal() {
+        if (!modal) return;
         modal.classList.remove("opacity-100");
-        modalContent.classList.remove("scale-100");
-        modal.classList.add("opacity-0");
-        modalContent.classList.add("scale-95");
-        setTimeout(() => {
-            modal.classList.add("hidden");
-            modalImg.src = '';
-            modalImg.alt = '';
-        }, 300);
+        if (modalContent) modalContent.classList.remove("scale-100");
+        setTimeout(() => { modal.classList.add("hidden"); }, 300);
     }
 
-    if (grid) grid.addEventListener("click", e => {
-        const c = e.target.closest(".book-card");
-        if (!c) return;
-        try {
-            const b = JSON.parse(c.dataset.book);
-            openModal(b);
-        } catch (p) {
-            console.error("Parse err:", p);
-        }
-    });
+    if (grid) {
+        grid.addEventListener("click", e => {
+            const c = e.target.closest(".book-card");
+            if (!c) return;
+            try { openModal(JSON.parse(c.dataset.book)); } catch (p) {}
+        });
+    }
     if (closeModalBtn) closeModalBtn.addEventListener("click", closeModal);
-    if (modal) modal.addEventListener("click", e => {
-        if (e.target === modal) closeModal();
-    });
-    document.addEventListener("keydown", e => {
-        if (e.key === "Escape" && modal && !modal.classList.contains("hidden")) closeModal();
-    });
+    if (modal) modal.addEventListener("click", e => { if (e.target === modal) closeModal(); });
 
-    let searchTimeout;
     if (searchInput) {
+        let searchTimeout;
         searchInput.addEventListener("input", e => {
             searchValue = e.target.value.trim();
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 currentPage = 1;
-                try {
-                    sessionStorage.removeItem('bookCatalogPage');
-                } catch (e) { }
-                loadBooks(1); // Gumagamit ng loadBooks na walang Swal.fire
+                try { sessionStorage.removeItem('bookCatalogPage_staff'); } catch(e){}
+                loadBooks(1);
             }, 500);
         });
-    } else {
-        console.error("Search input missing");
+    }
+
+    if (addToCartBtn) {
+        addToCartBtn.addEventListener("click", () => {
+            const id = addToCartBtn.dataset.id;
+            if (id) addToCart(id);
+        });
     }
 
     loadAvailableCount();
     loadCart().then(() => {
-        // --- ITO LANG ANG GAGAMIT NG loadBooksInitial (May Swal.fire) ---
         loadBooksInitial(currentPage); 
-        // ---------------------------------------------------------------
     });
 });
