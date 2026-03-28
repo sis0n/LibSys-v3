@@ -24,37 +24,17 @@ class TicketController extends Controller
     $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }
 
-  private function uploadQrToBackend(string $transactionCode, string $svgData): bool
+  private function saveQrLocally(string $transactionCode, string $svgData): bool
   {
-    $apiUrl = str_replace('/storage', '/api/upload-qr', STORAGE_URL);
-    $fileName = $transactionCode . '.svg';
-
-    try {
-      $ch = curl_init($apiUrl);
-      $postData = json_encode([
-        'filename' => $fileName,
-        'image' => base64_encode($svgData)
-      ]);
-
-      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-      curl_setopt($ch, CURLOPT_POST, true);
-      curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-      curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'Accept: application/json'
-      ]);
-
-      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
-      curl_setopt($ch, CURLOPT_TIMEOUT, 10);
-
-      $response = curl_exec($ch);
-      $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-      curl_close($ch);
-      return ($httpCode === 200);
-    } catch (\Exception $e) {
-      error_log("Upload failed: " . $e->getMessage());
-      return false;
+    $uploadDir = ROOT_PATH . "/public/storage/uploads/qrcodes/";
+    if (!is_dir($uploadDir)) {
+      mkdir($uploadDir, 0777, true);
     }
+
+    $fileName = $transactionCode . '.svg';
+    $destPath = $uploadDir . $fileName;
+
+    return file_put_contents($destPath, $svgData) !== false;
   }
 
   public function checkout()
@@ -176,11 +156,11 @@ class TicketController extends Controller
       $result = $builder->build();
       $svgData = $result->getString();
 
-      if (!$this->uploadQrToBackend($transactionCode, $svgData)) {
-          throw new \Exception("Failed to bridge QR code to mobile storage.");
+      if (!$this->saveQrLocally($transactionCode, $svgData)) {
+          throw new \Exception("Failed to save QR code locally.");
       }
 
-      $dbPath = "uploads/qrcodes/" . $transactionCode . ".svg";
+      $dbPath = "storage/uploads/qrcodes/" . $transactionCode . ".svg";
       $transactionId = $this->ticketRepo->createPendingTransaction($studentId, $transactionCode, $dueDate, $dbPath, 15);
 
       $this->ticketRepo->addTransactionItems($transactionId, $cartItems);
@@ -278,7 +258,7 @@ class TicketController extends Controller
         }
         
         if (strtolower($transactionData['status']) === 'pending') {
-          $qrPath = STORAGE_URL . "/" . ($transactionData['qrcode'] ?: "uploads/qrcodes/" . $transactionCode . ".svg");
+          $qrPath = STORAGE_URL . "/" . ($transactionData['qrcode'] ?: "storage/uploads/qrcodes/" . $transactionCode . ".svg");
         }
       }
     }

@@ -103,6 +103,16 @@ document.addEventListener("DOMContentLoaded", function () {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 
+  const selectionModal = document.getElementById("selection-modal");
+  const selectionList = document.getElementById("selection-list");
+  const selectionModalClose = document.getElementById("selection-modal-close");
+
+  const closeSelectionModal = () => {
+    if (selectionModal) selectionModal.classList.add("hidden");
+  };
+
+  let currentMatches = [];
+
   async function handleBookCheck(accessionNumber) {
     if (!accessionNumber) return;
     const formData = new FormData();
@@ -115,18 +125,63 @@ document.addEventListener("DOMContentLoaded", function () {
       });
       const result = await response.json();
       if (result.success) {
-        if (result.data.status === "borrowed")
-          openReturnModal(result.data.details);
-        else if (result.data.status === "available")
-          openAvailableModal(result.data.details);
+        const data = result.data;
+        if (data.status === "borrowed") {
+          if (data.count > 1 && data.matches) {
+            currentMatches = data.matches;
+            renderSelectionList(data.matches);
+            selectionModal.classList.remove("hidden");
+          } else if (data.matches && data.matches.length > 0) {
+            openReturnModal(data.matches[0]);
+          } else if (data.details) {
+            // Fallback for single detail object if repository logic changes
+            openReturnModal(data.details);
+          }
+        } else if (data.status === "available") {
+          openAvailableModal(data.details);
+        } else {
+          showErrorToast("Not Found", "No active borrowing or item found with this identifier.");
+        }
+      } else {
+        showErrorToast("Error", result.message || "An error occurred.");
       }
     } catch (error) {
       console.error("Error:", error);
+      showErrorToast("Error", "Could not connect to server.");
     }
     accessionInput.value = "";
     qrCodeValueInput.value = "";
     qrCodeValueInput.focus();
   }
+
+  function renderSelectionList(matches) {
+    if (!selectionList) return;
+    selectionList.innerHTML = matches
+      .map(
+        (match, index) => `
+        <div class="flex items-center justify-between p-4 bg-orange-50 border border-orange-200 rounded-xl hover:border-orange-400 transition-all cursor-pointer group" onclick="window.selectBorrowerByIndex(${index})">
+          <div class="flex flex-col">
+            <span class="font-bold text-gray-800 text-lg">${match.borrower_name}</span>
+            <span class="text-sm text-gray-600 font-mono">${match.id_number} • ${match.course_or_department}</span>
+            <span class="text-xs text-orange-600 mt-1 font-bold italic">Borrowed from: ${match.home_campus_name}</span>
+          </div>
+          <div class="flex items-center gap-3">
+             <span class="text-[10px] bg-white border border-orange-200 px-2 py-1 rounded text-gray-500 uppercase font-bold">${match.availability}</span>
+             <i class="ph ph-arrow-right text-orange-500 text-xl group-hover:translate-x-1 transition-transform"></i>
+          </div>
+        </div>
+      `,
+      )
+      .join("");
+  }
+
+  window.selectBorrowerByIndex = (index) => {
+    const match = currentMatches[index];
+    if (match) {
+      closeSelectionModal();
+      openReturnModal(match);
+    }
+  };
 
   function openReturnModal(data) {
     document.getElementById("modal-book-title").textContent = data.title;
@@ -144,6 +199,18 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("modal-borrower-year-section").textContent =
       data.student_year_section;
     document.getElementById("modal-due-date").textContent = data.due_date;
+
+    // Cross-Campus Warning Logic
+    const warningEl = document.getElementById("cross-campus-warning");
+    const campusNameEl = document.getElementById("home-campus-name");
+    if (warningEl && campusNameEl) {
+      if (data.is_cross_campus) {
+        campusNameEl.textContent = data.home_campus_name;
+        warningEl.classList.remove("hidden");
+      } else {
+        warningEl.classList.add("hidden");
+      }
+    }
 
     const statusEl = document.getElementById("modal-book-status");
     if (statusEl) {
@@ -186,8 +253,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const placeholder = document.getElementById(
       "available-modal-img-placeholder",
     );
-    if (data.book_image && img) {
-      img.src = "public/uploads/books-img/" + data.book_image;
+    if (data.cover && img) {
+      img.src = STORAGE_URL + "/" + data.cover;
       img.classList.remove("hidden");
       placeholder.classList.add("hidden");
     } else if (img) {
@@ -291,6 +358,7 @@ document.addEventListener("DOMContentLoaded", function () {
   cancelButton?.addEventListener("click", closeReturnModal);
   availableModalCloseButton?.addEventListener("click", closeAvailableModal);
   availableModalCloseAction?.addEventListener("click", closeAvailableModal);
+  selectionModalClose?.addEventListener("click", closeSelectionModal);
 
   fetchRecentReturns();
 });

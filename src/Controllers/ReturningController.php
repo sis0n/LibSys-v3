@@ -55,11 +55,33 @@ class ReturningController extends Controller
       $this->sendJson(['success' => false, 'message' => 'Accession Number or Item ID is required.'], 400);
       return;
     }
+    
     $result = $this->returningRepo->findItemByIdentifier($identifier);
     if ($result === null) {
-      $this->sendJson(['success' => false, 'message' => 'An error occurred.'], 500);
+      $this->sendJson(['success' => false, 'message' => 'An error occurred (Null result).'], 500);
       return;
     }
+
+    if (isset($result['status']) && $result['status'] === 'error') {
+      $this->sendJson(['success' => false, 'message' => 'An error occurred while processing the item.'], 500);
+      return;
+    }
+
+    $currentCampusId = $_SESSION['user_data']['campus_id'] ?? null;
+
+    // Logic to detect cross-campus return
+    if ($result['status'] === 'borrowed') {
+        if (isset($result['matches'])) {
+            foreach ($result['matches'] as &$match) {
+                $match['is_cross_campus'] = ($match['home_campus_id'] != $currentCampusId);
+                $match['current_librarian_campus_id'] = $currentCampusId;
+            }
+        } else if (isset($result['details'])) {
+            $result['details']['is_cross_campus'] = ($result['details']['home_campus_id'] != $currentCampusId);
+            $result['details']['current_librarian_campus_id'] = $currentCampusId;
+        }
+    }
+
     $this->sendJson(['success' => true, 'data' => $result]);
   }
 
@@ -68,6 +90,9 @@ class ReturningController extends Controller
     $data = $this->getPostData();
     $itemId = $data['borrowing_id'] ?? null;
     $condition = $data['condition'] ?? 'good';
+    
+    // Get the current campus of the librarian to perform the transfer if needed
+    $newCampusId = $_SESSION['user_data']['campus_id'] ?? null;
 
     if (!$itemId) {
       $this->sendJson(['success' => false, 'message' => 'Borrowing Item ID is required.'], 400);
@@ -91,7 +116,7 @@ class ReturningController extends Controller
     $stmt->execute([$itemId]);
     $itemInfo = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-    $success = $this->returningRepo->markAsReturned((int)$itemId, $condition);
+    $success = $this->returningRepo->markAsReturned((int)$itemId, $condition, $newCampusId);
 
     if ($success) {
       $itemName = $itemInfo['title'] ?: $itemInfo['equipment_name'] ?: "Unknown Item";

@@ -107,147 +107,99 @@ class ReturningRepository
   public function findItemByIdentifier($identifier): ?array
   {
     try {
-      $stmt = $this->db->prepare("SELECT * FROM books WHERE accession_number = ?");
+      // 1. First, look for ACTIVE BORROWINGS (borrowed or overdue) for this book
+      $stmt = $this->db->prepare("
+          SELECT 
+              bti.item_id as borrowing_id, bti.transaction_id, bti.book_id, bti.status as bti_status,
+              bt.borrowed_at, bt.due_date,
+              u.first_name, u.last_name, u.email,
+              s.student_number, s.year_level, s.section,
+              f.unique_faculty_id,
+              st.employee_id,
+              c.course_code, c.course_title,
+              cl.college_code,
+              b.title as book_title, b.author, b.accession_number, b.call_number, b.book_isbn, b.campus_id as book_campus_id,
+              camp.campus_name as home_campus_name
+          FROM borrow_transaction_items bti
+          JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+          JOIN books b ON bti.book_id = b.book_id
+          LEFT JOIN students s ON bt.student_id = s.student_id
+          LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+          LEFT JOIN staff st ON bt.staff_id = st.staff_id
+          LEFT JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+          LEFT JOIN courses c ON s.course_id = c.course_id
+          LEFT JOIN colleges cl ON f.college_id = cl.college_id
+          LEFT JOIN campuses camp ON camp.campus_id = b.campus_id
+          WHERE b.accession_number = ?
+          AND bti.status IN ('borrowed', 'overdue')
+      ");
+      $stmt->execute([$identifier]);
+      $activeBorrowings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+      if (count($activeBorrowings) > 0) {
+        $matches = [];
+        foreach ($activeBorrowings as $row) {
+          $borrowerName = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
+          
+          $idNumber = $row['student_number'] ?? $row['unique_faculty_id'] ?? $row['employee_id'] ?? 'N/A';
+          $dept = $row['course_code'] ?? $row['college_code'] ?? 'N/A';
+          $yearSec = isset($row['year_level']) ? ($row['year_level'] . ' ' . $row['section']) : 'N/A';
+
+          $matches[] = [
+            'status' => 'borrowed',
+            'item_type' => 'Book',
+            'title' => $row['book_title'],
+            'author' => $row['author'] ?? null,
+            'accession_number' => $row['accession_number'],
+            'borrower_name' => $borrowerName,
+            'id_number' => $idNumber,
+            'course_or_department' => $dept,
+            'student_year_section' => $yearSec,
+            'due_date' => $row['due_date'],
+            'borrowing_id' => $row['borrowing_id'],
+            'availability' => $row['bti_status'],
+            'home_campus_id' => $row['book_campus_id'],
+            'home_campus_name' => $row['home_campus_name'],
+            'call_number' => $row['call_number'] ?? null,
+            'book_isbn' => $row['book_isbn'] ?? null
+          ];
+        }
+        
+        return [
+          'status' => 'borrowed',
+          'matches' => $matches,
+          'count' => count($matches)
+        ];
+      }
+
+      // 2. If no active borrowings, check if the book exists at all (Available)
+      $stmt = $this->db->prepare("
+          SELECT b.*, camp.campus_name as home_campus_name 
+          FROM books b 
+          LEFT JOIN campuses camp ON b.campus_id = camp.id 
+          WHERE b.accession_number = ?
+      ");
       $stmt->execute([$identifier]);
       $book = $stmt->fetch(PDO::FETCH_ASSOC);
 
-      $itemIdForQuery = null;
-      $itemType = null;
-      $itemBasicDetails = null;
-
       if ($book) {
-        $itemIdForQuery = $book['book_id'];
-        $itemType = 'Book';
-        $itemBasicDetails = $book;
-      } else {
-        $stmt = $this->db->prepare("SELECT * FROM equipments WHERE equipment_name = ? OR asset_tag = ?");
-        $stmt->execute([$identifier, $identifier]);
-        $equipment = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($equipment) {
-          $itemIdForQuery = $equipment['equipment_id'];
-          $itemType = 'Equipment';
-          $itemBasicDetails = $equipment;
-        } else {
-          return ['status' => 'not_found'];
-        }
+        return [
+          'status' => 'available',
+          'details' => array_merge($book, [
+            'item_type' => 'Book',
+            'home_campus_name' => $book['home_campus_name']
+          ])
+        ];
       }
 
-      $availability = strtolower(trim(($itemType === 'Book' ? $itemBasicDetails['availability'] : $itemBasicDetails['status']) ?? ''));
-
-      if ($availability === 'borrowed' || $availability === 'overdue') {
-        $idColumn = ($itemType === 'Book') ? 'bti.book_id' : 'bti.equipment_id';
-
-        $stmt = $this->db->prepare("
-                    SELECT 
-                        bti.item_id, bti.transaction_id, bti.book_id, bti.equipment_id,
-                        bt.borrowed_at AS date_borrowed, bt.due_date,
-                        bt.student_id, bt.faculty_id, bt.staff_id, bt.guest_id,
-                        s.student_number, s.year_level, s.section, s.contact AS student_contact,
-                        u_student.first_name AS student_first_name, u_student.last_name AS student_last_name, u_student.email AS student_email, 
-                        c.course_code, c.course_title, 
-                        f.unique_faculty_id, f.college_id, f.contact AS faculty_contact, 
-                        u_faculty.first_name AS faculty_first_name, u_faculty.last_name AS faculty_last_name, u_faculty.email AS faculty_email, 
-                        cl.college_code, cl.college_name, 
-                        st.staff_id AS staff_id_num, st.employee_id, st.position AS staff_position, st.contact AS staff_contact,
-                        u_staff.first_name AS staff_first_name, u_staff.last_name AS staff_last_name, u_staff.email AS staff_email,
-                        g.guest_id AS guest_id_num, g.first_name AS guest_first_name, g.last_name AS guest_last_name, g.contact AS guest_contact,
-                        bti.status, bti.item_id AS borrowing_id,
-                        COALESCE(b.title, e.equipment_name) AS item_title,
-                        b.author, b.book_isbn, b.accession_number, b.call_number,
-                        e.asset_tag
-                    FROM borrow_transaction_items bti
-                    JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
-                    LEFT JOIN students s ON bt.student_id = s.student_id
-                    LEFT JOIN users u_student ON s.user_id = u_student.user_id
-                    LEFT JOIN courses c ON s.course_id = c.course_id 
-                    LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
-                    LEFT JOIN users u_faculty ON f.user_id = u_faculty.user_id
-                    LEFT JOIN colleges cl ON f.college_id = cl.college_id 
-                    LEFT JOIN staff st ON bt.staff_id = st.staff_id
-                    LEFT JOIN users u_staff ON st.user_id = u_staff.user_id
-                    LEFT JOIN guests g ON bt.guest_id = g.guest_id
-                    LEFT JOIN books b ON bti.book_id = b.book_id
-                    LEFT JOIN equipments e ON bti.equipment_id = e.equipment_id
-                    WHERE {$idColumn} = ? AND (bti.status = 'borrowed' OR bti.status = 'overdue')
-                    ORDER BY bt.borrowed_at DESC
-                    LIMIT 1
-                ");
-        $stmt->execute([$itemIdForQuery]);
-        $borrowInfo = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($borrowInfo) {
-          $borrowerName = $borrowerType = $contact = $email = $idNumber = $courseOrDept = $yearSectionDisplay = 'N/A';
-
-          if (!empty($borrowInfo['student_id'])) {
-            $borrowerName = trim(($borrowInfo['student_first_name'] ?? '') . ' ' . ($borrowInfo['student_last_name'] ?? ''));
-            $borrowerType = 'student';
-            $contact = $borrowInfo['student_contact'] ?? 'N/A';
-            $email = $borrowInfo['student_email'] ?? 'N/A';
-            $idNumber = $borrowInfo['student_number'] ?? 'N/A';
-            $courseOrDept = trim(($borrowInfo['course_code'] ?? 'N/A') . ' - ' . ($borrowInfo['course_title'] ?? 'N/A'));
-            $yearSectionDisplay = trim(($borrowInfo['year_level'] ?? 'N/A') . ' ' . ($borrowInfo['section'] ?? 'N/A'));
-          } elseif (!empty($borrowInfo['faculty_id'])) {
-            $borrowerName = trim(($borrowInfo['faculty_first_name'] ?? '') . ' ' . ($borrowInfo['faculty_last_name'] ?? ''));
-            $borrowerType = 'faculty';
-            $contact = $borrowInfo['faculty_contact'] ?? 'N/A';
-            $email = $borrowInfo['faculty_email'] ?? 'N/A';
-            $idNumber = $borrowInfo['unique_faculty_id'] ?? $borrowInfo['faculty_id'] ?? 'N/A';
-            $courseOrDept = trim(($borrowInfo['college_code'] ?? 'N/A') . ' - ' . ($borrowInfo['college_name'] ?? 'N/A'));
-            $yearSectionDisplay = $borrowInfo['college_name'] ?? 'N/A';
-          } elseif (!empty($borrowInfo['staff_id'])) {
-            $borrowerName = trim(($borrowInfo['staff_first_name'] ?? '') . ' ' . ($borrowInfo['staff_last_name'] ?? ''));
-            $borrowerType = 'staff';
-            $contact = $borrowInfo['staff_contact'] ?? 'N/A';
-            $email = $borrowInfo['staff_email'] ?? 'N/A';
-            $idNumber = $borrowInfo['employee_id'] ?? $borrowInfo['staff_id_num'] ?? 'N/A';
-            $courseOrDept = $borrowInfo['staff_position'] ?? 'N/A';
-            $yearSectionDisplay = $borrowerType;
-          } elseif (!empty($borrowInfo['guest_id'])) {
-            $borrowerName = trim(($borrowInfo['guest_first_name'] ?? '') . ' ' . ($borrowInfo['guest_last_name'] ?? ''));
-            $borrowerType = 'guest';
-            $contact = $borrowInfo['guest_contact'] ?? 'N/A';
-            $email = 'N/A';
-            $idNumber = $borrowInfo['guest_id_num'] ?? 'N/A';
-            $courseOrDept = 'N/A';
-            $yearSectionDisplay = $borrowerType;
-          }
-
-          return [
-            'status' => 'borrowed',
-            'details' => [
-              'item_type' => $itemType,
-              'title' => $borrowInfo['item_title'],
-              'author' => $borrowInfo['author'] ?? null,
-              'book_isbn' => $borrowInfo['book_isbn'] ?? null,
-              'accession_number' => $borrowInfo['accession_number'] ?? null,
-              'call_number' => $borrowInfo['call_number'] ?? null,
-              'asset_tag' => $borrowInfo['asset_tag'] ?? null,
-              'borrower_type' => $borrowerType,
-              'borrower_name' => $borrowerName,
-              'id_number' => $idNumber,
-              'course_or_department' => $courseOrDept,
-              'student_year_section' => $yearSectionDisplay,
-              'contact' => $contact,
-              'email' => $email,
-              'date_borrowed' => $borrowInfo['date_borrowed'],
-              'due_date' => $borrowInfo['due_date'],
-              'borrowing_id' => $borrowInfo['borrowing_id'],
-              'availability' => $borrowInfo['status']
-            ]
-          ];
-        }
-        return ['status' => 'available', 'details' => array_merge(['item_type' => $itemType], $itemBasicDetails)];
-      }
-
-      return ['status' => 'available', 'details' => array_merge(['item_type' => $itemType], $itemBasicDetails)];
+      return ['status' => 'not_found'];
     } catch (PDOException $e) {
       error_log('[ReturningRepository::findItemByIdentifier] ' . $e->getMessage());
       return ['status' => 'error', 'message' => 'Database error: ' . $e->getMessage()];
     }
   }
 
-  public function markAsReturned($itemId, $condition = 'good'): ?array
+  public function markAsReturned($itemId, $condition = 'good', $newCampusId = null): ?array
   {
     try {
       $this->db->beginTransaction();
@@ -280,11 +232,21 @@ class ReturningRepository
       $stmtUpdateItem->execute([$itemStatus, $itemId]);
 
       if ($bookId !== null) {
-        $stmtUpdateBook = $this->db->prepare("UPDATE books SET availability = ? WHERE book_id = ?");
-        $stmtUpdateBook->execute([$availabilityStatus, $bookId]);
+        if ($newCampusId) {
+          $stmtUpdateBook = $this->db->prepare("UPDATE books SET availability = ?, campus_id = ? WHERE book_id = ?");
+          $stmtUpdateBook->execute([$availabilityStatus, $newCampusId, $bookId]);
+        } else {
+          $stmtUpdateBook = $this->db->prepare("UPDATE books SET availability = ? WHERE book_id = ?");
+          $stmtUpdateBook->execute([$availabilityStatus, $bookId]);
+        }
       } elseif ($equipmentId !== null) {
-        $stmtUpdateEquipment = $this->db->prepare("UPDATE equipments SET status = ? WHERE equipment_id = ?");
-        $stmtUpdateEquipment->execute([$availabilityStatus, $equipmentId]);
+        if ($newCampusId) {
+          $stmtUpdateEquipment = $this->db->prepare("UPDATE equipments SET status = ?, campus_id = ? WHERE equipment_id = ?");
+          $stmtUpdateEquipment->execute([$availabilityStatus, $newCampusId, $equipmentId]);
+        } else {
+          $stmtUpdateEquipment = $this->db->prepare("UPDATE equipments SET status = ? WHERE equipment_id = ?");
+          $stmtUpdateEquipment->execute([$availabilityStatus, $equipmentId]);
+        }
       } else {
         $this->db->rollBack();
         return null;

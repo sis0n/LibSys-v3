@@ -141,9 +141,13 @@ class UserManagementController extends Controller
       return;
     }
 
+    $db = $this->userRepo->getDbConnection();
+
     try {
+      $db->beginTransaction();
 
       if ($this->userRepo->usernameExists($username)) {
+        $db->rollBack();
         echo json_encode([
           'success' => false,
           'message' => "The username '$username' is already taken. Please use a different one."
@@ -153,6 +157,7 @@ class UserManagementController extends Controller
       if ($role === 'student') {
         $studentNumber = $username;
         if ($this->studentRepo->studentNumberExists($studentNumber)) {
+          $db->rollBack();
           echo json_encode(['success' => false, 'message' => 'Student Number already exists.']);
           exit;
         }
@@ -176,8 +181,8 @@ class UserManagementController extends Controller
 
       $userId = $this->userRepo->insertUser($userData);
 
-      if ($userId) {
-        $this->auditRepo->log($_SESSION['user_id'], 'CREATE', 'USERS', $username, "Added new user: $first_name $last_name as " . ucfirst($role));
+      if (!$userId) {
+        throw new \Exception("Failed to insert user record.");
       }
 
       switch ($role) {
@@ -185,19 +190,20 @@ class UserManagementController extends Controller
           $studentNumber = $username;
           $courseId = filter_var($data['course_id'] ?? null, FILTER_VALIDATE_INT);
           if (!$courseId) {
+            $db->rollBack();
             echo json_encode(['success' => false, 'message' => 'Course/Program selection is required']);
             return;
           }
-          
+
           // Get campus name for student record compatibility if needed
           $campusRepo = new \App\Repositories\CampusRepository();
           $campuses = $campusRepo->getAllCampuses();
           $campusName = 'N/A';
-          foreach($campuses as $cp) {
-              if($cp['campus_id'] == $campus_id) {
-                  $campusName = $cp['campus_name'];
-                  break;
-              }
+          foreach ($campuses as $cp) {
+            if ($cp['campus_id'] == $campus_id) {
+              $campusName = $cp['campus_name'];
+              break;
+            }
           }
 
           $this->studentRepo->insertStudent(
@@ -214,6 +220,7 @@ class UserManagementController extends Controller
           $collegeId = filter_var($data['college_id'] ?? null, FILTER_VALIDATE_INT);
 
           if (!$collegeId) {
+            $db->rollBack();
             echo json_encode(['success' => false, 'message' => 'Department is required!']);
             return;
           }
@@ -238,6 +245,7 @@ class UserManagementController extends Controller
         case 'admin':
         case 'librarian':
           if (empty($data['modules']) || !is_array($data['modules'])) {
+            $db->rollBack();
             echo json_encode([
               'success' => false,
               'message' => 'Please select at least one module for ' . ucfirst($role) . '.',
@@ -264,9 +272,14 @@ class UserManagementController extends Controller
           break;
 
         default:
+          $db->rollBack();
           echo json_encode(['success' => false, 'message' => 'Invalid role specified.']);
           return;
       }
+
+      $this->auditRepo->log($_SESSION['user_id'], 'CREATE', 'USERS', $username, "Added new user: $first_name $last_name as " . ucfirst($role));
+
+      $db->commit();
 
       echo json_encode([
         'success' => true,
@@ -274,6 +287,8 @@ class UserManagementController extends Controller
         'user_id' => $userId,
       ]);
     } catch (\Exception $e) {
+      if ($db->inTransaction()) $db->rollBack();
+      error_log("[UserManagementController::addUser] " . $e->getMessage());
       echo json_encode([
         'success' => false,
         'message' => 'Error: ' . $e->getMessage()

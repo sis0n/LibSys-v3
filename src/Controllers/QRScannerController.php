@@ -75,7 +75,7 @@ class QRScannerController extends Controller
     $profilePicUrl = null;
 
     if ($profilePicPath) {
-      $uploadsPosition = strpos($profilePicPath, 'uploads/');
+      $uploadsPosition = strpos($profilePicPath, 'storage/uploads/');
 
       if ($uploadsPosition !== false) {
         $finalRelativePath = substr($profilePicPath, $uploadsPosition);
@@ -97,7 +97,7 @@ class QRScannerController extends Controller
       $regFormPath = $transaction['registration_form'] ?? null;
       $regFormUrl = null;
       if ($regFormPath) {
-        $uploadsPosition = strpos($regFormPath, 'uploads/');
+        $uploadsPosition = strpos($regFormPath, 'storage/uploads/');
         if ($uploadsPosition !== false) {
           $finalRelativePath = substr($regFormPath, $uploadsPosition);
           $regFormUrl = STORAGE_URL . '/' . $finalRelativePath;

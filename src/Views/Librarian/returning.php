@@ -88,8 +88,9 @@
 </div>
 
 <!-- RETURN MODAL -->
-<div id="return-modal" class="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 hidden px-4">
+<div id="return-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] hidden px-4">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg border-2 border-orange-500 max-h-[90vh] flex flex-col overflow-hidden">
+        <!-- Header -->
         <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-white flex-shrink-0">
             <div>
                 <h3 class="text-xl font-bold text-gray-800" id="return-modal-title">Item Scanned Successfully</h3>
@@ -100,7 +101,17 @@
             </button>
         </div>
 
+        <!-- Scrollable Body -->
         <div class="p-6 overflow-y-auto custom-scrollbar flex-grow bg-gray-50/30">
+            <!-- Cross-Campus Warning -->
+            <div id="cross-campus-warning" class="hidden mb-4 p-3 bg-red-100 border-l-4 border-red-500 text-red-700 rounded">
+                <div class="flex items-center gap-2">
+                    <i class="ph ph-warning-circle text-lg"></i>
+                    <p class="text-sm font-bold">Cross-Campus Return Detected</p>
+                </div>
+                <p class="text-[11px] mt-1">This item belongs to <span id="home-campus-name" class="font-bold underline"></span>. Returning it here will automatically transfer its record to this campus.</p>
+            </div>
+
             <div class="bg-stone-50 border border-stone-200 rounded-lg p-4 mb-4">
                 <div class="flex justify-between items-start mb-2">
                     <div>
@@ -150,6 +161,7 @@
             <div class="border-t border-gray-100 pt-4 mb-2">
                 <p class="text-xs font-bold text-gray-500 uppercase mb-3 tracking-widest text-center">Condition upon Return</p>
                 <div class="grid grid-cols-3 gap-3">
+                    <!-- Good -->
                     <label class="cursor-pointer relative block group">
                         <input type="radio" name="item_condition" value="good" class="peer absolute opacity-0" checked>
                         <div class="condition-card p-4 border-2 border-gray-100 rounded-2xl flex flex-col items-center justify-center transition-all duration-200 text-gray-400
@@ -158,6 +170,8 @@
                             <span class="text-[10px] font-black uppercase">Good</span>
                         </div>
                     </label>
+
+                    <!-- Damaged -->
                     <label class="cursor-pointer relative block group">
                         <input type="radio" name="item_condition" value="damaged" class="peer absolute opacity-0">
                         <div class="condition-card p-4 border-2 border-gray-100 rounded-2xl flex flex-col items-center justify-center transition-all duration-200 text-gray-400
@@ -166,6 +180,8 @@
                             <span class="text-[10px] font-black uppercase">Damaged</span>
                         </div>
                     </label>
+
+                    <!-- Lost -->
                     <label class="cursor-pointer relative block group">
                         <input type="radio" name="item_condition" value="lost" class="peer absolute opacity-0">
                         <div class="condition-card p-4 border-2 border-gray-100 rounded-2xl flex flex-col items-center justify-center transition-all duration-200 text-gray-400
@@ -187,6 +203,7 @@
             .condition-card:active { transform: scale(0.95); }
         </style>
 
+        <!-- Footer Buttons -->
         <div class="p-6 border-t border-gray-100 flex justify-end items-center gap-3 bg-white flex-shrink-0">
             <button id="modal-cancel-button" class="text-xs px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-semibold hover:bg-gray-100 transition">Cancel</button>
             <button id="modal-extend-button" class="text-xs px-6 py-2.5 border border-orange-200 rounded-lg text-orange-700 font-semibold hover:bg-orange-50 flex items-center gap-2"><i class="ph ph-calendar"></i> Extend Due Date</button>
@@ -196,7 +213,7 @@
 </div>
 
 <!-- AVAILABLE ITEM MODAL -->
-<div id="available-book-modal" class="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 hidden px-4">
+<div id="available-book-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] hidden px-4">
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 mx-4 border-2 border-green-500 max-h-[90vh] flex flex-col overflow-hidden">
         <div class="flex justify-between items-center mb-4 flex-shrink-0">
             <div>
@@ -209,6 +226,14 @@
         </div>
 
         <div class="overflow-y-auto custom-scrollbar flex-grow p-1">
+            <!-- Book Image -->
+            <div class="mb-4 flex justify-center">
+                <div id="available-modal-img-placeholder" class="w-32 h-44 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 border-2 border-dashed border-gray-200">
+                    <i class="ph ph-book-open text-4xl"></i>
+                </div>
+                <img id="available-modal-img" src="" alt="Book Cover" class="w-32 h-44 object-cover rounded-lg shadow-md hidden border border-gray-200">
+            </div>
+
             <div class="bg-stone-50 border border-stone-200 rounded-lg p-4 mb-4">
                 <div class="flex justify-between items-start mb-2">
                     <div>
@@ -255,4 +280,40 @@
     </div>
 </div>
 
+<!-- SELECTION MODAL (For Duplicates) -->
+<div id="selection-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] hidden px-4 py-6">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl border border-orange-200 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+        <!-- Header -->
+        <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-white">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                    <i class="ph ph-users-three text-xl font-bold"></i>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800 leading-tight">Multiple Borrowers Found</h3>
+                    <p class="text-gray-500 text-xs mt-0.5">Select the correct borrower for this item</p>
+                </div>
+            </div>
+            <button id="selection-modal-close" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition">
+                <i class="ph ph-x text-xl"></i>
+            </button>
+        </div>
+        
+        <!-- List Container -->
+        <div class="p-5 max-h-[60vh] overflow-y-auto custom-scrollbar bg-gray-50/50">
+            <div id="selection-list" class="flex flex-col gap-3">
+                <!-- List items will be injected here -->
+            </div>
+        </div>
+
+        <!-- Footer Info -->
+        <div class="px-5 py-3 bg-white border-t border-gray-100 text-center">
+            <p class="text-[10px] text-gray-400 italic">Please verify the borrower's identity using their ID card.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const STORAGE_URL = "<?= STORAGE_URL ?>";
+</script>
 <script src="<?= BASE_URL ?>/js/librarian/returning.js" defer></script>

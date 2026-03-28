@@ -48,8 +48,12 @@ class UserPermissionModuleRepository
 
   public function assignModules(int $userId, array $modules): bool
   {
+    $transactionStarted = false;
     try {
-      $this->db->beginTransaction();
+      if (!$this->db->inTransaction()) {
+        $this->db->beginTransaction();
+        $transactionStarted = true;
+      }
 
       $this->deleteModules($userId);
 
@@ -65,10 +69,14 @@ class UserPermissionModuleRepository
         ]);
       }
 
-      $this->db->commit();
+      if ($transactionStarted) {
+        $this->db->commit();
+      }
       return true;
     } catch (PDOException $e) {
-      $this->db->rollBack();
+      if ($transactionStarted) {
+        $this->db->rollBack();
+      }
       error_log("[UserModulePermissionRepository::assignModules] " . $e->getMessage());
       return false;
     }
