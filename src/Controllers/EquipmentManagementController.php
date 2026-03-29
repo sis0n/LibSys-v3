@@ -4,11 +4,13 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Repositories\EquipmentManagementRepository;
+use App\Repositories\CampusRepository;
 use Exception;
 
 class EquipmentManagementController extends Controller
 {
     private EquipmentManagementRepository $equipmentRepo;
+    private CampusRepository $campusRepo;
     private \App\Repositories\AuditLogRepository $auditRepo;
 
     public function __construct()
@@ -17,6 +19,7 @@ class EquipmentManagementController extends Controller
             session_start();
         }
         $this->equipmentRepo = new EquipmentManagementRepository();
+        $this->campusRepo = new CampusRepository();
         $this->auditRepo = new \App\Repositories\AuditLogRepository();
     }
 
@@ -48,7 +51,15 @@ class EquipmentManagementController extends Controller
     {
         $role = $_SESSION['role'] ?? 'guest';
         $viewPath = ucfirst($role) . "/equipmentManagement";
-        $this->view($viewPath, ["title" => "Equipment Management"]);
+        
+        // Fetch active campuses for the modal dropdown
+        $allCampuses = $this->campusRepo->getAllCampuses();
+        $activeCampuses = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);
+
+        $this->view($viewPath, [
+            "title" => "Equipment Management",
+            "campuses" => $activeCampuses
+        ]);
     }
 
     public function getAll()
@@ -56,11 +67,12 @@ class EquipmentManagementController extends Controller
         try {
             $search = $_GET['search'] ?? '';
             $status = $_GET['status'] ?? 'All Status';
+            $campusId = $_GET['campus_id'] ?? null;
             $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
             $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
 
-            $equipments = $this->equipmentRepo->fetchEquipments($search, $status, 'default', $limit, $offset);
-            $totalCount = $this->equipmentRepo->countEquipments($search, $status);
+            $equipments = $this->equipmentRepo->fetchEquipments($search, $status, 'default', $limit, $offset, $campusId);
+            $totalCount = $this->equipmentRepo->countEquipments($search, $status, $campusId);
 
             $this->json([
                 'success' => true,
@@ -92,7 +104,7 @@ class EquipmentManagementController extends Controller
         try {
             $data = [
                 'equipment_name' => $_POST['equipment_name'] ?? '',
-                'category'       => $_POST['category'] ?? 'General',
+                'campus_id'      => $_POST['campus_id'] ?? null,
                 'asset_tag'      => $this->generateAssetTag(),
                 'status'         => $_POST['status'] ?? 'available',
                 'is_active'      => 1
@@ -100,6 +112,10 @@ class EquipmentManagementController extends Controller
 
             if (empty($data['equipment_name'])) {
                 $this->json(['success' => false, 'message' => 'Equipment Name is required'], 400);
+            }
+
+            if (empty($data['campus_id'])) {
+                $this->json(['success' => false, 'message' => 'Campus selection is required'], 400);
             }
 
             $equipmentId = $this->equipmentRepo->addEquipment($data);
@@ -125,11 +141,16 @@ class EquipmentManagementController extends Controller
 
             $data = [
                 'equipment_name' => $_POST['equipment_name'] ?? '',
+                'campus_id'      => $_POST['campus_id'] ?? null,
                 'status'         => $_POST['status'] ?? 'available'
             ];
 
             if (empty($data['equipment_name'])) {
                 $this->json(['success' => false, 'message' => 'Equipment Name is required'], 400);
+            }
+
+            if (empty($data['campus_id'])) {
+                $this->json(['success' => false, 'message' => 'Campus selection is required'], 400);
             }
 
             $success = $this->equipmentRepo->updateEquipment((int)$equipmentId, $data);

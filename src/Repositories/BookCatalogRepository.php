@@ -17,8 +17,8 @@ class BookCatalogRepository
   {
     $query = "SELECT b.*, c.campus_name 
               FROM books b 
-              LEFT JOIN campuses c ON b.campus_id = c.campus_id 
-              WHERE b.deleted_at IS NULL";
+              INNER JOIN campuses c ON b.campus_id = c.campus_id 
+              WHERE b.deleted_at IS NULL AND c.is_active = 1";
     $params = [];
     if ($campusId !== null) {
       $query .= " AND b.campus_id = ?";
@@ -32,7 +32,7 @@ class BookCatalogRepository
 
   public function getBookById($id)
   {
-    $stmt = $this->db->prepare("SELECT b.*, c.campus_name FROM books b LEFT JOIN campuses c ON b.campus_id = c.campus_id WHERE b.book_id = ? AND b.deleted_at IS NULL");
+    $stmt = $this->db->prepare("SELECT b.*, c.campus_name FROM books b INNER JOIN campuses c ON b.campus_id = c.campus_id WHERE b.book_id = ? AND b.deleted_at IS NULL AND c.is_active = 1");
     $stmt->execute([$id]);
     return $stmt->fetch(\PDO::FETCH_ASSOC);
   }
@@ -106,9 +106,9 @@ class BookCatalogRepository
     $search = "%$keyword%";
     $stmt = $this->db->prepare("
             SELECT b.*, c.campus_name FROM books b 
-            LEFT JOIN campuses c ON b.campus_id = c.campus_id
+            INNER JOIN campuses c ON b.campus_id = c.campus_id
               WHERE (b.title LIKE ? OR b.author LIKE ? OR b.accession_number LIKE ? OR b.subject LIKE ? OR b.book_isbn LIKE ?)
-              AND b.deleted_at IS NULL
+              AND b.deleted_at IS NULL AND c.is_active = 1
         ");
     $stmt->execute([$search, $search, $search, $search, $search]);
     return $stmt->fetchAll(\PDO::FETCH_ASSOC);
@@ -117,8 +117,8 @@ class BookCatalogRepository
   public function filterBooks($filters = [])
   {
     $query = "SELECT b.*, c.campus_name FROM books b 
-              LEFT JOIN campuses c ON b.campus_id = c.campus_id
-              WHERE b.deleted_at IS NULL AND b.availability NOT IN ('lost', 'damaged')";
+              INNER JOIN campuses c ON b.campus_id = c.campus_id
+              WHERE b.deleted_at IS NULL AND b.availability NOT IN ('lost', 'damaged') AND c.is_active = 1";
     $place_holder = [];
 
     foreach ($filters as $column => $value) {
@@ -154,8 +154,8 @@ class BookCatalogRepository
     $offset = max(0, min($offset, 10000));
     $query = "SELECT b.*, c.campus_name 
               FROM books b 
-              LEFT JOIN campuses c ON b.campus_id = c.campus_id 
-              WHERE b.deleted_at IS NULL AND b.availability NOT IN ('lost', 'damaged')";
+              INNER JOIN campuses c ON b.campus_id = c.campus_id 
+              WHERE b.deleted_at IS NULL AND b.availability NOT IN ('lost', 'damaged') AND c.is_active = 1";
     $params = [];
 
     if ($campusId !== null) {
@@ -207,10 +207,10 @@ class BookCatalogRepository
 
   public function countAvailableBooks(?int $campusId = null): int
   {
-    $query = "SELECT COUNT(*) FROM books WHERE availability = 'available' AND deleted_at IS NULL";
+    $query = "SELECT COUNT(*) FROM books b INNER JOIN campuses c ON b.campus_id = c.campus_id WHERE b.availability = 'available' AND b.deleted_at IS NULL AND c.is_active = 1";
     $params = [];
     if ($campusId !== null) {
-        $query .= " AND campus_id = ?";
+        $query .= " AND b.campus_id = ?";
         $params[] = $campusId;
     }
     $stmt = $this->db->prepare($query);
@@ -224,16 +224,16 @@ class BookCatalogRepository
     string $status = '',
     ?int $campusId = null
   ): int {
-    $query = "SELECT COUNT(*) FROM books WHERE deleted_at IS NULL AND availability NOT IN ('lost', 'damaged')";
+    $query = "SELECT COUNT(*) FROM books b INNER JOIN campuses c ON b.campus_id = c.campus_id WHERE b.deleted_at IS NULL AND b.availability NOT IN ('lost', 'damaged') AND c.is_active = 1";
     $params = [];
 
     if ($campusId !== null) {
-        $query .= " AND campus_id = ?";
+        $query .= " AND b.campus_id = ?";
         $params[] = $campusId;
     }
 
     if ($search !== '') {
-      $query .= " AND (title LIKE ? OR author LIKE ? OR book_isbn LIKE ? OR accession_number LIKE ?)";
+      $query .= " AND (b.title LIKE ? OR b.author LIKE ? OR b.book_isbn LIKE ? OR b.accession_number LIKE ?)";
       $searchTerm = "%$search%";
       $params[] = $searchTerm;
       $params[] = $searchTerm;
@@ -242,12 +242,12 @@ class BookCatalogRepository
     }
 
     if ($category !== '' && $category !== 'All Categories') {
-      $query .= " AND subject = ?";
+      $query .= " AND b.subject = ?";
       $params[] = $category;
     }
 
     if ($status !== '' && $status !== 'All Status') {
-      $query .= " AND availability = ?";
+      $query .= " AND b.availability = ?";
       $params[] = strtolower($status);
     }
 

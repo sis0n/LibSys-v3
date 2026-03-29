@@ -192,7 +192,7 @@ class RouteConfig
     $router->post('api/superadmin/userManagement/toggleStatus/{id}', 'UserManagementController@toggleStatus');
     $router->post('api/superadmin/userManagement/allowEdit/{id}', 'UserManagementController@allowEdit', ['superadmin']);
     $router->post('api/superadmin/userManagement/bulkImport', 'UserManagementController@bulkImport');
-    $router->get('api/superadmin/userManagement/getAllCourses', 'DataController@getAllCourses', ['superadmin', 'student promotion']);
+    $router->get('api/superadmin/userManagement/getAllCourses', 'DataController@getAllCourses', ['superadmin']);
     $router->get('api/superadmin/userManagement/getColleges', 'DataController@getColleges', ['superadmin']);
     $router->get('api/campuses/all', 'DataController@getAllCampuses');
     $router->get('api/superadmin/booksmanagement/fetch', 'BookManagementController@fetch', ['superadmin']);
@@ -260,11 +260,11 @@ class RouteConfig
     $router->get('api/superadmin/auditLogs/fetch', 'AuditLogController@fetch', ['superadmin']);
     $router->get('auditLogs', 'AuditLogController@index', ['superadmin']);
 
-    $router->get('api/superadmin/studentPromotion/fetch', 'StudentPromotionController@fetch', ['superadmin', 'student promotion']);
-    $router->post('api/superadmin/studentPromotion/promote', 'StudentPromotionController@promote', ['superadmin', 'student promotion']);
-    $router->post('api/superadmin/studentPromotion/deactivate', 'StudentPromotionController@deactivate', ['superadmin', 'student promotion']);
-    $router->post('api/superadmin/studentPromotion/activate', 'StudentPromotionController@activate', ['superadmin', 'student promotion']);
-    $router->get('studentPromotion', 'StudentPromotionController@index', ['superadmin', 'student promotion']);
+    $router->get('api/superadmin/studentPromotion/fetch', 'StudentPromotionController@fetch', ['superadmin']);
+    $router->post('api/superadmin/studentPromotion/promote', 'StudentPromotionController@promote', ['superadmin']);
+    $router->post('api/superadmin/studentPromotion/deactivate', 'StudentPromotionController@deactivate', ['superadmin']);
+    $router->post('api/superadmin/studentPromotion/activate', 'StudentPromotionController@activate', ['superadmin']);
+    $router->get('studentPromotion', 'StudentPromotionController@index', ['superadmin']);
 
     $router->post('generate-report', 'DomPdfTemplateController@generateLibraryReport', ['superadmin']);
 
@@ -288,6 +288,14 @@ class RouteConfig
     $router->get('api/attendance/logs/ajax', 'AttendanceController@fetchLogsAjax', ['attendance logs', 'superadmin']);
     $router->get('api/superadmin/overdue/getTableData', 'OverdueController@getTableData', ['superadmin', 'overdue tracking']);
     $router->post('api/superadmin/overdue/sendReminder', 'OverdueController@sendReminder', ['superadmin', 'overdue tracking']);
+
+    // Campus Management Routes
+    $router->get('campusManagement', 'CampusManagementController@index', ['superadmin']);
+    $router->get('api/superadmin/campuses/fetch', 'CampusManagementController@fetch', ['superadmin']);
+    $router->post('api/superadmin/campuses/store', 'CampusManagementController@store', ['superadmin']);
+    $router->post('api/superadmin/campuses/update/{id}', 'CampusManagementController@update', ['superadmin']);
+    $router->post('api/superadmin/campuses/toggleStatus/{id}', 'CampusManagementController@toggleStatus', ['superadmin']);
+    $router->post('api/superadmin/campuses/delete/{id}', 'CampusManagementController@destroy', ['superadmin']);
 
     $router->get('dashboard', 'ViewController@handleDashboard');
 

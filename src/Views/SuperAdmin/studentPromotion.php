@@ -26,6 +26,13 @@
                 <option value="">All Courses</option>
             </select>
 
+            <select id="campusFilter" class="bg-white border border-orange-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:ring-1 focus:ring-orange-300">
+                <option value="">All Campuses</option>
+                <?php foreach ($campuses as $campus): ?>
+                    <option value="<?= $campus['campus_id'] ?>"><?= $campus['campus_name'] ?></option>
+                <?php endforeach; ?>
+            </select>
+
             <select id="yearFilter" class="bg-white border border-orange-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:ring-1 focus:ring-orange-300">
                 <option value="">All Year Levels</option>
                 <option value="1">1st Year</option>

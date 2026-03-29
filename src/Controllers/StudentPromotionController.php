@@ -5,23 +5,39 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Repositories\StudentPromotionRepository;
 use App\Repositories\AuditLogRepository;
+use App\Repositories\CampusRepository;
 
 class StudentPromotionController extends Controller
 {
     private $promoRepo;
     private $auditRepo;
+    private $campusRepo;
 
     public function __construct()
     {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (($_SESSION['role'] ?? '') !== 'superadmin') {
+            http_response_code(403);
+            die("Forbidden: Access restricted to Superadmin only.");
+        }
+
         $this->promoRepo = new StudentPromotionRepository();
         $this->auditRepo = new \App\Repositories\AuditLogRepository();
+        $this->campusRepo = new CampusRepository();
     }
 
     public function index()
     {
+        $allCampuses = $this->campusRepo->getAllCampuses();
+        $activeCampuses = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);
+
         $this->view('superadmin/studentPromotion', [
             'title' => 'Student Promotion',
-            'currentPage' => 'studentPromotion'
+            'currentPage' => 'studentPromotion',
+            'campuses' => $activeCampuses
         ]);
     }
 
@@ -31,6 +47,7 @@ class StudentPromotionController extends Controller
         try {
             $filters = [
                 'course_id' => $_GET['course_id'] ?? null,
+                'campus_id' => $_GET['campus_id'] ?? null,
                 'year_level' => $_GET['year_level'] ?? null,
                 'search' => $_GET['search'] ?? '',
                 'status' => $_GET['status'] ?? 1
@@ -45,7 +62,7 @@ class StudentPromotionController extends Controller
 
             $students = $this->promoRepo->fetchStudents($filters, $limit, $offset);
             $totalCount = $this->promoRepo->countStudents($filters);
-            $stats = $this->promoRepo->getYearLevelStats($filters['status']);
+            $stats = $this->promoRepo->getYearLevelStats($filters['status'], $filters['campus_id']);
 
             echo json_encode([
                 'success' => true,

@@ -331,8 +331,7 @@
                             'restore books',
                             'restore equipment',
                             'user management',
-                            'restore users',
-                            'student promotion'
+                            'restore users'
                         ];
 
                         foreach ($modules as $module):
@@ -590,8 +589,7 @@
                         'restore books',
                         'restore equipment',
                         'user management',
-                        'restore users',
-                        'student promotion'
+                        'restore users'
                     ];
                     foreach ($modules as $module):
                         $isUserManagement = ($module === 'user management');

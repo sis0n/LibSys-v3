@@ -15,16 +15,23 @@ class StudentPromotionRepository
         $this->db = Database::getInstance()->getConnection();
     }
 
-    public function getYearLevelStats($status = 1)
+    public function getYearLevelStats($status = 1, $campusId = null)
     {
         $sql = "SELECT year_level, COUNT(*) as count 
                 FROM students s
                 JOIN users u ON s.user_id = u.user_id
-                WHERE u.is_active = :status AND u.deleted_at IS NULL
-                GROUP BY year_level 
-                ORDER BY year_level ASC";
+                WHERE u.is_active = :status AND u.deleted_at IS NULL";
+        
+        $params = [':status' => $status];
+        if (!empty($campusId)) {
+            $sql .= " AND u.campus_id = :campus_id";
+            $params[':campus_id'] = $campusId;
+        }
+
+        $sql .= " GROUP BY year_level ORDER BY year_level ASC";
+        
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([':status' => $status]);
+        $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -32,16 +39,21 @@ class StudentPromotionRepository
     {
         $status = isset($filters['status']) ? (int)$filters['status'] : 1;
         
-        $sql = "SELECT s.*, u.first_name, u.last_name, u.username, u.email, u.is_active, c.course_code, c.course_title
+        $sql = "SELECT s.*, u.first_name, u.last_name, u.username, u.email, u.is_active, c.course_code, c.course_title, cp.campus_name
                 FROM students s
                 JOIN users u ON s.user_id = u.user_id
                 LEFT JOIN courses c ON s.course_id = c.course_id
+                LEFT JOIN campuses cp ON u.campus_id = cp.campus_id
                 WHERE u.is_active = :status AND u.deleted_at IS NULL";
         
         $params = [':status' => $status];
         if (!empty($filters['course_id'])) {
             $sql .= " AND s.course_id = :course_id";
             $params[':course_id'] = $filters['course_id'];
+        }
+        if (!empty($filters['campus_id'])) {
+            $sql .= " AND u.campus_id = :campus_id";
+            $params[':campus_id'] = $filters['campus_id'];
         }
         if (!empty($filters['year_level'])) {
             $sql .= " AND s.year_level = :year_level";
@@ -73,6 +85,10 @@ class StudentPromotionRepository
         if (!empty($filters['course_id'])) {
             $sql .= " AND s.course_id = :course_id";
             $params[':course_id'] = $filters['course_id'];
+        }
+        if (!empty($filters['campus_id'])) {
+            $sql .= " AND u.campus_id = :campus_id";
+            $params[':campus_id'] = $filters['campus_id'];
         }
         if (!empty($filters['year_level'])) {
             $sql .= " AND s.year_level = :year_level";
@@ -108,6 +124,10 @@ class StudentPromotionRepository
         if (!empty($filters['course_id'])) {
             $sql .= " AND s.course_id = :course_id";
             $params[':course_id'] = $filters['course_id'];
+        }
+        if (!empty($filters['campus_id'])) {
+            $sql .= " AND u.campus_id = :campus_id";
+            $params[':campus_id'] = $filters['campus_id'];
         }
         if (!empty($filters['year_level'])) {
             $sql .= " AND s.year_level = :year_level";
@@ -146,6 +166,10 @@ class StudentPromotionRepository
             $sql .= " AND s.course_id = :course_id";
             $params[':course_id'] = $filters['course_id'];
         }
+        if (!empty($filters['campus_id'])) {
+            $sql .= " AND u.campus_id = :campus_id";
+            $params[':campus_id'] = $filters['campus_id'];
+        }
         if (!empty($filters['year_level'])) {
             $sql .= " AND s.year_level = :year_level";
             $params[':year_level'] = $filters['year_level'];
@@ -182,6 +206,10 @@ class StudentPromotionRepository
         if (!empty($filters['course_id'])) {
             $sql .= " AND s.course_id = :course_id";
             $params[':course_id'] = $filters['course_id'];
+        }
+        if (!empty($filters['campus_id'])) {
+            $sql .= " AND u.campus_id = :campus_id";
+            $params[':campus_id'] = $filters['campus_id'];
         }
         if (!empty($filters['year_level'])) {
             $sql .= " AND s.year_level = :year_level";

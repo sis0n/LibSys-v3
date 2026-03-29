@@ -49,6 +49,27 @@
                     <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectEqStatus(this, 'Damaged')">Damaged</div>
                 </div>
             </div>
+
+            <div class="relative inline-block text-left ml-3">
+                <button id="eqCampusDropdownBtn"
+                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition">
+                    <span>
+                        <i class="ph ph-buildings text-gray-500"></i>
+                        <span id="eqCampusDropdownValue">All Campuses</span>
+                    </span>
+                    <i class="ph ph-caret-down text-xs"></i>
+                </button>
+                <div id="eqCampusDropdownMenu"
+                    class="absolute mt-1 w-full bg-white border border-orange-200 rounded-lg shadow-md hidden z-20">
+                    <div class="campus-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectEqCampus(this, '', 'All Campuses')">All Campuses</div>
+                    <?php foreach ($campuses as $campus): ?>
+                        <div class="campus-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" 
+                             onclick="selectEqCampus(this, '<?= $campus['campus_id'] ?>', '<?= $campus['campus_name'] ?>')">
+                            <?= $campus['campus_name'] ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -61,16 +82,17 @@
             <thead class="bg-orange-100 text-left text-gray-800">
                 <tr>
                     <th class="py-3 px-4 font-medium text-left">Equipment Name</th>
+                    <th class="py-3 px-4 font-medium text-left">Campus</th>
                     <th class="py-3 px-4 font-medium text-left">Asset Tag</th>
                     <th class="py-3 px-4 font-medium text-left">Condition</th>
                     <th class="py-3 px-4 font-medium text-left">Visibility</th>
                     <th class="py-3 px-4 font-medium text-left">Last Updated</th>
-                    <th class="py-3 px-4 font-medium text-center">Actions</th>
+                    <th class="py-3 px-4 font-medium text-right">Actions</th>
                 </tr>
             </thead>
             <tbody id="eqTableBody" class="divide-y divide-orange-100 bg-white">
                 <tr>
-                    <td colspan="5" class="py-10 text-center text-gray-500">
+                    <td colspan="7" class="py-10 text-center text-gray-500">
                         <i class="ph ph-spinner animate-spin text-2xl"></i>
                     </td>
                 </tr>
@@ -99,6 +121,15 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Equipment Name <span class="text-red-500">*</span></label>
                 <input type="text" name="equipment_name" required placeholder="e.g. Chess Board #1" class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Campus <span class="text-red-500">*</span></label>
+                <select name="campus_id" required class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500 bg-white">
+                    <option value="" disabled selected>Select Campus</option>
+                    <?php foreach ($campuses as $campus): ?>
+                        <option value="<?= $campus['campus_id'] ?>"><?= $campus['campus_name'] ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Asset Tag</label>
@@ -137,6 +168,15 @@
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Equipment Name <span class="text-red-500">*</span></label>
                 <input type="text" id="edit_equipment_name" name="equipment_name" required class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Campus <span class="text-red-500">*</span></label>
+                <select id="edit_campus_id" name="campus_id" required class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500 bg-white">
+                    <option value="" disabled>Select Campus</option>
+                    <?php foreach ($campuses as $campus): ?>
+                        <option value="<?= $campus['campus_id'] ?>"><?= $campus['campus_name'] ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Asset Tag</label>

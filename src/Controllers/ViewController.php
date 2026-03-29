@@ -101,7 +101,8 @@ class ViewController extends Controller
       'restoreUser' => 'restore users',
       'userManagement' => 'user management',
       'libraryPolicies' => 'superadmin',
-      'overdue' => 'superadmin'
+      'overdue' => 'superadmin',
+      'campusManagement' => 'superadmin'
     ];
 
     $universalPages = [
@@ -142,6 +143,13 @@ class ViewController extends Controller
       "title" => ucfirst($action),
       "currentPage" => $action
     ];
+
+    // Inject campuses data for management pages that need it
+    if (in_array($action, ['bookManagement', 'equipmentManagement', 'userManagement'])) {
+      $campusRepo = new \App\Repositories\CampusRepository();
+      $allCampuses = $campusRepo->getAllCampuses();
+      $data['campuses'] = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);
+    }
 
     $this->view($viewPath, $data);
   }

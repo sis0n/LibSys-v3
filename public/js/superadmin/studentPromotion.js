@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentFilters = {
         search: "",
         course_id: "",
+        campus_id: "",
         year_level: "",
         status: 1
     };
@@ -116,7 +117,8 @@ document.addEventListener("DOMContentLoaded", () => {
                             <span class="font-bold text-gray-900">${s.first_name} ${s.last_name}</span>
                             ${s.is_active == 0 ? '<span class="text-[9px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded font-black uppercase">Inactive</span>' : ''}
                         </div>
-                        <span class="text-[11px] font-mono text-gray-500 uppercase">${s.student_number}</span>
+                        <span class="text-[11px] font-mono text-gray-500 uppercase tracking-wider">${s.student_number}</span>
+                        <span class="text-[10px] text-orange-600 font-bold uppercase tracking-tighter">${s.campus_name || 'N/A'}</span>
                     </div>
                 </td>
                 <td class="px-6 py-4">
@@ -448,6 +450,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("statusFilter").onchange = (e) => {
         currentFilters.status = e.target.value;
+        isGlobalSelect = false;
+        selectedIds.clear();
+        fetchStudents(1);
+    };
+
+    document.getElementById("campusFilter").onchange = (e) => {
+        currentFilters.campus_id = e.target.value;
         isGlobalSelect = false;
         selectedIds.clear();
         fetchStudents(1);

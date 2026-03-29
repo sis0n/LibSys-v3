@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         </div>
                     </div>
                     <h3 class="text-lg font-bold text-gray-800">${title}</h3>
-                    <p class="text-[13px] text-gray-600 mt-1">${text}</p>
+                    <p class="text-[13px] text-gray-700 mt-1">${text}</p>
                 </div>
             `,
             showCancelButton: true,
@@ -74,6 +74,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentPage = 1;
     let currentSearch = "";
     let currentStatus = "All Status";
+    let currentCampus = "";
+    let debounceTimer;
     const limit = 10;
 
     // --- Elements ---
@@ -113,6 +115,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const params = new URLSearchParams({
             search: currentSearch,
             status: currentStatus === "All Status" ? "" : currentStatus,
+            campus_id: currentCampus,
             limit: limit,
             offset: offset
         });
@@ -142,7 +145,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderTable() {
         tableBody.innerHTML = "";
         if (equipments.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-gray-500">No equipment found matching filters.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-gray-500">No equipment found matching filters.</td></tr>`;
             return;
         }
 
@@ -152,6 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
             row.innerHTML = `
                 <td class="px-6 py-4 font-medium text-gray-800">${eq.equipment_name}</td>
+                <td class="px-6 py-4 text-gray-600 font-medium">${eq.campus_name || 'N/A'}</td>
                 <td class="px-6 py-4 text-gray-600 font-mono text-xs">${eq.asset_tag || 'N/A'}</td>
                 <td class="px-6 py-4">
                     <span class="w-fit px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getConditionClass(eq.status)}">
@@ -214,6 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (data.success) {
                 document.getElementById("edit_equipment_id").value = data.equipment.equipment_id;
                 document.getElementById("edit_equipment_name").value = data.equipment.equipment_name;
+                document.getElementById("edit_campus_id").value = data.equipment.campus_id || "";
                 document.getElementById("edit_asset_tag").value = data.equipment.asset_tag || "";
                 document.getElementById("edit_status").value = data.equipment.status;
                 editModal.classList.remove("hidden");
@@ -319,9 +324,23 @@ document.addEventListener("DOMContentLoaded", () => {
         loadEquipments(1, false);
     };
 
+    window.selectEqCampus = (el, campusId, campusName) => {
+        currentCampus = campusId;
+        document.getElementById("eqCampusDropdownValue").textContent = campusName;
+        document.getElementById("eqCampusDropdownMenu").classList.add("hidden");
+        loadEquipments(1, false);
+    };
+
     document.getElementById("eqStatusDropdownBtn").onclick = (e) => {
         e.stopPropagation();
+        document.getElementById("eqCampusDropdownMenu").classList.add("hidden");
         document.getElementById("eqStatusDropdownMenu").classList.toggle("hidden");
+    };
+
+    document.getElementById("eqCampusDropdownBtn").onclick = (e) => {
+        e.stopPropagation();
+        document.getElementById("eqStatusDropdownMenu").classList.add("hidden");
+        document.getElementById("eqCampusDropdownMenu").classList.toggle("hidden");
     };
 
     document.getElementById("openAddEqBtn").onclick = () => {
@@ -347,6 +366,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.addEventListener("click", () => {
         document.getElementById("eqStatusDropdownMenu").classList.add("hidden");
+        document.getElementById("eqCampusDropdownMenu").classList.add("hidden");
     });
 
     loadEquipments(1);

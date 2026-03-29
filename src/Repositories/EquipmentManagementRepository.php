@@ -22,33 +22,41 @@ class EquipmentManagementRepository
         return (int)$stmt->fetchColumn() === 0;
     }
 
-    public function fetchEquipments($search = '', $status = 'All Status', $sort = 'default', $limit = 30, $offset = 0)
+    public function fetchEquipments($search = '', $status = 'All Status', $sort = 'default', $limit = 30, $offset = 0, $campusId = null)
     {
-        $query = "SELECT * FROM equipments WHERE deleted_at IS NULL"; 
+        $query = "SELECT e.*, c.campus_name 
+                  FROM equipments e 
+                  INNER JOIN campuses c ON e.campus_id = c.campus_id 
+                  WHERE e.deleted_at IS NULL AND c.is_active = 1"; 
         $params = [];
 
         if (!empty($search)) {
-            $query .= " AND (equipment_name LIKE :search OR asset_tag LIKE :search)";
+            $query .= " AND (e.equipment_name LIKE :search OR e.asset_tag LIKE :search)";
             $params[':search'] = "%$search%";
         }
 
         if ($status !== 'All Status' && !empty($status)) {
             if ($status === 'Active') {
-                $query .= " AND is_active = 1";
+                $query .= " AND e.is_active = 1";
             } elseif ($status === 'Inactive') {
-                $query .= " AND is_active = 0";
+                $query .= " AND e.is_active = 0";
             } else {
-                $query .= " AND status = :status";
+                $query .= " AND e.status = :status";
                 $params[':status'] = strtolower($status);
             }
         }
 
+        if (!empty($campusId)) {
+            $query .= " AND e.campus_id = :campus_id";
+            $params[':campus_id'] = $campusId;
+        }
+
         switch ($sort) {
-            case 'name_asc':  $query .= " ORDER BY equipment_name ASC"; break;
-            case 'name_desc': $query .= " ORDER BY equipment_name DESC"; break;
-            case 'newest':    $query .= " ORDER BY created_at DESC"; break;
-            case 'oldest':    $query .= " ORDER BY created_at ASC"; break;
-            default:          $query .= " ORDER BY equipment_name ASC"; break;
+            case 'name_asc':  $query .= " ORDER BY e.equipment_name ASC"; break;
+            case 'name_desc': $query .= " ORDER BY e.equipment_name DESC"; break;
+            case 'newest':    $query .= " ORDER BY e.created_at DESC"; break;
+            case 'oldest':    $query .= " ORDER BY e.created_at ASC"; break;
+            default:          $query .= " ORDER BY e.equipment_name ASC"; break;
         }
 
         $query .= " LIMIT :limit OFFSET :offset";
@@ -64,25 +72,30 @@ class EquipmentManagementRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function countEquipments($search = '', $status = 'All Status')
+    public function countEquipments($search = '', $status = 'All Status', $campusId = null)
     {
-        $query = "SELECT COUNT(*) FROM equipments WHERE deleted_at IS NULL";
+        $query = "SELECT COUNT(*) FROM equipments e INNER JOIN campuses c ON e.campus_id = c.campus_id WHERE e.deleted_at IS NULL AND c.is_active = 1";
         $params = [];
 
         if (!empty($search)) {
-            $query .= " AND (equipment_name LIKE :search OR asset_tag LIKE :search)";
+            $query .= " AND (e.equipment_name LIKE :search OR e.asset_tag LIKE :search)";
             $params[':search'] = "%$search%";
         }
 
         if ($status !== 'All Status' && !empty($status)) {
             if ($status === 'Active') {
-                $query .= " AND is_active = 1";
+                $query .= " AND e.is_active = 1";
             } elseif ($status === 'Inactive') {
-                $query .= " AND is_active = 0";
+                $query .= " AND e.is_active = 0";
             } else {
-                $query .= " AND status = :status";
+                $query .= " AND e.status = :status";
                 $params[':status'] = strtolower($status);
             }
+        }
+
+        if (!empty($campusId)) {
+            $query .= " AND e.campus_id = :campus_id";
+            $params[':campus_id'] = $campusId;
         }
 
         $stmt = $this->db->prepare($query);
@@ -95,9 +108,10 @@ class EquipmentManagementRepository
 
     public function addEquipment($data)
     {
-        $stmt = $this->db->prepare("INSERT INTO equipments (equipment_name, asset_tag, status, is_active, created_at) VALUES (:name, :asset_tag, :status, :is_active, NOW())");
+        $stmt = $this->db->prepare("INSERT INTO equipments (equipment_name, campus_id, asset_tag, status, is_active, created_at) VALUES (:name, :campus_id, :asset_tag, :status, :is_active, NOW())");
         $stmt->execute([
             ':name'      => $data['equipment_name'],
+            ':campus_id' => $data['campus_id'],
             ':asset_tag' => $data['asset_tag'],
             ':status'    => $data['status'],
             ':is_active' => $data['is_active']
@@ -107,11 +121,12 @@ class EquipmentManagementRepository
 
     public function updateEquipment($id, $data)
     {
-        $stmt = $this->db->prepare("UPDATE equipments SET equipment_name = :name, status = :status, updated_at = NOW() WHERE equipment_id = :id");
+        $stmt = $this->db->prepare("UPDATE equipments SET equipment_name = :name, campus_id = :campus_id, status = :status, updated_at = NOW() WHERE equipment_id = :id");
         return $stmt->execute([
-            ':id'     => $id,
-            ':name'   => $data['equipment_name'],
-            ':status' => $data['status']
+            ':id'        => $id,
+            ':name'      => $data['equipment_name'],
+            ':campus_id' => $data['campus_id'],
+            ':status'    => $data['status']
         ]);
     }
 
@@ -123,7 +138,7 @@ class EquipmentManagementRepository
 
     public function getById($id)
     {
-        $stmt = $this->db->prepare("SELECT * FROM equipments WHERE equipment_id = ? AND deleted_at IS NULL");
+        $stmt = $this->db->prepare("SELECT e.*, c.campus_name FROM equipments e INNER JOIN campuses c ON e.campus_id = c.campus_id WHERE e.equipment_id = ? AND e.deleted_at IS NULL AND c.is_active = 1");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
