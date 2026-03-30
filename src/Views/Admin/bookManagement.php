@@ -201,6 +201,7 @@
                     <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Borrowed')">Borrowed</div>
                     <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Damaged')">Damaged</div>
                     <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Lost')">Lost</div>
+                    <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Inactive')">Inactive</div>
                 </div>
             </div>
         </div>

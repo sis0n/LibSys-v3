@@ -190,13 +190,13 @@ class EquipmentManagementController extends Controller
     {
         try {
             if (!$id) $this->json(['success' => false, 'message' => 'ID required'], 400);
-            $success = $this->equipmentRepo->softDeleteEquipment((int)$id);
+            $success = $this->equipmentRepo->deactivateEquipment((int)$id);
 
             if ($success) {
-                $this->auditRepo->log($_SESSION['user_id'], 'DELETE', 'EQUIPMENTS', $id, "Deleted (archived) equipment ID $id");
-                $this->json(['success' => true, 'message' => 'Equipment deleted successfully']);
+                $this->auditRepo->log($_SESSION['user_id'], 'DELETE', 'EQUIPMENTS', $id, "Deactivated equipment ID $id");
+                $this->json(['success' => true, 'message' => 'Equipment deactivated successfully']);
             } else {
-                $this->json(['success' => false, 'message' => 'Failed to delete equipment'], 500);
+                $this->json(['success' => false, 'message' => 'Failed to deactivate equipment'], 500);
             }
         } catch (Exception $e) {
             $this->json(['success' => false, 'message' => $e->getMessage()], 500);

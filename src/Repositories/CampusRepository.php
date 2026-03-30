@@ -88,7 +88,7 @@ class CampusRepository
         if ((int)$stmt->fetchColumn() > 0) return true;
 
         // Check books
-        $stmt = $this->db->prepare("SELECT COUNT(*) FROM books WHERE campus_id = :id AND deleted_at IS NULL");
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM books WHERE campus_id = :id AND is_active = 1");
         $stmt->execute([':id' => $id]);
         if ((int)$stmt->fetchColumn() > 0) return true;
 

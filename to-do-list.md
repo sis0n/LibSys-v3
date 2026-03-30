@@ -14,17 +14,13 @@
 - [x] **Rule Enforcement:** Update borrowing logic to fetch policies based on the user's campus or the book's campus.
 
 ### 🗑️ Data Management Refactoring
-- [ ] **Remove Soft Delete:** Replace `deleted_at` (soft delete) with `is_active` status toggle for Books and Equipment to align with the new Campus Management pattern. User Management will retain soft delete functionality.
-- [ ] **Remove Restore Module:** Completely remove the 'Restore Books' module as it will be obsolete once soft delete is replaced by the `is_active` toggle.
-- [ ] **Books Table Cleanup:** Drop the `deleted_at` and `deleted_by` columns from the `books` table after the transition to the `is_active` toggle pattern.
+- [x] **Remove Soft Delete:** Replace `deleted_at` (soft delete) with `is_active` status toggle for Books and Equipment to align with the new Campus Management pattern. User Management will retain soft delete functionality.
+- [x] **Remove Restore Module:** Completely remove the 'Restore Books' module as it will be obsolete once soft delete is replaced by the `is_active` toggle.
+- [x] **Books Table Cleanup:** Drop the `deleted_at` and `deleted_by` columns from the `books` table after the transition to the `is_active` toggle pattern.
 - [ ] **Bulk Delete Approval Workflow:** Implement a request-based bulk delete system for 10+ records requiring approval from a higher role.
 - [ ] **Approval Queue Module:** Create a separate module where approvers can view, approve, or reject pending bulk delete requests with a time-limited approval window.
 - [ ] **Database Schema:** Create `bulk_delete_requests` and `bulk_delete_request_items` tables to track all requests and their statuses (pending/approved/rejected/executed/expired).
 
-### 🗑️ Data Management Refactoring
-- [ ] **Remove Soft Delete:** Replace `deleted_at` (soft delete) with `is_active` status toggle for Books and Equipment to align with the new Campus Management pattern. User Management will retain soft delete functionality.
-- [ ] **Remove Restore Module:** Completely remove the 'Restore Books' module as it will be obsolete once soft delete is replaced by the `is_active` toggle.
-- [ ] **Books Table Cleanup:** Drop the `deleted_at` and `deleted_by` columns from the `books` table after the transition to the `is_active` toggle pattern.
 
 ### 🎨 UI & Usability Fixes
 - [ ] **Dropdown Z-Index Fix:** Fix the layering issue where book catalog dropdowns (Campus, Sort, Status) appear behind the book cards in `public/js/student/bookCatalog.js`.

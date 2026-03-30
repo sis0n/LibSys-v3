@@ -73,14 +73,15 @@ class RouteConfig
     $router->get('api/staff/borrowing-history/pagination', 'StaffBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['staff']);
     $router->get('api/staff/borrowing-history/stats', 'StaffBorrowingHistoryController@fetchStats', ['staff']);
 
-    $router->get('api/librarian/restoreBooks/fetch', 'RestoreBookController@getDeletedBooksJson', ['restore books']);
-    $router->post('api/librarian/restoreBooks/restore', 'RestoreBookController@restore', ['restore books']);
-    $router->post('api/librarian/restoreBooks/archive/{id}', 'RestoreBookController@archiveBookAction', ['restore books']);
+
     $router->get('api/librarian/booksmanagement/fetch', 'BookManagementController@fetch', ['book management']);
     $router->get('api/librarian/booksmanagement/get/{id}', 'BookManagementController@getDetails', ['book management']);
+    $router->get('api/librarian/booksmanagement/details/{id}', 'BookManagementController@getDetails', ['book management']);
     $router->post('api/librarian/booksmanagement/store', 'BookManagementController@store', ['book management']);
+    $router->post('api/librarian/booksmanagement/add', 'BookManagementController@store', ['book management']);
     $router->post('api/librarian/booksmanagement/update/{id}', 'BookManagementController@update', ['book management']);
     $router->post('api/librarian/booksmanagement/delete/{id}', 'BookManagementController@destroy', ['book management']);
+    $router->post('api/librarian/booksmanagement/reactivate/{id}', 'BookManagementController@reactivate', ['book management']);
     $router->post('api/librarian/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['book management']);
     $router->post('api/librarian/booksmanagement/bulkImport', 'BookManagementController@bulkImport', ['book management']);
     $router->get('api/librarian/booksmanagement/history/{id}', 'BookManagementController@getBorrowingHistory', ['book management']);
@@ -119,14 +120,15 @@ class RouteConfig
     $router->get('api/librarian/dashboard/getData', 'DashboardController@getData', ['reports']);
 
 
-    $router->get('api/admin/restoreBooks/fetch', 'RestoreBookController@getDeletedBooksJson', ['restore books']);
-    $router->post('api/admin/restoreBooks/restore', 'RestoreBookController@restore', ['restore books']);
-    $router->post('api/admin/restoreBooks/archive/{id}', 'RestoreBookController@archiveBookAction', ['restore books']);
+
      $router->get('api/admin/booksmanagement/fetch', 'BookManagementController@fetch', ['book management']);
     $router->get('api/admin/booksmanagement/get/{id}', 'BookManagementController@getDetails', ['book management']);
+    $router->get('api/admin/booksmanagement/details/{id}', 'BookManagementController@getDetails', ['book management']);
     $router->post('api/admin/booksmanagement/store', 'BookManagementController@store', ['book management']);
+    $router->post('api/admin/booksmanagement/add', 'BookManagementController@store', ['book management']);
     $router->post('api/admin/booksmanagement/update/{id}', 'BookManagementController@update', ['book management']);
     $router->post('api/admin/booksmanagement/delete/{id}', 'BookManagementController@destroy', ['book management']);
+    $router->post('api/admin/booksmanagement/reactivate/{id}', 'BookManagementController@reactivate', ['book management']);
     $router->post('api/admin/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['book management']);
     $router->post('api/admin/booksmanagement/bulkImport', 'BookManagementController@bulkImport', ['book management']);
     $router->get('api/admin/booksmanagement/history/{id}', 'BookManagementController@getBorrowingHistory', ['book management']);
@@ -197,9 +199,12 @@ class RouteConfig
     $router->get('api/campuses/all', 'DataController@getAllCampuses');
     $router->get('api/superadmin/booksmanagement/fetch', 'BookManagementController@fetch', ['superadmin']);
     $router->get('api/superadmin/booksmanagement/get/{id}', 'BookManagementController@getDetails', ['superadmin']);
+    $router->get('api/superadmin/booksmanagement/details/{id}', 'BookManagementController@getDetails', ['superadmin']);
     $router->post('api/superadmin/booksmanagement/store', 'BookManagementController@store', ['superadmin']);
+    $router->post('api/superadmin/booksmanagement/add', 'BookManagementController@store', ['superadmin']);
     $router->post('api/superadmin/booksmanagement/update/{id}', 'BookManagementController@update', ['superadmin']);
     $router->post('api/superadmin/booksmanagement/delete/{id}', 'BookManagementController@destroy', ['superadmin']);
+    $router->post('api/superadmin/booksmanagement/reactivate/{id}', 'BookManagementController@reactivate', ['superadmin']);
     $router->post('api/superadmin/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['superadmin']);
     $router->get('api/superadmin/booksmanagement/history/{id}', 'BookManagementController@getBorrowingHistory', ['superadmin']);
     $router->get('api/superadmin/equipmentManagement/fetch', 'EquipmentManagementController@getAll', ['superadmin']);
@@ -220,9 +225,7 @@ class RouteConfig
     $router->get('api/superadmin/restoreUser/fetch', 'RestoreUserController@getDeletedUsersJson', ['superadmin']);
     $router->post('api/superadmin/restoreUser/restore', 'RestoreUserController@restore', ['superadmin']);
     $router->post('api/superadmin/restoreUser/delete/{id}', 'RestoreUserController@archive', ['superadmin']);
-    $router->get('api/superadmin/restoreBooks/fetch', 'RestoreBookController@getDeletedBooksJson', ['superadmin']);
-    $router->post('api/superadmin/restoreBooks/restore', 'RestoreBookController@restore', ['superadmin']);
-    $router->post('api/superadmin/restoreBooks/archive/{id}', 'RestoreBookController@archive', ['superadmin']);
+
     $router->get('api/superadmin/backup/export/zip/{table}', 'BackupController@exportBothFormats', ['superadmin']);
     $router->get('api/superadmin/backup/database/full', 'BackupController@initiateBackup', ['superadmin']);
     $router->get('api/superadmin/backup/secure_download/{filename}', 'BackupController@downloadBackup', ['superadmin']);

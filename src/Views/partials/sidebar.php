@@ -371,9 +371,9 @@ $baseUrl = BASE_URL;
                     </div>
                 </div>
 
-                <div class="sidebar-dropdown" data-pages='["backup", "restoreBooks", "restoreUser"]'>
+                <div class="sidebar-dropdown" data-pages='["backup", "restoreUser"]'>
                     <button
-                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["backup", "restoreBooks", "restoreUser"])) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
+                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["backup", "restoreUser"])) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
                         <span class="flex items-center gap-x-3">
                             <i class="ph ph-database text-2xl"></i>
                             <span class="text-base">Backup & Restore</span>
@@ -385,11 +385,6 @@ $baseUrl = BASE_URL;
                             class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'backup' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
                             <i class="ph ph-floppy-disk text-xl"></i>
                             <span class="text-base text-sm">Backup</span>
-                        </a>
-                        <a href="<?= $baseUrl ?>/restoreBooks"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'restoreBooks' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-book text-xl"></i>
-                            <span class="text-base text-sm">Restore Books</span>
                         </a>
                         <a href="<?= $baseUrl ?>/restoreUser"
                             class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'restoreUser' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">

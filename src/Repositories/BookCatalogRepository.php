@@ -18,7 +18,7 @@ class BookCatalogRepository
     $query = "SELECT b.*, c.campus_name 
               FROM books b 
               INNER JOIN campuses c ON b.campus_id = c.campus_id 
-              WHERE b.deleted_at IS NULL AND c.is_active = 1";
+              WHERE b.is_active = 1 AND c.is_active = 1";
     $params = [];
     if ($campusId !== null) {
       $query .= " AND b.campus_id = ?";
@@ -32,7 +32,7 @@ class BookCatalogRepository
 
   public function getBookById($id)
   {
-    $stmt = $this->db->prepare("SELECT b.*, c.campus_name FROM books b INNER JOIN campuses c ON b.campus_id = c.campus_id WHERE b.book_id = ? AND b.deleted_at IS NULL AND c.is_active = 1");
+    $stmt = $this->db->prepare("SELECT b.*, c.campus_name FROM books b INNER JOIN campuses c ON b.campus_id = c.campus_id WHERE b.book_id = ? AND b.is_active = 1 AND c.is_active = 1");
     $stmt->execute([$id]);
     return $stmt->fetch(\PDO::FETCH_ASSOC);
   }
@@ -91,13 +91,13 @@ class BookCatalogRepository
 
   public function deleteBook($id)
   {
-    $stmt = $this->db->prepare("UPDATE books SET deleted_at = NOW() WHERE book_id = ?");
+    $stmt = $this->db->prepare("UPDATE books SET is_active = 0 WHERE book_id = ?");
     return $stmt->execute([$id]);
   }
 
   public function updateAvailability($id, $status)
   {
-    $stmt = $this->db->prepare("UPDATE books SET availability = ? WHERE book_id = ? AND deleted_at IS NULL");
+    $stmt = $this->db->prepare("UPDATE books SET availability = ? WHERE book_id = ? AND is_active = 1");
     return $stmt->execute([$status, $id]);
   }
 
@@ -108,7 +108,7 @@ class BookCatalogRepository
             SELECT b.*, c.campus_name FROM books b 
             INNER JOIN campuses c ON b.campus_id = c.campus_id
               WHERE (b.title LIKE ? OR b.author LIKE ? OR b.accession_number LIKE ? OR b.subject LIKE ? OR b.book_isbn LIKE ?)
-              AND b.deleted_at IS NULL AND c.is_active = 1
+              AND b.is_active = 1 AND c.is_active = 1
         ");
     $stmt->execute([$search, $search, $search, $search, $search]);
     return $stmt->fetchAll(\PDO::FETCH_ASSOC);
@@ -118,7 +118,7 @@ class BookCatalogRepository
   {
     $query = "SELECT b.*, c.campus_name FROM books b 
               INNER JOIN campuses c ON b.campus_id = c.campus_id
-              WHERE b.deleted_at IS NULL AND b.availability NOT IN ('lost', 'damaged') AND c.is_active = 1";
+              WHERE b.is_active = 1 AND b.availability NOT IN ('lost', 'damaged') AND c.is_active = 1";
     $place_holder = [];
 
     foreach ($filters as $column => $value) {
@@ -155,7 +155,7 @@ class BookCatalogRepository
     $query = "SELECT b.*, c.campus_name 
               FROM books b 
               INNER JOIN campuses c ON b.campus_id = c.campus_id 
-              WHERE b.deleted_at IS NULL AND b.availability NOT IN ('lost', 'damaged') AND c.is_active = 1";
+              WHERE b.is_active = 1 AND b.availability NOT IN ('lost', 'damaged') AND c.is_active = 1";
     $params = [];
 
     if ($campusId !== null) {
@@ -207,7 +207,7 @@ class BookCatalogRepository
 
   public function countAvailableBooks(?int $campusId = null): int
   {
-    $query = "SELECT COUNT(*) FROM books b INNER JOIN campuses c ON b.campus_id = c.campus_id WHERE b.availability = 'available' AND b.deleted_at IS NULL AND c.is_active = 1";
+    $query = "SELECT COUNT(*) FROM books b INNER JOIN campuses c ON b.campus_id = c.campus_id WHERE b.availability = 'available' AND b.is_active = 1 AND c.is_active = 1";
     $params = [];
     if ($campusId !== null) {
         $query .= " AND b.campus_id = ?";
@@ -224,7 +224,7 @@ class BookCatalogRepository
     string $status = '',
     ?int $campusId = null
   ): int {
-    $query = "SELECT COUNT(*) FROM books b INNER JOIN campuses c ON b.campus_id = c.campus_id WHERE b.deleted_at IS NULL AND b.availability NOT IN ('lost', 'damaged') AND c.is_active = 1";
+    $query = "SELECT COUNT(*) FROM books b INNER JOIN campuses c ON b.campus_id = c.campus_id WHERE b.is_active = 1 AND b.availability NOT IN ('lost', 'damaged') AND c.is_active = 1";
     $params = [];
 
     if ($campusId !== null) {

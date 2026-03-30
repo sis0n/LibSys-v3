@@ -311,7 +311,7 @@ class ReportRepository
                     SUM(CASE WHEN DATE(deleted_at) = CURDATE() THEN 1 ELSE 0 END) as today,
                     COUNT(*) as filtered_count
                 FROM books
-                WHERE deleted_at IS NOT NULL $whereClause
+                WHERE is_active = 0 $whereClause
                 GROUP BY YEAR(deleted_at)
             ";
             $stmt = $this->db->prepare($sql);
@@ -503,16 +503,16 @@ class ReportRepository
     public function getLibraryResourcesData()
     {
         try {
-            // Count active books (available or borrowed, not deleted)
-            $stmtBooks = $this->db->query("SELECT COUNT(*) FROM books WHERE deleted_at IS NULL");
+            // Count active books (available or borrowed, not deactivated)
+            $stmtBooks = $this->db->query("SELECT COUNT(*) FROM books WHERE is_active = 1");
             $totalBooks = $stmtBooks->fetchColumn();
 
             // Count available books specifically
-            $stmtAvail = $this->db->query("SELECT COUNT(*) FROM books WHERE deleted_at IS NULL AND availability = 'available'");
+            $stmtAvail = $this->db->query("SELECT COUNT(*) FROM books WHERE is_active = 1 AND availability = 'available'");
             $availableBooks = $stmtAvail->fetchColumn();
 
-            // Count active equipments (not deleted)
-            $stmtEquip = $this->db->query("SELECT COUNT(*) FROM equipments WHERE deleted_at IS NULL");
+            // Count active equipments (not deactivated)
+            $stmtEquip = $this->db->query("SELECT COUNT(*) FROM equipments WHERE is_active = 1");
             $totalEquip = $stmtEquip->fetchColumn();
 
             return [

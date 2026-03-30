@@ -98,7 +98,7 @@ class BookManagementController extends Controller
     public function getDetails($id)
     {
         try {
-            $book = $this->bookRepo->findBookById($id);
+            $book = $this->bookRepo->findBookByIdAll($id);
             if (!$book) {
                 return $this->json(['success' => false, 'message' => 'Book not found.'], 404);
             }
@@ -197,6 +197,35 @@ class BookManagementController extends Controller
         }
     }
 
+    public function reactivate($id)
+    {
+        $bookId = (int)$id;
+        $updatedByUserId = $_SESSION['user_id'] ?? null;
+
+        if ($updatedByUserId === null) {
+            return $this->json(['success' => false, 'message' => 'Authentication required.'], 401);
+        }
+
+        try {
+            $book = $this->bookRepo->findBookByIdAll($bookId); // Need a new repo method or update existing
+
+            if (!$book) {
+                return $this->json(['success' => false, 'message' => 'Book not found.'], 404);
+            }
+
+            $success = $this->bookRepo->toggleActiveStatus($bookId, 1, $updatedByUserId);
+
+            if ($success) {
+                $this->auditRepo->log($updatedByUserId, 'REACTIVATE', 'BOOKS', $book['accession_number'], "Reactivated book: {$book['title']}");
+                return $this->json(['success' => true, 'message' => 'Book reactivated successfully!']);
+            }
+
+            return $this->json(['success' => false, 'message' => 'Failed to reactivate book.'], 500);
+        } catch (\Exception $e) {
+            return $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function destroy($id)
     {
         $bookId = (int)$id;
@@ -208,40 +237,23 @@ class BookManagementController extends Controller
 
         try {
             $book = $this->bookRepo->findBookById($bookId);
-
             if (!$book) {
                 return $this->json(['success' => false, 'message' => 'Book not found.'], 404);
             }
 
             if ($book['availability'] === 'borrowed') {
-                return $this->json([
-                    'success' => false,
-                    'message' => 'Cannot delete book. It is currently borrowed.'
-                ], 409);
+                return $this->json(['success' => false, 'message' => "Cannot deactivate '{$book['title']}': It is currently borrowed."], 400);
             }
 
             $result = $this->bookRepo->deleteBook($bookId, $deletedByUserId);
-
             if ($result['success']) {
-                $this->auditRepo->log($deletedByUserId, 'DELETE', 'BOOKS', $book['accession_number'], "Deleted book: {$book['title']}");
+                $this->auditRepo->log($deletedByUserId, 'DEACTIVATE', 'BOOKS', $book['accession_number'], "Deactivated book: {$book['title']}");
+                return $this->json(['success' => true, 'message' => 'Book deactivated successfully!']);
             }
 
-            $status = $result['success'] ? 200 : 400;
-
-            if ($result['message'] === 'Book not found.') $status = 404;
-            if ($result['message'] === 'Book already deleted.') $status = 409;
-
-            return $this->json($result, $status);
-        } catch (\PDOException $e) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Internal server error.'
-            ], 500);
+            return $this->json(['success' => false, 'message' => $result['message'] ?? 'Failed to deactivate book.'], 500);
         } catch (\Exception $e) {
-            return $this->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
+            return $this->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 

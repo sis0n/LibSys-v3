@@ -22,10 +22,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const csvFile = document.getElementById("csvFile");
   const uploadText = document.querySelector(
     '#importModal label[for="csvFile"] p:first-of-type',
-  ); // Get the specific span for text
+  );
   const uploadInstruction = document.querySelector(
     '#importModal label[for="csvFile"] p:last-of-type',
-  ); // Get the specific span for instruction text
+  );
 
   const addBookModal = document.getElementById("addBookModal");
   const openAddBookBtn = document.getElementById("openAddBookBtn");
@@ -66,6 +66,11 @@ document.addEventListener("DOMContentLoaded", () => {
   let searchTimeout;
 
   // --- Helpers ---
+  function truncateText(text, length = 30) {
+    if (!text) return "N/A";
+    return text.length > length ? text.substring(0, length) + "..." : text;
+  }
+
   function showSuccessToast(title, body = "Successfully processed.") {
     if (typeof Swal == "undefined") return alert(title);
     Swal.fire({
@@ -122,26 +127,76 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  async function showConfirmationModal(title, text, confirmText = "Confirm") {
+    if (typeof Swal == "undefined") return confirm(title);
+    const result = await Swal.fire({
+      background: "transparent",
+      buttonsStyling: false,
+      width: "450px",
+      html: `
+                <div class="flex flex-col text-center">
+                    <div class="flex justify-center mb-3">
+                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 text-orange-600">
+                            <i class="ph ph-warning-circle text-3xl"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800">${title}</h3>
+                    <p class="text-[14px] text-gray-700 mt-1">${text}</p>
+                </div>
+            `,
+      showCancelButton: true,
+      confirmButtonText: confirmText,
+      cancelButtonText: "Cancel",
+      customClass: {
+        popup:
+          "!rounded-xl !shadow-lg !p-6 !bg-white !border-2 !border-orange-400 shadow-[0_0_15px_#ffb34780]",
+        confirmButton:
+          "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700 !mx-2 !font-semibold !text-base",
+        cancelButton:
+          "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300 !mx-2 !font-semibold !text-base",
+        actions: "!mt-4",
+      },
+    });
+    return result.isConfirmed;
+  }
+
   // --- Modals & Modifiers ---
+
   const openModal = (modal) => {
     modal.classList.remove("hidden");
+    // Force reflow
+    modal.offsetHeight;
     modal.classList.add("opacity-100");
-    modal
-      .querySelector(".animate-fadeIn, .animate-scaleIn")
-      .classList.remove("animate-fadeOut", "opacity-0", "scale-95");
+    modal.classList.remove("opacity-0");
+    
+    const content = modal.querySelector(".animate-fadeIn, .animate-scaleIn, #viewBookModalContent");
+    if (content) {
+      content.classList.remove("animate-fadeOut", "opacity-0", "scale-95");
+      if (content.id === "viewBookModalContent") {
+        content.classList.remove("scale-95");
+        content.classList.add("scale-100");
+      }
+    }
   };
 
   const closeModal = (modal) => {
     modal.classList.add("opacity-0");
     modal.classList.remove("opacity-100");
-    modal
-      .querySelector(".animate-fadeIn, .animate-scaleIn")
-      .classList.add("animate-fadeOut", "opacity-0", "scale-95");
+    
+    const content = modal.querySelector(".animate-fadeIn, .animate-scaleIn, #viewBookModalContent");
+    if (content) {
+      content.classList.add("animate-fadeOut", "opacity-0");
+      if (content.id === "viewBookModalContent") {
+        content.classList.add("scale-95");
+        content.classList.remove("scale-100");
+      }
+    }
+
     setTimeout(() => {
       modal.classList.add("hidden");
-      modal
-        .querySelector(".animate-fadeOut, .opacity-0")
-        .classList.remove("animate-fadeOut", "opacity-0", "scale-95");
+      if (content) {
+        content.classList.remove("animate-fadeOut", "opacity-0");
+      }
     }, 300);
   };
 
@@ -183,20 +238,18 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await response.json();
 
       if (data.success) {
-        // Populate Filter Dropdown
         const filterMenu = document.getElementById("campusDropdownMenu");
         const allOption = filterMenu.querySelector(".campus-item");
-        filterMenu.innerHTML = ""; // Clear existing options
-        filterMenu.appendChild(allOption); // Add back the "All Campuses" option
+        filterMenu.innerHTML = "";
+        filterMenu.appendChild(allOption);
 
-        // Populate Modal Selects
         const addSelect = addBookForm.querySelector('select[name="campus_id"]');
         const editSelect = editBookForm.querySelector(
           'select[name="campus_id"]',
         );
 
-        addSelect.innerHTML = '<option value="">Select Campus</option>'; // Reset add modal select
-        editSelect.innerHTML = '<option value="">Select Campus</option>'; // Reset edit modal select
+        addSelect.innerHTML = '<option value="">Select Campus</option>';
+        editSelect.innerHTML = '<option value="">Select Campus</option>';
 
         data.campuses.forEach((campus) => {
           const item = document.createElement("div");
@@ -233,14 +286,19 @@ document.addEventListener("DOMContentLoaded", () => {
     books.forEach((book) => {
       const isSelected = selectedBookIds.has(book.book_id);
       const row = document.createElement("tr");
-      row.className = `hover:bg-orange-50 transition-colors ${isSelected ? "bg-orange-100" : ""}`;
+      row.className = `hover:bg-orange-50 transition-colors ${isSelected ? "bg-orange-100" : ""} ${book.is_active == 0 ? "opacity-60 bg-gray-50" : ""}`;
       row.innerHTML = `
                 <td class="py-3 px-4 ${isMultiSelectMode ? "" : "hidden"}">
                     <input type="checkbox" class="accent-orange-500" ${isSelected ? "checked" : ""} onchange="toggleBookSelection(${book.book_id})">
                 </td>
                 <td class="py-3 px-4">
-                    <p class="font-medium text-gray-900">${book.title}</p>
-                    <p class="text-xs text-gray-500 font-mono">${book.accession_number} | ${book.call_number}</p>
+                    <div class="flex items-center gap-2">
+                        ${book.is_active == 0 ? '<i class="ph ph-eye-slash text-gray-400" title="Inactive"></i>' : ""}
+                        <div>
+                            <p class="font-medium ${book.is_active == 0 ? "text-gray-500" : "text-gray-900"}">${truncateText(book.title, 35)}</p>
+                            <p class="text-xs text-gray-500 font-mono">${book.accession_number} | ${book.call_number}</p>
+                        </div>
+                    </div>
                 </td>
                 <td class="py-3 px-4 text-center">
                     <span class="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
@@ -249,20 +307,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 </td>
                 <td class="py-3 px-4 text-gray-600">${book.author || "N/A"}</td>
                 <td class="py-3 px-4 text-center">
-                    <span class="px-2 py-1 rounded-full text-[10px] font-bold ${getStatusClass(book.availability)}">
-                        ${book.availability.toUpperCase()}
+                    <span onclick="toggleBookActive(${book.book_id}, ${book.is_active}, '${book.title.replace(/'/g, "\\'")}')" 
+                          class="px-2 py-1 rounded-full text-[10px] font-bold cursor-pointer hover:opacity-80 transition ${getStatusClass(book.availability, book.is_active)}">
+                        ${book.is_active == 1 ? book.availability.toUpperCase() : "INACTIVE"}
                     </span>
                 </td>
                 <td class="py-3 px-4">
                     <div class="flex items-center justify-center gap-2">
-                        <button onclick="viewBook(${book.book_id})" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition" title="View Details">
+                        <button onclick="viewHistory(${book.book_id})" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition" title="View History">
                             <i class="ph ph-eye text-lg"></i>
+                        </button>
+                        <button onclick="viewBook(${book.book_id})" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded-md transition" title="View Details">
+                            <i class="ph ph-info text-lg"></i>
                         </button>
                         <button onclick="editBook(${book.book_id})" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-md transition" title="Edit Book">
                             <i class="ph ph-note-pencil text-lg"></i>
-                        </button>
-                        <button onclick="deleteBook(${book.book_id}, '${book.title}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition" title="Delete Book">
-                            <i class="ph ph-trash text-lg"></i>
                         </button>
                     </div>
                 </td>
@@ -271,7 +330,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  const getStatusClass = (status) => {
+  const getStatusClass = (status, isActive = 1) => {
+    if (isActive == 0) return "bg-gray-300 text-gray-700";
     switch (status.toLowerCase()) {
       case "available":
         return "bg-green-100 text-green-700";
@@ -283,6 +343,50 @@ document.addEventListener("DOMContentLoaded", () => {
         return "bg-red-100 text-red-700";
       default:
         return "bg-gray-100 text-gray-700";
+    }
+  };
+
+  window.toggleBookActive = async (id, currentStatus, title) => {
+    const newStatus = currentStatus == 1 ? 0 : 1;
+    const actionText = newStatus == 1 ? "reactivate" : "deactivate";
+    const confirmBtnText = newStatus == 1 ? "Yes, Reactivate" : "Yes, Deactivate";
+
+    const isConfirmed = await showConfirmationModal(
+      `Confirm ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}`,
+      `Are you sure you want to ${actionText} **"${title}"**?`,
+      confirmBtnText,
+    );
+
+    if (!isConfirmed) return;
+
+    showLoadingModal(
+      `${actionText.charAt(0).toUpperCase() + actionText.slice(1)}ing book...`,
+      "Please wait.",
+    );
+
+    try {
+      const endpoint =
+        newStatus == 1
+          ? `api/superadmin/booksmanagement/reactivate/${id}`
+          : `api/superadmin/booksmanagement/delete/${id}`;
+
+      const response = await fetch(endpoint, { method: "POST" });
+      const data = await response.json();
+      Swal.close();
+
+      if (data.success) {
+        showSuccessToast(
+          "Success",
+          `Book ${actionText}d successfully!`,
+        );
+        fetchBooks();
+      } else {
+        showErrorToast("Error", data.message);
+      }
+    } catch (error) {
+      Swal.close();
+      console.error(`Error ${actionText}ing book:`, error);
+      showErrorToast("Error", `Failed to ${actionText} book.`);
     }
   };
 
@@ -301,7 +405,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const totalPages = Math.ceil(totalCount / limit);
     if (totalPages <= 1) return;
 
-    // Previous
     paginationList.innerHTML += `
             <li>
                 <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? "disabled" : ""} 
@@ -311,7 +414,6 @@ document.addEventListener("DOMContentLoaded", () => {
             </li>
         `;
 
-    // Pages
     for (let i = 1; i <= totalPages; i++) {
       if (
         i === 1 ||
@@ -331,7 +433,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    // Next
     paginationList.innerHTML += `
             <li>
                 <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? "disabled" : ""} 
@@ -342,7 +443,6 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
   };
 
-  // --- Actions ---
   window.changePage = (page) => {
     if (page < 1 || page > Math.ceil(totalCount / limit)) return;
     currentPage = page;
@@ -380,7 +480,55 @@ document.addEventListener("DOMContentLoaded", () => {
       selectedBookIds.add(id);
     }
     selectionCount.textContent = selectedBookIds.size;
-    renderTable(); // Re-render to update row selection visuals
+    renderTable();
+  };
+
+  window.viewHistory = async (id) => {
+    const historyTableBody = document.getElementById("historyTableBody");
+    const historyEmptyState = document.getElementById("historyEmptyState");
+    const historyTableContainer = document.getElementById(
+      "historyTableContainer",
+    );
+
+    historyTableBody.innerHTML = "";
+    historyEmptyState.classList.add("hidden");
+    historyTableContainer.classList.remove("hidden");
+
+    try {
+      const response = await fetch(
+        `api/superadmin/booksmanagement/history/${id}`,
+      );
+      const data = await response.json();
+
+      if (data.success && data.history.length > 0) {
+        data.history.forEach((row) => {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-orange-50 transition-colors";
+          const fullName = `${row.first_name || ""} ${row.last_name || ""}`.trim() || "N/A";
+          const idRole = `${row.identifier || "N/A"} / <span class="capitalize">${row.role || "N/A"}</span>`;
+          
+          tr.innerHTML = `
+                        <td class="px-4 py-3 text-sm text-gray-700 font-medium">${fullName}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${idRole}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${row.borrowed_at || "N/A"}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${row.returned_at || '<span class="text-orange-600 font-semibold italic text-[11px]">Pending</span>'}</td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${row.status === "returned" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}">
+                                ${row.status}
+                            </span>
+                        </td>
+                    `;
+          historyTableBody.appendChild(tr);
+        });
+        openModal(historyModal);
+      } else {
+        historyEmptyState.classList.remove("hidden");
+        historyTableContainer.classList.add("hidden");
+        openModal(historyModal);
+      }
+    } catch (error) {
+      console.error("Error fetching borrowing history:", error);
+    }
   };
 
   window.viewBook = async (id) => {
@@ -431,7 +579,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch (error) {
       console.error("Error viewing book:", error);
-      showToast("Failed to load book details.", "error");
     }
   };
 
@@ -486,62 +633,25 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch (error) {
       console.error("Error loading book for edit:", error);
-      showToast("Failed to load book for editing.", "error");
     }
   };
 
-  window.deleteBook = async (id, title) => {
-    const result = await Swal.fire({
-      title: "Are you sure?",
-      text: `You are about to delete "${title}". This action cannot be undone.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete it!",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        const response = await fetch(
-          `api/superadmin/booksmanagement/delete/${id}`,
-          { method: "POST" },
-        );
-        const data = await response.json();
-        if (data.success) {
-          showToast("Book deleted successfully!");
-          fetchBooks(); // Refresh list
-        } else {
-          Swal.fire("Error", data.message, "error");
-        }
-      } catch (error) {
-        console.error("Error deleting book:", error);
-        showToast("Failed to delete book.", "error");
-      }
-    }
-  };
-
-  // --- Bulk Import Modal Handling ---
   bulkImportBtn.addEventListener("click", () => {
     openModal(importModal);
-    bulkImportForm.reset(); // Reset form when modal opens
+    bulkImportForm.reset();
     if (uploadText)
       uploadText.textContent = "Drop CSV file here or click to browse";
-    if (uploadInstruction) uploadInstruction.style.display = ""; // Ensure instruction is visible
+    if (uploadInstruction) uploadInstruction.style.display = "";
   });
 
   [closeImportModal, cancelImport].forEach((btn) =>
     btn.addEventListener("click", () => closeModal(importModal)),
   );
 
-  // Close modal when clicking outside content
   importModal.addEventListener("click", (e) => {
-    if (e.target === importModal) {
-      closeModal(importModal);
-    }
+    if (e.target === importModal) closeModal(importModal);
   });
 
-  // --- Bulk Import Form Submission ---
   bulkImportForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const formData = new FormData(bulkImportForm);
@@ -553,19 +663,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      Swal.fire(
-        "Error",
-        "Invalid file type. Please upload a CSV file.",
-        "warning",
-      );
-      return;
-    }
-
-    showLoadingModal(
-      "Importing Books...",
-      "Please wait while we process your CSV file.",
-    );
+    showLoadingModal("Importing Books...", "Please wait.");
     try {
       const response = await fetch(
         "api/superadmin/booksmanagement/bulkImport",
@@ -577,30 +675,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await response.json();
 
       if (data.success) {
-        showSuccessToast(
-          "Import Successful!",
-          `Imported ${data.imported} books.`,
-        );
+        showSuccessToast("Import Successful!", `Imported ${data.imported} books.`);
         closeModal(importModal);
         fetchBooks();
       } else {
-        showErrorToast(
-          "Import Failed",
-          data.message || "An unknown error occurred during import.",
-        );
+        showErrorToast("Import Failed", data.message);
       }
     } catch (error) {
-      console.error("Full error:", error);
-
-      try {
-        const text = await response.text();
-        console.error("Raw response:", text);
-      } catch (e) {}
-
-      showErrorToast(
-        "Import Failed",
-        "An error occurred while processing the bulk import. Please try again.",
-      );
+      console.error("Import error:", error);
+      showErrorToast("Import Failed", "An error occurred.");
     }
   });
 
@@ -609,16 +692,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (file) {
       if (uploadText) uploadText.textContent = file.name;
       if (uploadInstruction) uploadInstruction.style.display = "none";
-
       bulkImportForm.requestSubmit();
-    } else {
-      if (uploadText)
-        uploadText.textContent = "Drop CSV file here or click to browse";
-      if (uploadInstruction) uploadInstruction.style.display = "";
     }
   });
 
-  // --- Event Listeners ---
   bookSearchInput.addEventListener("input", () => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
@@ -631,7 +708,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const menu = btn.nextElementSibling;
-      // Close other dropdowns if this one is opened
       document.querySelectorAll(".absolute.z-20").forEach((m) => {
         if (m !== menu) m.classList.add("hidden");
       });
@@ -639,11 +715,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Close dropdowns when clicking anywhere else on the document
   document.addEventListener("click", () => {
-    document
-      .querySelectorAll(".absolute.z-20")
-      .forEach((m) => m.classList.add("hidden"));
+    document.querySelectorAll(".absolute.z-20").forEach((m) => m.classList.add("hidden"));
   });
 
   openAddBookBtn.addEventListener("click", () => openModal(addBookModal));
@@ -651,51 +724,24 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", () => {
       closeModal(addBookModal);
       addBookForm.reset();
-      document.getElementById("previewContainer").classList.add("hidden"); // Hide image preview on close
+      document.getElementById("previewContainer").classList.add("hidden");
     }),
   );
-  // Close modal when clicking outside content for Add Book Modal
-  addBookModal.addEventListener("click", (e) => {
-    if (e.target === addBookModal) {
-      closeModal(addBookModal);
-      addBookForm.reset();
-      document.getElementById("previewContainer").classList.add("hidden");
-    }
-  });
 
   [closeEditBookModal, cancelEditBook].forEach((btn) =>
     btn.addEventListener("click", () => {
       closeModal(editBookModal);
-      editBookForm.reset(); // Reset form on cancel/close
+      editBookForm.reset();
     }),
   );
-  // Close modal when clicking outside content for Edit Book Modal
-  editBookModal.addEventListener("click", (e) => {
-    if (e.target === editBookModal) {
-      closeModal(editBookModal);
-      editBookForm.reset();
-    }
-  });
 
   [closeViewModal, closeViewModalBtn].forEach((btn) =>
     btn.addEventListener("click", () => closeModal(viewBookModal)),
   );
-  // Close modal when clicking outside content for View Book Modal
-  viewBookModal.addEventListener("click", (e) => {
-    if (e.target === viewBookModal) {
-      closeModal(viewBookModal);
-    }
-  });
 
   [closeHistoryModal, closeHistoryBtn].forEach((btn) =>
     btn.addEventListener("click", () => closeModal(historyModal)),
   );
-  // Close modal when clicking outside content for History Modal
-  historyModal.addEventListener("click", (e) => {
-    if (e.target === historyModal) {
-      closeModal(historyModal);
-    }
-  });
 
   addBookForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -707,18 +753,16 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       const data = await response.json();
       if (data.success) {
-        showToast("Book added successfully!");
+        showSuccessToast("Book added successfully!");
         closeModal(addBookModal);
         addBookForm.reset();
-        // Hide image preview after successful add
         document.getElementById("previewContainer").classList.add("hidden");
-        fetchBooks(); // Refresh list
+        fetchBooks();
       } else {
         Swal.fire("Error", data.message, "error");
       }
     } catch (error) {
       console.error("Error adding book:", error);
-      showToast("Failed to add book.", "error");
     }
   });
 
@@ -736,66 +780,56 @@ document.addEventListener("DOMContentLoaded", () => {
       );
       const data = await response.json();
       if (data.success) {
-        showToast("Book updated successfully!");
+        showSuccessToast("Book updated successfully!");
         closeModal(editBookModal);
-        fetchBooks(); // Refresh list
+        fetchBooks();
       } else {
         Swal.fire("Error", data.message, "error");
       }
     } catch (error) {
       console.error("Error updating book:", error);
-      showToast("Failed to update book.", "error");
     }
   });
 
-  // Multi-select Logic
   multiSelectBtn.addEventListener("click", () => {
     isMultiSelectMode = true;
     document.getElementById("multi-select-header").classList.remove("hidden");
-    multiSelectBtn.classList.add("hidden"); // Hide multi-select trigger button
-    multiSelectActions.classList.remove("hidden"); // Show delete/cancel actions
-    selectionCount.textContent = selectedBookIds.size; // Update count display
-    renderTable(); // Re-render table to show checkboxes
+    multiSelectBtn.classList.add("hidden");
+    multiSelectActions.classList.remove("hidden");
+    selectionCount.textContent = selectedBookIds.size;
+    renderTable();
   });
 
   cancelSelectionBtn.addEventListener("click", () => {
     isMultiSelectMode = false;
-    selectedBookIds.clear(); // Clear selections
+    selectedBookIds.clear();
     document.getElementById("multi-select-header").classList.add("hidden");
-    multiSelectBtn.classList.remove("hidden"); // Show multi-select trigger button
-    multiSelectActions.classList.add("hidden"); // Hide delete/cancel actions
+    multiSelectBtn.classList.remove("hidden");
+    multiSelectActions.classList.add("hidden");
     selectionCount.textContent = "0";
-    renderTable(); // Re-render table to hide checkboxes
+    renderTable();
   });
 
   selectAllBtn.addEventListener("click", () => {
     if (selectedBookIds.size === books.length) {
-      selectedBookIds.clear(); // Deselect all
+      selectedBookIds.clear();
     } else {
-      // Select all
       books.forEach((b) => selectedBookIds.add(b.book_id));
     }
     selectionCount.textContent = selectedBookIds.size;
-    renderTable(); // Re-render to update visuals
+    renderTable();
   });
 
   multiDeleteBtn.addEventListener("click", async () => {
-    if (selectedBookIds.size === 0) {
-      showToast("Please select books to delete.", "info");
-      return;
-    }
+    if (selectedBookIds.size === 0) return;
 
-    const result = await Swal.fire({
-      title: "Bulk Delete",
-      html: `Are you sure you want to delete ${selectedBookIds.size} books? This action cannot be undone.`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Yes, delete them!",
-    });
+    const result = await showConfirmationModal(
+      "Bulk Deactivate",
+      `Are you sure you want to deactivate ${selectedBookIds.size} books?`,
+      "Yes, Deactivate Them!"
+    );
 
-    if (result.isConfirmed) {
+    if (result) {
       try {
         const response = await fetch(
           "api/superadmin/booksmanagement/deleteMultiple",
@@ -807,126 +841,63 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         const data = await response.json();
         if (data.success) {
-          showToast(`Successfully deleted ${data.deleted_count} book(s)!`);
-          selectedBookIds.clear(); // Clear selections
-          cancelSelectionBtn.click(); // Exit multi-select mode
-          fetchBooks(); // Refresh list
+          showSuccessToast(`Successfully deactivated ${data.deleted_count} book(s)!`);
+          selectedBookIds.clear();
+          cancelSelectionBtn.click();
+          fetchBooks();
         } else {
-          // Display errors if any
-          Swal.fire(
-            "Error",
-            `Failed to delete some books. ${data.errors.join("<br>")}`,
-            "error",
-          );
+          Swal.fire("Error", data.message, "error");
         }
       } catch (error) {
         console.error("Error bulk deleting books:", error);
-        showToast("Failed to delete books. Please try again.", "error");
       }
     }
   });
 
-  // Image Previews for Add Book
-  const setupAddBookPreview = (
-    inputId,
-    previewImgId,
-    containerId,
-    textElementId,
-  ) => {
+  // Image Previews
+  const setupPreview = (inputId, previewImgId, containerId, textElementId) => {
     const input = document.getElementById(inputId);
-    const previewImg = document.getElementById(previewImgId);
-    const container = document.getElementById(containerId);
-    const textElement = document.getElementById(textElementId);
-
     input.addEventListener("change", () => {
       const file = input.files[0];
       if (file) {
         const reader = new FileReader();
         reader.onload = (e) => {
-          previewImg.src = e.target.result;
-          container.classList.remove("hidden");
-          if (textElement) textElement.textContent = "Change Image";
+          document.getElementById(previewImgId).src = e.target.result;
+          document.getElementById(containerId).classList.remove("hidden");
+          if (textElementId) document.getElementById(textElementId).textContent = "Change Image";
         };
         reader.readAsDataURL(file);
-      } else {
-        // Reset if file input is cleared
-        previewImg.src = "";
-        container.classList.add("hidden");
-        if (textElement) textElement.textContent = "Upload Image";
       }
     });
   };
 
-  // Image Previews for Edit Book
-  const setupEditBookPreview = (
-    inputId,
-    previewImgId,
-    containerId,
-    textElementId,
-    removeBtnId,
-    removeInputId,
-  ) => {
-    const input = document.getElementById(inputId);
-    const previewImg = document.getElementById(previewImgId);
-    const container = document.getElementById(containerId);
-    const textElement = document.getElementById(textElementId);
-    const removeBtn = document.getElementById(removeBtnId);
-    const removeInput = document.getElementById(removeInputId);
-
-    input.addEventListener("change", () => {
-      const file = input.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          previewImg.src = e.target.result;
-          container.classList.remove("hidden");
-          removeBtn.classList.remove("hidden"); // Show remove button
-          if (textElement) textElement.textContent = "Change Image";
-          removeInput.value = "0"; // Reset remove flag
-        };
-        reader.readAsDataURL(file);
-      } else {
-        // If user clears the file input, revert to original state if any, or hide.
-        // This part might need more context on how to revert if not deleting.
-        // For now, if file is cleared, we hide preview and show upload text.
-        previewImg.src = "";
-        container.classList.add("hidden");
-        removeBtn.classList.add("hidden");
-        if (textElement) textElement.textContent = "Upload Image";
-        removeInput.value = "0";
-      }
-    });
-
-    // Handler for removing the current image
-    if (removeBtn) {
-      removeBtn.addEventListener("click", () => {
-        previewImg.src = "";
-        container.classList.add("hidden");
-        removeBtn.classList.add("hidden");
-        if (textElement) textElement.textContent = "Upload Image";
-        removeInput.value = "1"; // Mark for removal
-        input.value = ""; // Clear the file input itself
-      });
+  setupPreview("book_image", "previewImage", "previewContainer", "uploadText");
+  
+  const editInput = document.getElementById("edit_book_image");
+  editInput.addEventListener("change", () => {
+    const file = editInput.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById("editPreviewImage").src = e.target.result;
+        document.getElementById("editPreviewContainer").classList.remove("hidden");
+        document.getElementById("removeImageBtn").classList.remove("hidden");
+        document.getElementById("editUploadText").textContent = "Change Image";
+        document.getElementById("edit_remove_image").value = "0";
+      };
+      reader.readAsDataURL(file);
     }
-  };
+  });
 
-  // Initialize Image Previews
-  setupAddBookPreview(
-    "book_image",
-    "previewImage",
-    "previewContainer",
-    "uploadText",
-  );
-  setupEditBookPreview(
-    "edit_book_image",
-    "editPreviewImage",
-    "editPreviewContainer",
-    "editUploadText",
-    "removeImageBtn",
-    "edit_remove_image",
-  );
+  document.getElementById("removeImageBtn").addEventListener("click", () => {
+    document.getElementById("editPreviewImage").src = "";
+    document.getElementById("editPreviewContainer").classList.add("hidden");
+    document.getElementById("removeImageBtn").classList.add("hidden");
+    document.getElementById("editUploadText").textContent = "Upload Image";
+    document.getElementById("edit_remove_image").value = "1";
+    editInput.value = "";
+  });
 
-  // Initial Load
   loadCampuses();
   fetchBooks();
 });

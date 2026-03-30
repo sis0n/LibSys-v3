@@ -8,8 +8,8 @@ use PDO;
 class BookManagementRepository
 {
     private $db;
-    private $baseQuery = "SELECT b.*, c.campus_name FROM books b LEFT JOIN campuses c ON b.campus_id = c.campus_id WHERE b.deleted_at IS NULL";
-    private $countQuery = "SELECT COUNT(*) FROM books WHERE deleted_at IS NULL";
+    private $baseQuery = "SELECT b.*, c.campus_name FROM books b LEFT JOIN campuses c ON b.campus_id = c.campus_id WHERE 1=1";
+    private $countQuery = "SELECT COUNT(*) FROM books WHERE 1=1";
 
     public function __construct()
     {
@@ -24,6 +24,16 @@ class BookManagementRepository
         $query = $this->baseQuery;
         $params = [];
 
+        if (strtolower($status) === 'inactive') {
+            $query .= " AND b.is_active = 0";
+        } else {
+            $query .= " AND b.is_active = 1";
+            if ($status !== '' && strtolower($status) !== 'all status') {
+                $query .= " AND b.availability = ?";
+                $params[] = strtolower($status);
+            }
+        }
+
         if ($search !== '') {
             $query .= " AND (b.title LIKE ? OR b.author LIKE ? OR b.book_isbn LIKE ? OR b.accession_number LIKE ? OR b.call_number LIKE ? OR b.subject LIKE ?)";
             $searchTerm = "%$search%";
@@ -33,11 +43,6 @@ class BookManagementRepository
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
-        }
-
-        if ($status !== '' && strtolower($status) !== 'all status') {
-            $query .= " AND b.availability = ?";
-            $params[] = strtolower($status);
         }
 
         if ($campus_id !== null && $campus_id > 0) {
@@ -73,6 +78,16 @@ class BookManagementRepository
         $query = $this->countQuery;
         $params = [];
 
+        if (strtolower($status) === 'inactive') {
+            $query .= " AND is_active = 0";
+        } else {
+            $query .= " AND is_active = 1";
+            if ($status !== '' && strtolower($status) !== 'all status') {
+                $query .= " AND availability = ?";
+                $params[] = strtolower($status);
+            }
+        }
+
         if ($search !== '') {
             $query .= " AND (title LIKE ? OR author LIKE ? OR book_isbn LIKE ? OR accession_number LIKE ? OR call_number LIKE ? OR subject LIKE ?)";
             $searchTerm = "%$search%";
@@ -82,10 +97,6 @@ class BookManagementRepository
             $params[] = $searchTerm;
             $params[] = $searchTerm;
             $params[] = $searchTerm;
-        }
-        if ($status !== '' && strtolower($status) !== 'all status') {
-            $query .= " AND availability = ?";
-            $params[] = strtolower($status);
         }
         if ($campus_id !== null && $campus_id > 0) {
             $query .= " AND campus_id = ?";
@@ -99,9 +110,36 @@ class BookManagementRepository
 
     public function findBookById($id)
     {
-        $stmt = $this->db->prepare("SELECT b.*, c.campus_name FROM books b LEFT JOIN campuses c ON b.campus_id = c.campus_id WHERE b.book_id = ? AND b.deleted_at IS NULL");
+        $stmt = $this->db->prepare("SELECT b.*, c.campus_name FROM books b LEFT JOIN campuses c ON b.campus_id = c.campus_id WHERE b.book_id = ? AND b.is_active = 1");
         $stmt->execute([$id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function findBookByIdAll($id)
+    {
+        $stmt = $this->db->prepare("SELECT b.*, c.campus_name FROM books b LEFT JOIN campuses c ON b.campus_id = c.campus_id WHERE b.book_id = ?");
+        $stmt->execute([$id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function toggleActiveStatus(int $bookId, int $status, int $updatedByUserId): bool
+    {
+        try {
+            $stmt = $this->db->prepare("
+                UPDATE books 
+                SET is_active = :status,
+                    updated_by = :updated_by
+                WHERE book_id = :book_id
+            ");
+            return $stmt->execute([
+                ':status' => $status,
+                ':updated_by' => $updatedByUserId,
+                ':book_id' => $bookId
+            ]);
+        } catch (\PDOException $e) {
+            error_log("Error in toggleActiveStatus: " . $e->getMessage());
+            return false;
+        }
     }
 
     public function bulkCreateBooks(array $allBooksData)
@@ -210,7 +248,7 @@ class BookManagementRepository
     public function deleteBook(int $bookId, int $deletedByUserId): array
     {
         try {
-            $stmt = $this->db->prepare("SELECT deleted_at FROM books WHERE book_id = :book_id");
+            $stmt = $this->db->prepare("SELECT is_active FROM books WHERE book_id = :book_id");
             $stmt->execute([':book_id' => $bookId]);
             $book = $stmt->fetch();
 
@@ -218,27 +256,27 @@ class BookManagementRepository
                 return ['success' => false, 'message' => 'Book not found.'];
             }
 
-            if ($book['deleted_at'] !== null) {
-                return ['success' => false, 'message' => 'Book already deleted.'];
+            if ($book['is_active'] == 0) {
+                return ['success' => false, 'message' => 'Book is already inactive.'];
             }
 
             $stmt = $this->db->prepare("
-            UPDATE books 
-            SET deleted_at = CURRENT_TIMESTAMP, 
-                deleted_by = :deleted_by,
-                is_archived = 0 
-            WHERE book_id = :book_id AND deleted_at IS NULL
-        ");
+                UPDATE books 
+                SET is_active = 0,
+                    updated_by = :updated_by,
+                    is_archived = 0 
+                WHERE book_id = :book_id
+            ");
             $stmt->execute([
-                ':deleted_by' => $deletedByUserId,
+                ':updated_by' => $deletedByUserId,
                 ':book_id' => $bookId
             ]);
 
             if ($stmt->rowCount() > 0) {
-                return ['success' => true, 'message' => 'Book deleted successfully!'];
+                return ['success' => true, 'message' => 'Book deactivated successfully!'];
             }
 
-            return ['success' => false, 'message' => 'Failed to delete book.'];
+            return ['success' => false, 'message' => 'Failed to deactivate book.'];
         } catch (\PDOException $e) {
             return ['success' => false, 'message' => 'Database error: ' . $e->getMessage()];
         }

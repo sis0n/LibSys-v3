@@ -51,7 +51,7 @@ class DashboardRepository
       $row = $stmt->fetch(PDO::FETCH_ASSOC);
       $attendanceToday = (int) ($row['attendance_today'] ?? 0);
 
-      $stmt = $this->db->query("SELECT COUNT(*) AS total_books FROM books WHERE deleted_at IS NULL");
+      $stmt = $this->db->query("SELECT COUNT(*) AS total_books FROM books WHERE is_active = 1");
       $totalBooks = (int) ($stmt->fetch(PDO::FETCH_ASSOC)['total_books'] ?? 0);
 
       $stmt = $this->db->query("
