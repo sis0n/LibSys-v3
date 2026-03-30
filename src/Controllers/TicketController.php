@@ -44,8 +44,9 @@ class TicketController extends Controller
 
     $userId = $_SESSION['user_id'] ?? null;
     $role = strtolower($_SESSION['role'] ?? 'student');
+    $campusId = $_SESSION['user_data']['campus_id'] ?? 1;
 
-    $policy = $this->policyRepo->getPolicyByRole($role);
+    $policy = $this->policyRepo->getPolicyByRole($role, (int)$campusId);
     $DURATION_DAYS = $policy ? (int)$policy['borrow_duration_days'] : 7;
     $maxAllowed = $policy ? (int)$policy['max_books'] : 5;
 

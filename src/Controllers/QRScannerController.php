@@ -51,7 +51,7 @@ class QRScannerController extends Controller
       $idValue = (int) $transaction['student_id'];
     }
 
-    $policy = $this->policyRepo->getPolicyByRole($userType);
+    $policy = $this->policyRepo->getPolicyByRole($userType, (int)($transaction['campus_id'] ?? 1));
     $MAX_LIMIT = $policy ? (int)$policy['max_books'] : 5;
 
     $currentBorrowed = $this->qrScannerRepository->getBorrowedCount($idColumn, $idValue, $transactionCode);
@@ -194,7 +194,7 @@ class QRScannerController extends Controller
       $userType = 'student';
     }
 
-    $policy = $this->policyRepo->getPolicyByRole($userType);
+    $policy = $this->policyRepo->getPolicyByRole($userType, (int)($transaction['campus_id'] ?? 1));
     $MAX_LIMIT = $policy ? (int)$policy['max_books'] : 5;
 
     $currentBorrowed = $this->qrScannerRepository->getBorrowedCount($idColumn, $idValue, $transactionCode);

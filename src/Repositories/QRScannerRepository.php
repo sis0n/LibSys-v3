@@ -24,7 +24,7 @@ class QRScannerRepository
             s.student_number, s.year_level, s.section, s.registration_form,
             f.unique_faculty_id, f.college_id,
             st.staff_id, st.employee_id, st.position, st.contact,
-            u.profile_picture, u.first_name, u.last_name, u.middle_name, u.suffix,
+            u.profile_picture, u.first_name, u.last_name, u.middle_name, u.suffix, u.campus_id,
             s.course_id,
             c.course_code, c.course_title,
             cl.college_code, cl.college_name

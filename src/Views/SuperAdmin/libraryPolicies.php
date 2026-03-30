@@ -1,10 +1,35 @@
 <div class="min-h-screen">
-    <div class="mb-6">
-        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
-            <i class="ph ph-scroll text-orange-600"></i>
-            Library Policy Management
-        </h2>
-        <p class="text-gray-700">Configure borrowing limits and durations for different user roles.</p>
+    <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h2 class="text-2xl font-bold flex items-center gap-2 text-gray-800">
+                <i class="ph ph-scroll text-orange-600"></i>
+                Library Policy Management
+            </h2>
+            <p class="text-sm text-gray-500 mt-1">Configure borrowing limits and durations per campus.</p>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-widest hidden md:block">Campus Context:</span>
+            <div class="relative min-w-[200px]">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="ph ph-buildings text-orange-500"></i>
+                </div>
+                <select id="campusFilter" 
+                    class="appearance-none w-full bg-white border border-gray-200 rounded-lg pl-10 pr-10 py-2.5 text-sm font-semibold text-gray-700 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all cursor-pointer shadow-sm hover:border-orange-300">
+                    <?php 
+                    $currentCampusId = $selectedCampusId ?? 1;
+                    foreach ($campuses as $campus): 
+                    ?>
+                        <option value="<?= $campus['campus_id'] ?>" <?= $currentCampusId == $campus['campus_id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($campus['campus_name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                    <i class="ph ph-caret-down"></i>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="policyCardsContainer">
@@ -72,4 +97,7 @@
     </div>
 </div>
 
+<script>
+    const BASE_URL = "<?= BASE_URL ?>";
+</script>
 <script src="<?= BASE_URL ?>/js/superadmin/libraryPolicies.js" defer></script>
