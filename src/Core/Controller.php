@@ -31,6 +31,14 @@ class Controller
         }
     }
 
+    protected function getCampusFilter(): ?int
+    {
+        if (isset($_SESSION['role']) && $_SESSION['role'] === 'campus_admin') {
+            return $_SESSION['user_data']['campus_id'] ?? null;
+        }
+        return null;
+    }
+
     protected function validateCsrf(): bool
     {
         $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';

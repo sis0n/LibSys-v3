@@ -249,10 +249,6 @@
                                 <div class="user-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
                                     onclick="selectUserRole(this, 'Librarian')">Librarian</div>
                                 <div class="user-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
-                                    onclick="selectUserRole(this, 'Admin')">Admin</div>
-                                <div class="user-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
-                                    onclick="selectUserRole(this, 'Campus Admin')">Campus Admin</div>
-                                <div class="user-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
                                     onclick="selectUserRole(this, 'Faculty')">Faculty</div>
                                 <div class="user-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
                                     onclick="selectUserRole(this, 'Staff')">Staff</div>
@@ -330,6 +326,8 @@
                             'attendance logs',
                             'reports',
                             'transaction history',
+                            'restore books',
+                            'restore equipment',
                             'user management',
                             'restore users'
                         ];
@@ -486,15 +484,13 @@
                                 <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
                                     onclick="selectEditRole(this, 'Student')">Student</div>
                                 <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
-                                    onclick="selectEditRole(this, 'Librarian')">Librarian</div>
-                                <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
-                                    onclick="selectEditRole(this, 'Admin')">Admin</div>
-                                <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
-                                    onclick="selectEditRole(this, 'Campus Admin')">Campus Admin</div>
-                                <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
                                     onclick="selectEditRole(this, 'Faculty')">Faculty</div>
                                 <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
                                     onclick="selectEditRole(this, 'Staff')">Staff</div>
+                                <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
+                                    onclick="selectEditRole(this, 'Librarian')">Librarian</div>
+                                <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
+                                    onclick="selectEditRole(this, 'Admin')">Admin</div>
                             </div>
                         </div>
                     </div>
@@ -625,4 +621,8 @@
     </div>
 </div>
 
-<script src="<?= BASE_URL ?>/js/superadmin/userManagement.js" defer></script>
+<script>
+    const CURRENT_USER_CAMPUS_ID = <?= json_encode($_SESSION['user_data']['campus_id'] ?? null) ?>;
+    const CURRENT_USER_ROLE = <?= json_encode($_SESSION['role'] ?? '') ?>;
+</script>
+<script src="<?= BASE_URL ?>/js/campus_admin/userManagement.js" defer></script>

@@ -47,9 +47,14 @@ class UserManagementController extends Controller
       $status = $_GET['status'] ?? 'All Status';
 
       $currentUserId = $_SESSION['user_id'] ?? null;
+      
+      $campusId = null;
+      if (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'campus_admin') {
+        $campusId = $_SESSION['user_data']['campus_id'] ?? null;
+      }
 
-      $users = $this->userRepo->getPaginatedUsers($limit, $offset, $search, $role, $status, $currentUserId);
-      $totalCount = $this->userRepo->countPaginatedUsers($search, $role, $status, $currentUserId);
+      $users = $this->userRepo->getPaginatedUsers($limit, $offset, $search, $role, $status, $currentUserId, $campusId);
+      $totalCount = $this->userRepo->countPaginatedUsers($search, $role, $status, $currentUserId, $campusId);
 
       echo json_encode(['success' => true, 'users' => $users, 'totalCount' => $totalCount]);
     } catch (\Exception $e) {
@@ -174,7 +179,7 @@ class UserManagementController extends Controller
         'last_name' => $last_name,
         'campus_id' => $campus_id,
         'email' => $data['email'] ?? null,
-        'role' => ucfirst($role),
+        'role' => str_replace(' ', '_', strtolower($role)),
         'is_active' => 1,
         'created_at' => date('Y-m-d H:i:s')
       ];
@@ -244,17 +249,19 @@ class UserManagementController extends Controller
           break;
         case 'admin':
         case 'librarian':
+        case 'campus admin':
           if (empty($data['modules']) || !is_array($data['modules'])) {
             $db->rollBack();
             echo json_encode([
               'success' => false,
-              'message' => 'Please select at least one module for ' . ucfirst($role) . '.',
+              'message' => 'Please select at least one module for ' . ucwords($role) . '.',
             ]);
             return;
           }
 
           $validModules = [
             'book management',
+            'equipment management',
             'qr scanner',
             'returning',
             'overdue tracking',
@@ -262,9 +269,10 @@ class UserManagementController extends Controller
             'attendance logs',
             'reports',
             'transaction history',
-            'restore books',
             'user management',
-            'restore users'
+            'restore users',
+            'student promotion',
+            'library policies'
           ];
           $modules = array_filter($data['modules'], fn($m) => in_array($m, $validModules));
 
@@ -541,7 +549,7 @@ class UserManagementController extends Controller
         (new \App\Repositories\StudentProfileRepository())->updateStudentProfile((int)$id, $studentData);
       }
 
-      if (($currentRole === 'admin' || $currentRole === 'librarian') && $modulesKeyWasPresent) {
+      if (in_array($currentRole, ['superadmin', 'admin', 'librarian', 'campus_admin']) && $modulesKeyWasPresent) {
         $modulesToAssign = is_array($modulesPayload) ? $modulesPayload : [];
         $this->userPermissionRepo->assignModules((int)$id, $modulesToAssign);
       }

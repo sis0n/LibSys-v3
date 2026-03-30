@@ -599,7 +599,7 @@ class UserRepository
     }
   }
 
-  public function getPaginatedUsers(int $limit, int $offset, string $search, string $role, string $status, ?int $excludeUserId = null): array
+  public function getPaginatedUsers(int $limit, int $offset, string $search, string $role, string $status, ?int $excludeUserId = null, ?int $campusId = null): array
   {
     $baseQuery = "
         FROM users u
@@ -611,6 +611,11 @@ class UserRepository
     if ($excludeUserId !== null) {
       $baseQuery .= " AND u.user_id != ?";
       $params[] = $excludeUserId;
+    }
+
+    if ($campusId !== null) {
+      $baseQuery .= " AND u.campus_id = ?";
+      $params[] = $campusId;
     }
 
     if ($search !== '') {
@@ -654,7 +659,7 @@ class UserRepository
     }
   }
 
-  public function countPaginatedUsers(string $search, string $role, string $status, ?int $excludeUserId = null): int
+  public function countPaginatedUsers(string $search, string $role, string $status, ?int $excludeUserId = null, ?int $campusId = null): int
   {
     $query = "SELECT COUNT(DISTINCT u.user_id) FROM users u WHERE u.deleted_at IS NULL AND u.role NOT IN ('superadmin')";
     $params = [];
@@ -662,6 +667,11 @@ class UserRepository
     if ($excludeUserId !== null) {
       $query .= " AND u.user_id != ?";
       $params[] = $excludeUserId;
+    }
+
+    if ($campusId !== null) {
+      $query .= " AND u.campus_id = ?";
+      $params[] = $campusId;
     }
 
     if ($search !== '') {

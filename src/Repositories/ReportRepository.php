@@ -77,7 +77,7 @@ class ReportRepository
         }
     }
 
-    public function getCirculatedEquipmentsSummary(string $filter = 'month')
+    public function getCirculatedEquipmentsSummary(string $filter = 'month', ?int $campusId = null)
     {
         try {
             $whereClause = "";
@@ -87,6 +87,10 @@ class ReportRepository
                 $whereClause = "AND MONTH(bt.borrowed_at) = MONTH(CURDATE()) AND YEAR(bt.borrowed_at) = YEAR(CURDATE())";
             } else { // year
                 $whereClause = "AND YEAR(bt.borrowed_at) = YEAR(CURDATE())";
+            }
+
+            if ($campusId !== null) {
+                $whereClause .= " AND bt.campus_id = " . (int)$campusId;
             }
 
             $sql = "
@@ -139,7 +143,7 @@ class ReportRepository
         }
     }
 
-    public function getTopVisitorsFiltered(string $filter = 'month')
+    public function getTopVisitorsFiltered(string $filter = 'month', ?int $campusId = null)
     {
         try {
             $whereClause = "";
@@ -149,6 +153,10 @@ class ReportRepository
                 $whereClause = "MONTH(a.date) = MONTH(CURDATE()) AND YEAR(a.date) = YEAR(CURDATE())";
             } else { // year
                 $whereClause = "YEAR(a.date) = YEAR(CURDATE())";
+            }
+
+            if ($campusId !== null) {
+                $whereClause .= " AND u.campus_id = " . (int)$campusId;
             }
 
             $sql = "
@@ -175,7 +183,7 @@ class ReportRepository
         }
     }
 
-    public function getTopBorrowers(string $filter = 'month')
+    public function getTopBorrowers(string $filter = 'month', ?int $campusId = null)
     {
         try {
             $whereClause = "";
@@ -185,6 +193,10 @@ class ReportRepository
                 $whereClause = "MONTH(bt.borrowed_at) = MONTH(CURDATE()) AND YEAR(bt.borrowed_at) = YEAR(CURDATE())";
             } else { // year
                 $whereClause = "YEAR(bt.borrowed_at) = YEAR(CURDATE())";
+            }
+
+            if ($campusId !== null) {
+                $whereClause .= " AND u.campus_id = " . (int)$campusId;
             }
 
             $sql = "

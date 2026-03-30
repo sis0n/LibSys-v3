@@ -37,6 +37,7 @@ class AuthRepository
 
       $modules = [];
       $role = strtolower(trim($user['role'] ?? 'guest'));
+      $role = str_replace(' ', '_', $role); // Normalize 'campus admin' to 'campus_admin'
 
       $departmentOrCourse = null;
 

@@ -259,7 +259,12 @@ class RouteConfig
     $router->post('api/superadmin/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['superadmin']);
     $router->get('api/superadmin/libraryPolicies/getAll', 'LibraryPolicyController@getAll', ['superadmin']);
     $router->post('api/superadmin/libraryPolicies/update', 'LibraryPolicyController@update', ['superadmin']);
-
+    $router->get('api/superadmin/campuses/fetch', 'CampusManagementController@fetch', ['superadmin']);
+    $router->post('api/superadmin/campuses/store', 'CampusManagementController@store', ['superadmin']);
+    $router->post('api/superadmin/campuses/update/{id}', 'CampusManagementController@update', ['superadmin']);
+    $router->post('api/superadmin/campuses/toggleStatus/{id}', 'CampusManagementController@toggleStatus', ['superadmin']);
+    $router->post('api/superadmin/campuses/delete/{id}', 'CampusManagementController@destroy', ['superadmin']);
+    $router->get('campusManagement', 'CampusManagementController@index', ['superadmin']);
     $router->get('api/superadmin/auditLogs/fetch', 'AuditLogController@fetch', ['superadmin']);
     $router->get('auditLogs', 'AuditLogController@index', ['superadmin']);
 
@@ -270,6 +275,81 @@ class RouteConfig
     $router->get('studentPromotion', 'StudentPromotionController@index', ['superadmin']);
 
     $router->post('generate-report', 'DomPdfTemplateController@generateLibraryReport', ['superadmin']);
+
+    $router->get('api/campus_admin/userManagement/pagination', 'UserManagementController@fetchPaginatedUsers', ['campus_admin']);
+    $router->get('api/campus_admin/userManagement/get/{id}', 'UserManagementController@getUserById', ['campus_admin']);
+    $router->get('api/campus_admin/userManagement/search', 'UserManagementController@search', ['campus_admin']);
+    $router->post('api/campus_admin/userManagement/add', 'UserManagementController@addUser', ['campus_admin']);
+    $router->post('api/campus_admin/userManagement/update/{id}', 'UserManagementController@updateUser', ['campus_admin']);
+    $router->post('api/campus_admin/userManagement/delete/{id}', 'UserManagementController@deleteUser', ['campus_admin']);
+    $router->post('api/campus_admin/userManagement/deleteMultiple', 'UserManagementController@deleteMultipleUsers');
+    $router->post('api/campus_admin/userManagement/toggleStatus/{id}', 'UserManagementController@toggleStatus');
+    $router->post('api/campus_admin/userManagement/allowEdit/{id}', 'UserManagementController@allowEdit', ['campus_admin']);
+    $router->post('api/campus_admin/userManagement/bulkImport', 'UserManagementController@bulkImport');
+    $router->get('api/campus_admin/userManagement/getAllCourses', 'DataController@getAllCourses', ['campus_admin']);
+    $router->get('api/campus_admin/userManagement/getColleges', 'DataController@getColleges', ['campus_admin']);
+    $router->get('api/campuses/all', 'DataController@getAllCampuses');
+    $router->get('api/campus_admin/booksmanagement/fetch', 'BookManagementController@fetch', ['campus_admin']);
+    $router->get('api/campus_admin/booksmanagement/get/{id}', 'BookManagementController@getDetails', ['campus_admin']);
+    $router->get('api/campus_admin/booksmanagement/details/{id}', 'BookManagementController@getDetails', ['campus_admin']);
+    $router->post('api/campus_admin/booksmanagement/store', 'BookManagementController@store', ['campus_admin']);
+    $router->post('api/campus_admin/booksmanagement/add', 'BookManagementController@store', ['campus_admin']);
+    $router->post('api/campus_admin/booksmanagement/update/{id}', 'BookManagementController@update', ['campus_admin']);
+    $router->post('api/campus_admin/booksmanagement/delete/{id}', 'BookManagementController@destroy', ['campus_admin']);
+    $router->post('api/campus_admin/booksmanagement/reactivate/{id}', 'BookManagementController@reactivate', ['campus_admin']);
+    $router->post('api/campus_admin/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['campus_admin']);
+    $router->get('api/campus_admin/booksmanagement/history/{id}', 'BookManagementController@getBorrowingHistory', ['campus_admin']);
+    $router->get('api/campus_admin/equipmentManagement/fetch', 'EquipmentManagementController@getAll', ['campus_admin']);
+    $router->get('api/campus_admin/equipmentManagement/get/{id}', 'EquipmentManagementController@get', ['campus_admin']);
+    $router->post('api/campus_admin/equipmentManagement/store', 'EquipmentManagementController@store', ['campus_admin']);
+    $router->post('api/campus_admin/equipmentManagement/update/{id}', 'EquipmentManagementController@update', ['campus_admin']);
+    $router->post('api/campus_admin/equipmentManagement/toggleActive/{id}', 'EquipmentManagementController@toggleActive', ['campus_admin']);
+    $router->post('api/campus_admin/equipmentManagement/delete/{id}', 'EquipmentManagementController@destroy', ['campus_admin']);
+    $router->post('api/campus_admin/booksmanagement/bulkImport', 'BookManagementController@bulkImport', ['campus_admin']);
+    $router->post('api/campus_admin/qrScanner/scanTicket', 'QRScannerController@scan', ['campus_admin']);
+    $router->post('api/campus_admin/qrScanner/borrowTransaction', 'QRScannerController@borrowTransaction', ['campus_admin']);
+    $router->get('api/campus_admin/qrScanner/transactionHistory', 'QRScannerController@history', ['campus_admin']);
+    $router->get('api/campus_admin/returning/getTableData', 'ReturningController@getOverdue', ['campus_admin']);
+    $router->get('api/campus_admin/returning/getRecent', 'ReturningController@getRecentReturnsJson', ['campus_admin']);
+    $router->post('api/campus_admin/returning/checkBook', 'ReturningController@checkBookStatus', ['campus_admin']);
+    $router->post('api/campus_admin/returning/markReturned', 'ReturningController@returnBook', ['campus_admin']);
+    $router->post('api/campus_admin/returning/extend', 'ReturningController@extendDueDate', ['campus_admin']);
+    $router->get('api/campus_admin/restoreUser/fetch', 'RestoreUserController@getDeletedUsersJson', ['campus_admin']);
+    $router->post('api/campus_admin/restoreUser/restore', 'RestoreUserController@restore', ['campus_admin']);
+    $router->post('api/campus_admin/restoreUser/delete/{id}', 'RestoreUserController@archive', ['campus_admin']);
+
+    $router->get('api/campus_admin/dashboard/stats', 'DashboardController@getStats', ['campus_admin']);
+    $router->get('api/campus_admin/dashboard/top-visitors', 'DashboardController@getTopVisitors', ['campus_admin']);
+    $router->get('api/campus_admin/dashboard/weekly-activity', 'DashboardController@getWeeklyActivity', ['campus_admin']);
+    $router->get('api/campus_admin/dashboard/getData', 'DashboardController@getData', ['campus_admin']);
+    $router->get('api/campus_admin/transactionHistory/json', 'TransactionHistoryController@getTransactionsJson', ['campus_admin']);
+    $router->get('api/campus_admin/borrowingForm/manualBorrow', 'ManualBorrowingController@manualBorrow', ['campus_admin']);
+    $router->get('api/campus_admin/borrowingForm/getEquipments', 'ManualBorrowingController@getEquipments', ['campus_admin']);
+    $router->get('api/campus_admin/borrowingForm/getCollaterals', 'ManualBorrowingController@getCollaterals', ['campus_admin']);
+    $router->post('api/campus_admin/borrowingForm/checkUser', 'ManualBorrowingController@checkUser');
+    $router->post('api/campus_admin/borrowingForm/create', 'ManualBorrowingController@create');
+    $router->get('api/campus_admin/reports/circulated-books', 'ReportController@getCirculatedBooksReport', ['campus_admin', 'reports']);
+    $router->get('api/campus_admin/reports/circulated-equipments', 'ReportController@getCirculatedEquipmentsReport', ['campus_admin', 'reports']);
+    $router->get('api/campus_admin/reports/top-visitors', 'ReportController@getTopVisitors', ['campus_admin', 'reports']);
+    $router->get('api/campus_admin/reports/top-borrowers', 'ReportController@getTopBorrowers', ['campus_admin', 'reports']);
+    $router->get('api/campus_admin/reports/most-borrowed-books', 'ReportController@getMostBorrowedBooks', ['campus_admin', 'reports']);
+    $router->get('api/campus_admin/reports/deleted-books', 'ReportController@getDeletedBooks', ['campus_admin', 'reports']);
+    $router->get('api/campus_admin/reports/lost-damaged-books', 'ReportController@getLostDamagedBooksReport', ['campus_admin', 'reports']);
+    $router->get('api/campus_admin/reports/library-visits-department', 'ReportController@getLibraryVisitsByDepartment', ['campus_admin', 'reports']);
+    $router->get('api/campus_admin/reports/getActivityReport', 'ReportController@getActivityReport', ['campus_admin', 'reports']);
+    $router->get('api/campus_admin/reports/getReportGraphData', 'ReportController@getReportGraphData', ['campus_admin', 'reports']);
+    $router->post('api/campus_admin/reports/generate-report', 'DomPdfTemplateController@generateLibraryReport', ['campus_admin', 'reports']);
+    $router->get('api/campus_admin/myProfile/get', 'campus_adminProfileController@getProfile', ['campus_admin']);
+    $router->post('api/campus_admin/myProfile/update', 'campus_adminProfileController@updateProfile', ['campus_admin']);
+    $router->post('api/campus_admin/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['campus_admin']);
+    $router->get('api/campus_admin/libraryPolicies/getAll', 'LibraryPolicyController@getAll', ['campus_admin']);
+    $router->post('api/campus_admin/libraryPolicies/update', 'LibraryPolicyController@update', ['campus_admin']);
+
+    $router->get('api/campus_admin/studentPromotion/fetch', 'StudentPromotionController@fetch', ['campus_admin']);
+    $router->post('api/campus_admin/studentPromotion/promote', 'StudentPromotionController@promote', ['campus_admin']);
+    $router->post('api/campus_admin/studentPromotion/deactivate', 'StudentPromotionController@deactivate', ['campus_admin']);
+    $router->post('api/campus_admin/studentPromotion/activate', 'StudentPromotionController@activate', ['campus_admin']);
+    $router->get('studentPromotion', 'StudentPromotionController@index', ['campus_admin']);
 
     $router->get('api/student/attendance/get', 'AttendanceController@getMyAttendance', ['student']);
     $router->get('api/student/cart', 'CartController@index', ['student']);
@@ -288,17 +368,9 @@ class RouteConfig
     $router->post('api/student/myprofile/update', 'StudentProfileController@updateProfile', ['student']);
     $router->get('api/data/getAllCourses', 'DataController@getAllCourses', ['student']);
 
-    $router->get('api/attendance/logs/ajax', 'AttendanceController@fetchLogsAjax', ['attendance logs', 'superadmin']);
-    $router->get('api/superadmin/overdue/getTableData', 'OverdueController@getTableData', ['superadmin', 'overdue tracking']);
-    $router->post('api/superadmin/overdue/sendReminder', 'OverdueController@sendReminder', ['superadmin', 'overdue tracking']);
-
-    // Campus Management Routes
-    $router->get('campusManagement', 'CampusManagementController@index', ['superadmin']);
-    $router->get('api/superadmin/campuses/fetch', 'CampusManagementController@fetch', ['superadmin']);
-    $router->post('api/superadmin/campuses/store', 'CampusManagementController@store', ['superadmin']);
-    $router->post('api/superadmin/campuses/update/{id}', 'CampusManagementController@update', ['superadmin']);
-    $router->post('api/superadmin/campuses/toggleStatus/{id}', 'CampusManagementController@toggleStatus', ['superadmin']);
-    $router->post('api/superadmin/campuses/delete/{id}', 'CampusManagementController@destroy', ['superadmin']);
+    $router->get('api/superadmin/overdue/getTableData', 'OverdueController@getTableData', ['superadmin', 'overdue tracking', 'campus_admin']);
+    $router->post('api/superadmin/overdue/sendReminder', 'OverdueController@sendReminder', ['superadmin', 'overdue tracking', 'campus_admin']);
+    $router->get('api/attendance/logs/ajax', 'AttendanceController@fetchLogsAjax', ['attendance logs', 'superadmin', 'campus_admin']);
 
     $router->get('dashboard', 'ViewController@handleDashboard');
 

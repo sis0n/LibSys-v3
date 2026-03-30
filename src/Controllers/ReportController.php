@@ -16,8 +16,9 @@ class ReportController extends Controller
         header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
+            $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
-            $data = $repository->getCirculatedBooksSummary($filter);
+            $data = $repository->getCirculatedBooksSummary($filter, $campusId);
             echo json_encode(['success' => true, 'data' => $data]);
         } catch (Exception $e) {
             http_response_code(500);

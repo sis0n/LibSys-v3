@@ -13,7 +13,7 @@ $normalizedPermissions = array_map(function ($p) {
 }, $userPermissions);
 
 $hasPermission = function ($code) use ($normalizedPermissions, $isSuperAdmin) {
-    if ($isSuperAdmin) {
+    if ($isSuperAdmin && empty($normalizedPermissions)) {
         return true;
     }
     return in_array(trim(strtolower($code)), $normalizedPermissions);
@@ -260,16 +260,27 @@ $baseUrl = BASE_URL;
                     </div>
                 </div>
 
-            <?php elseif ($role === 'superadmin'): ?>
+            <?php elseif ($role === 'superadmin' || $role === 'campus_admin'): ?>
                 <a href="<?= $baseUrl ?>/dashboard"
                     class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'dashboard' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
                     <i class="ph ph-house text-2xl"></i>
                     <span>Dashboard</span>
                 </a>
 
-                <div class="sidebar-dropdown" data-pages='["userManagement", "campusManagement", "bookManagement", "equipmentManagement", "studentPromotion"]'>
+                <?php 
+                    $mgmtItems = [];
+                    if ($hasPermission('user management')) $mgmtItems[] = ["url" => "userManagement", "icon" => "ph ph-users", "label" => "User Management"];
+                    if ($role === 'superadmin') $mgmtItems[] = ["url" => "campusManagement", "icon" => "ph ph-buildings", "label" => "Campus Management"];
+                    if ($hasPermission('student promotion')) $mgmtItems[] = ["url" => "studentPromotion", "icon" => "ph ph-student", "label" => "Student Promotion"];
+                    if ($hasPermission('book management')) $mgmtItems[] = ["url" => "bookManagement", "icon" => "ph ph-book-open", "label" => "Book Management"];
+                    if ($hasPermission('equipment management')) $mgmtItems[] = ["url" => "equipmentManagement", "icon" => "ph ph-desktop", "label" => "Equipment Management"];
+                    
+                    if (!empty($mgmtItems)):
+                        $mgmtPages = array_column($mgmtItems, 'url');
+                ?>
+                <div class="sidebar-dropdown" data-pages='<?= json_encode($mgmtPages) ?>'>
                     <button
-                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["userManagement", "campusManagement", "bookManagement", "equipmentManagement", "studentPromotion"])) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
+                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, $mgmtPages)) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
                         <span class="flex items-center gap-x-3">
                             <i class="ph ph-folders text-2xl"></i>
                             <span class="text-base">Management</span>
@@ -277,37 +288,29 @@ $baseUrl = BASE_URL;
                         <i class="ph ph-caret-down text-xl dropdown-icon transition-transform"></i>
                     </button>
                     <div class="pl-5 pt-1 space-y-1 hidden ml-4">
-                        <a href="<?= $baseUrl ?>/userManagement"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'userManagement' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-users text-xl"></i>
-                            <span class="text-base text-sm">User Management</span>
+                        <?php foreach ($mgmtItems as $item): ?>
+                        <a href="<?= $baseUrl ?>/<?= $item['url'] ?>"
+                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === $item['url'] ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
+                            <i class="<?= $item['icon'] ?> text-xl"></i>
+                            <span class="text-base text-sm"><?= $item['label'] ?></span>
                         </a>
-                        <a href="<?= $baseUrl ?>/campusManagement"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'campusManagement' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-buildings text-xl"></i>
-                            <span class="text-base text-sm">Campus Management</span>
-                        </a>
-                        <a href="<?= $baseUrl ?>/studentPromotion"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'studentPromotion' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-student text-xl"></i>
-                            <span class="text-base text-sm">Student Promotion</span>
-                        </a>
-                        <a href="<?= $baseUrl ?>/bookManagement"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'bookManagement' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-book-open text-xl"></i>
-                            <span class="text-base text-sm">Book Management</span>
-                        </a>
-                        <a href="<?= $baseUrl ?>/equipmentManagement"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'equipmentManagement' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-desktop text-xl"></i>
-                            <span class="text-base text-sm">Equipment Management</span>
-                        </a>
+                        <?php endforeach; ?>
                     </div>
                 </div>
+                <?php endif; ?>
 
-                <div class="sidebar-dropdown" data-pages='["qrScanner", "returning", "borrowingForm"]'>
+                <?php 
+                    $transItems = [];
+                    if ($hasPermission('qr scanner')) $transItems[] = ["url" => "qrScanner", "icon" => "ph ph-qr-code", "label" => "QR Scanner"];
+                    if ($hasPermission('returning')) $transItems[] = ["url" => "returning", "icon" => "ph ph-arrow-counter-clockwise", "label" => "Returning"];
+                    if ($hasPermission('borrowing form')) $transItems[] = ["url" => "borrowingForm", "icon" => "ph ph-receipt", "label" => "Borrowing Form"];
+                    
+                    if (!empty($transItems)):
+                        $transPages = array_column($transItems, 'url');
+                ?>
+                <div class="sidebar-dropdown" data-pages='<?= json_encode($transPages) ?>'>
                     <button
-                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["qrScanner", "returning", "borrowingForm"])) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
+                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, $transPages)) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
                         <span class="flex items-center gap-x-3">
                             <i class="ph ph-swap text-2xl"></i>
                             <span class="text-base">QR & Returning</span>
@@ -315,27 +318,31 @@ $baseUrl = BASE_URL;
                         <i class="ph ph-caret-down text-xl dropdown-icon transition-transform"></i>
                     </button>
                     <div class="pl-5 pt-1 space-y-1 hidden ml-4">
-                        <a href="<?= $baseUrl ?>/qrScanner"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'qrScanner' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-qr-code text-xl"></i>
-                            <span class="text-base text-sm">QR Scanner</span>
+                        <?php foreach ($transItems as $item): ?>
+                        <a href="<?= $baseUrl ?>/<?= $item['url'] ?>"
+                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === $item['url'] ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
+                            <i class="<?= $item['icon'] ?> text-xl"></i>
+                            <span class="text-base text-sm"><?= $item['label'] ?></span>
                         </a>
-                        <a href="<?= $baseUrl ?>/returning"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'returning' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-arrow-counter-clockwise text-xl"></i>
-                            <span class="text-base text-sm">Returning</span>
-                        </a>
-                        <a href="<?= $baseUrl ?>/borrowingForm"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'borrowingForm' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-receipt text-xl"></i>
-                            <span class="text-base text-sm">Borrowing Form</span>
-                        </a>
+                        <?php endforeach; ?>
                     </div>
                 </div>
+                <?php endif; ?>
 
-                <div class="sidebar-dropdown" data-pages='["attendanceLogs", "topVisitor", "transactionHistory", "auditLogs", "overdue"]'>
+                <?php 
+                    $logItems = [];
+                    if ($hasPermission('attendance logs')) $logItems[] = ["url" => "attendanceLogs", "icon" => "ph ph-calendar-check", "label" => "Attendance Logs"];
+                    if ($hasPermission('overdue tracking')) $logItems[] = ["url" => "overdue", "icon" => "ph ph-warning", "label" => "Overdue Tracking"];
+                    if ($hasPermission('reports')) $logItems[] = ["url" => "topVisitor", "icon" => "ph ph-chart-bar", "label" => "Reports"];
+                    if ($hasPermission('transaction history')) $logItems[] = ["url" => "transactionHistory", "icon" => "ph ph-arrows-left-right", "label" => "Transaction History"];
+                    if ($role === 'superadmin') $logItems[] = ["url" => "auditLogs", "icon" => "ph ph-shield-check", "label" => "Audit Trail"];
+                    
+                    if (!empty($logItems)):
+                        $logPages = array_column($logItems, 'url');
+                ?>
+                <div class="sidebar-dropdown" data-pages='<?= json_encode($logPages) ?>'>
                     <button
-                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["attendanceLogs", "topVisitor", "transactionHistory", "auditLogs", "overdue"])) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
+                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, $logPages)) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
                         <span class="flex items-center gap-x-3">
                             <i class="ph ph-activity text-2xl"></i>
                             <span class="text-base">Activity & Logs</span>
@@ -343,62 +350,53 @@ $baseUrl = BASE_URL;
                         <i class="ph ph-caret-down text-xl dropdown-icon transition-transform"></i>
                     </button>
                     <div class="pl-5 pt-1 space-y-1 hidden ml-4">
-                        <a href="<?= $baseUrl ?>/attendanceLogs"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'attendanceLogs' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-calendar-check text-xl"></i>
-                            <span class="text-base text-sm">Attendance Logs</span>
+                        <?php foreach ($logItems as $item): ?>
+                        <a href="<?= $baseUrl ?>/<?= $item['url'] ?>"
+                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === $item['url'] ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
+                            <i class="<?= $item['icon'] ?> text-xl"></i>
+                            <span class="text-base text-sm"><?= $item['label'] ?></span>
                         </a>
-                        <a href="<?= $baseUrl ?>/overdue"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'overdue' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-warning text-xl"></i>
-                            <span class="text-base text-sm">Overdue Tracking</span>
-                        </a>
-                        <a href="<?= $baseUrl ?>/topVisitor"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'topVisitor' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-chart-bar text-xl"></i>
-                            <span class="text-base text-sm">Reports</span>
-                        </a>
-                        <a href="<?= $baseUrl ?>/transactionHistory"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'transactionHistory' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-arrows-left-right text-xl"></i>
-                            <span class="text-base text-sm">Transaction History</span>
-                        </a>
-                        <a href="<?= $baseUrl ?>/auditLogs"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'auditLogs' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-shield-check text-xl"></i>
-                            <span class="text-base text-sm">Audit Trail</span>
-                        </a>
+                        <?php endforeach; ?>
                     </div>
                 </div>
+                <?php endif; ?>
 
-                <div class="sidebar-dropdown" data-pages='["backup", "restoreUser"]'>
+                <?php if ($role === 'superadmin'): 
+                    $backupItems = [];
+                    // For now, superadmin backup/restore are always shown if role is superadmin,
+                    // but we can add permission checks if needed.
+                    $backupItems[] = ["url" => "backup", "icon" => "ph ph-floppy-disk", "label" => "Backup"];
+                    $backupItems[] = ["url" => "restoreUser", "icon" => "ph ph-user-gear", "label" => "Restore User"];
+                    $backupPages = array_column($backupItems, 'url');
+                ?>
+                <div class="sidebar-dropdown" data-pages='<?= json_encode($backupPages) ?>'>
                     <button
-                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["backup", "restoreUser"])) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
+                        class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, $backupPages)) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
                         <span class="flex items-center gap-x-3">
                             <i class="ph ph-database text-2xl"></i>
                             <span class="text-base">Backup & Restore</span>
                         </span>
                         <i class="ph ph-caret-down text-xl dropdown-icon transition-transform"></i>
                     </button>
-                    <div class="pl-5 pt-1 space-y-1 hidden">
-                        <a href="<?= $baseUrl ?>/backup"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'backup' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-floppy-disk text-xl"></i>
-                            <span class="text-base text-sm">Backup</span>
+                    <div class="pl-5 pt-1 space-y-1 hidden ml-4">
+                        <?php foreach ($backupItems as $item): ?>
+                        <a href="<?= $baseUrl ?>/<?= $item['url'] ?>"
+                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === $item['url'] ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
+                            <i class="<?= $item['icon'] ?> text-xl"></i>
+                            <span class="text-base text-sm"><?= $item['label'] ?></span>
                         </a>
-                        <a href="<?= $baseUrl ?>/restoreUser"
-                            class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'restoreUser' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-user-gear text-xl"></i>
-                            <span class="text-base text-sm">Restore User</span>
-                        </a>
+                        <?php endforeach; ?>
                     </div>
                 </div>
+                <?php endif; ?>
 
+                <?php if ($hasPermission('library policies')): ?>
                 <a href="<?= $baseUrl ?>/libraryPolicies"
                     class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'libraryPolicies' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
                     <i class="ph ph-scroll text-2xl"></i>
                     <span>Library Policies</span>
                 </a>
+                <?php endif; ?>
 
                 <div class="sidebar-dropdown" data-pages='["myProfile", "changePassword"]'>
                     <button class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["myProfile", "changePassword"])) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">

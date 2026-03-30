@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function loadDeleted() {
         tableBody.innerHTML = `<tr><td colspan="4" class="py-10 text-center"><i class="ph ph-spinner animate-spin text-2xl text-orange-500"></i></td></tr>`;
         try {
-            const res = await fetch(`api/superadmin/restoreEquipment/fetch`);
+            const res = await fetch(`api/campus_admin/restoreEquipment/fetch`);
             const data = await res.json();
             if (data.success) {
                 deletedItems = data.equipments;
@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (confirm.isConfirmed) {
-            const res = await fetch(`api/superadmin/restoreEquipment/restore/${id}`, { method: "POST" });
+            const res = await fetch(`api/campus_admin/restoreEquipment/restore/${id}`, { method: "POST" });
             const data = await res.json();
             if (data.success) {
                 Swal.fire("Restored!", data.message, "success");
@@ -77,7 +77,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (confirm.isConfirmed) {
-            const res = await fetch(`api/superadmin/restoreEquipment/deletePermanently/${id}`, { method: "POST" });
+            const res = await fetch(`api/campus_admin/restoreEquipment/deletePermanently/${id}`, { method: "POST" });
             const data = await res.json();
             if (data.success) {
                 Swal.fire("Deleted!", data.message, "success");

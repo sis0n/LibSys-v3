@@ -82,7 +82,10 @@ class BookManagementController extends Controller
             $search   = $_GET['search'] ?? '';
             $status   = $_GET['status'] ?? 'All Status';
             $sort     = $_GET['sort'] ?? 'default';
-            $campusId = isset($_GET['campus_id']) ? (int)$_GET['campus_id'] : null;
+
+            $campusFilter = $this->getCampusFilter();
+            $campusId = $campusFilter !== null ? $campusFilter : (isset($_GET['campus_id']) ? (int)$_GET['campus_id'] : null);
+            
             $limit    = (int)($_GET['limit'] ?? 30);
             $offset   = (int)($_GET['offset'] ?? 0);
 

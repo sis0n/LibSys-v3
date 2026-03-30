@@ -344,7 +344,7 @@ window.addEventListener("DOMContentLoaded", () => {
         if (userMgmtWrapper) userMgmtWrapper.classList.add('hidden');
         if (restoreUserWrapper) restoreUserWrapper.classList.add('hidden');
 
-        if (normalizedRole === "admin" || normalizedRole === "librarian") {
+        if (normalizedRole === "admin" || normalizedRole === "librarian" || normalizedRole === "campus admin") {
             container.classList.remove("hidden");
 
             container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
@@ -354,7 +354,7 @@ window.addEventListener("DOMContentLoaded", () => {
             if (normalizedRole === 'admin') {
                 if (userMgmtWrapper) userMgmtWrapper.classList.remove('hidden');
                 if (restoreUserWrapper) restoreUserWrapper.classList.remove('hidden');
-            } else if (normalizedRole === 'librarian') {
+            } else if (normalizedRole === 'librarian' || normalizedRole === 'campus admin') {
                 if (userMgmtWrapper) userMgmtWrapper.classList.remove('hidden');
             }
         } else {
@@ -371,7 +371,7 @@ window.addEventListener("DOMContentLoaded", () => {
         select.innerHTML = '<option value="">Loading Courses...</option>';
 
         try {
-            const res = await fetch('api/admin/userManagement/getAllCourses');
+            const res = await fetch('api/campus_admin/userManagement/getAllCourses');
             const data = await res.json();
 
             select.innerHTML = '<option value="">Select Course/Program</option>';
@@ -406,7 +406,7 @@ window.addEventListener("DOMContentLoaded", () => {
         select.innerHTML = '<option value="">Loading Colleges...</option>';
 
         try {
-            const res = await fetch('api/admin/userManagement/getColleges');
+            const res = await fetch('api/campus_admin/userManagement/getColleges');
             const data = await res.json();
 
             select.innerHTML = '<option value="">Select College/Department</option>';
@@ -509,7 +509,7 @@ window.addEventListener("DOMContentLoaded", () => {
         formData.append("csv_file", fileInput.files[0]);
 
         try {
-            const res = await fetch("api/admin/userManagement/bulkImport", {
+            const res = await fetch("api/campus_admin/userManagement/bulkImport", {
                 method: "POST",
                 body: formData
             });
@@ -720,7 +720,7 @@ window.addEventListener("DOMContentLoaded", () => {
                 offset: offset
             });
 
-            const res = await fetch(`api/admin/userManagement/pagination?${params.toString()}`);
+            const res = await fetch(`api/campus_admin/userManagement/pagination?${params.toString()}`);
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             const data = await res.json();
 
@@ -917,7 +917,7 @@ window.addEventListener("DOMContentLoaded", () => {
             const addStartTime = Date.now();
 
             try {
-                const res = await fetch("api/admin/userManagement/add", {
+                const res = await fetch("api/campus_admin/userManagement/add", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json"
@@ -1002,7 +1002,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
                 try {
                     // --- 2. FETCH FULL DETAILS FROM API ---
-                    const res = await fetch(`api/admin/userManagement/get/${user.user_id}`);
+                    const res = await fetch(`api/campus_admin/userManagement/get/${user.user_id}`);
                     const data = await res.json();
 
                     // Mabilis na pagsara ng modal
@@ -1093,7 +1093,7 @@ window.addEventListener("DOMContentLoaded", () => {
                 const deleteStartTime = Date.now();
 
                 try {
-                    const res = await fetch(`api/admin/userManagement/delete/${user.user_id}`, {
+                    const res = await fetch(`api/campus_admin/userManagement/delete/${user.user_id}`, {
                         method: "POST"
                     });
                     const data = await res.json();
@@ -1120,7 +1120,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
             // TOGGLE STATUS
             if (e.target.closest(".toggle-status-btn")) {
-                if (user.role.toLowerCase() === 'admin') return showErrorToast("Action Denied", "admin status cannot be changed!");
+                if (user.role.toLowerCase() === 'superadmin') return showErrorToast("Action Denied", "Superadmin status cannot be changed!");
                 if (user.role.toLowerCase() === 'scanner') return showErrorToast("Action Denied", "Scanner status cannot be changed!");
 
                 const newStatus = user.status === 'Active' ? 'Inactive' : 'Active';
@@ -1138,7 +1138,7 @@ window.addEventListener("DOMContentLoaded", () => {
                 const statusStartTime = Date.now();
 
                 try {
-                    const res = await fetch(`api/admin/userManagement/toggleStatus/${user.user_id}`, {
+                    const res = await fetch(`api/campus_admin/userManagement/toggleStatus/${user.user_id}`, {
                         method: "POST"
                     });
                     const data = await res.json();
@@ -1177,7 +1177,7 @@ window.addEventListener("DOMContentLoaded", () => {
                 showLoadingModal("Grangting Permission...", "Sending temporary edit token.");
 
                 try {
-                    const res = await fetch(`api/admin/userManagement/allowEdit/${userId}`, {
+                    const res = await fetch(`api/campus_admin/userManagement/allowEdit/${userId}`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" }
                     });
@@ -1247,7 +1247,7 @@ window.addEventListener("DOMContentLoaded", () => {
             const editStartTime = Date.now();
 
             try {
-                const res = await fetch(`api/admin/userManagement/update/${currentEditingUserId}`, {
+                const res = await fetch(`api/campus_admin/userManagement/update/${currentEditingUserId}`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(payload)
@@ -1411,7 +1411,7 @@ window.addEventListener("DOMContentLoaded", () => {
             showLoadingModal("Deleting Users...", `Processing ${userIds.length} user(s).`);
 
             try {
-                const res = await fetch('api/admin/userManagement/deleteMultiple', {
+                const res = await fetch('api/campus_admin/userManagement/deleteMultiple', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1474,7 +1474,7 @@ window.addEventListener("DOMContentLoaded", () => {
             showLoadingModal("Granting Access...", `Processing ${selectedIds.length} student(s).`);
 
             try {
-                const res = await fetch('api/admin/userManagement/allowMultipleEdit', {
+                const res = await fetch('api/campus_admin/userManagement/allowMultipleEdit', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

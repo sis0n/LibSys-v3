@@ -34,6 +34,7 @@ class ViewController extends Controller
       case 'faculty':
       case 'staff':
       case 'superadmin':
+      case 'campus_admin':
         $view_path = $role . '/dashboard';
         $current_page = 'dashboard';
         break;
@@ -120,7 +121,15 @@ class ViewController extends Controller
 
     if (array_key_exists($action, $protectedModules)) {
 
-      if ($role === 'superadmin') {
+      if ($role === 'superadmin' || $role === 'campus_admin') {
+        if ($role === 'campus_admin') {
+          // Restricted modules for Campus Admin based on RBAC_POLICY.md
+          $restrictedForCampusAdmin = ['campusManagement', 'backup', 'restoreUser', 'auditLogs'];
+          if (in_array($action, $restrictedForCampusAdmin)) {
+            $this->view("errors/403", ["title" => "Forbidden"], false);
+            exit;
+          }
+        }
       } else if ($role === 'admin' || $role === 'librarian') {
         $permissionName = $protectedModules[$action];
 

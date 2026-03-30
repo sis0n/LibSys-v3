@@ -67,7 +67,10 @@ class EquipmentManagementController extends Controller
         try {
             $search = $_GET['search'] ?? '';
             $status = $_GET['status'] ?? 'All Status';
-            $campusId = $_GET['campus_id'] ?? null;
+            
+            $campusFilter = $this->getCampusFilter();
+            $campusId = $campusFilter !== null ? $campusFilter : ($_GET['campus_id'] ?? null);
+            
             $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
             $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
 

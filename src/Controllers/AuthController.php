@@ -115,7 +115,7 @@ class AuthController extends Controller
             $finalPath = User::getFirstAccessibleModuleUrl($userRole, $permissions);
         } elseif (User::isScanner($user)) {
             $finalPath = BASE_URL . '/attendance';
-        } elseif (User::isSuperadmin($user) || User::isStudent($user) || User::isFaculty($user) || User::isStaff($user)) {
+        } elseif (User::isSuperadmin($user) || User::isCampusAdmin($user) || User::isStudent($user) || User::isFaculty($user) || User::isStaff($user)) {
             $finalPath = BASE_URL . '/dashboard';
         }
 
