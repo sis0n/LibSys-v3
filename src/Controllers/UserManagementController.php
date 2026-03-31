@@ -22,6 +22,14 @@ class UserManagementController extends Controller
   public function __construct()
   {
     parent::__construct();
+    
+    // RBAC: librarian is explicitly blocked from User Management
+    $role = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
+    if (in_array($role, ['librarian', 'student', 'faculty', 'staff', 'scanner'])) {
+        http_response_code(403);
+        die("Forbidden: Access denied.");
+    }
+
     $this->userRepo = new UserRepository();
     $this->studentRepo = new StudentRepository();
     $this->userPermissionRepo = new UserPermissionModuleRepository();

@@ -34,14 +34,20 @@ class AuditLogRepository
         }
     }
 
-    public function fetchLogs($search = '', $limit = 50, $offset = 0, $action = '', $resource = '')
+    public function fetchLogs($search = '', $limit = 50, $offset = 0, $action = '', $resource = '', ?int $campusId = null)
     {
         try {
             $sql = "SELECT al.*, u.first_name, u.last_name, u.role, u.username
                     FROM audit_logs al
                     LEFT JOIN users u ON al.user_id = u.user_id
-                    WHERE 1=1";
+                    LEFT JOIN campuses c ON u.campus_id = c.campus_id
+                    WHERE (c.is_active = 1 OR u.campus_id IS NULL)";
             $params = [];
+
+            if ($campusId !== null) {
+                $sql .= " AND u.campus_id = :campus_id";
+                $params[':campus_id'] = $campusId;
+            }
 
             if (!empty($search)) {
                 $sql .= " AND (u.first_name LIKE :search OR u.last_name LIKE :search OR al.action LIKE :search OR al.resource LIKE :search OR al.details LIKE :search)";
@@ -75,11 +81,20 @@ class AuditLogRepository
         }
     }
 
-    public function countLogs($search = '', $action = '', $resource = '')
+    public function countLogs($search = '', $action = '', $resource = '', ?int $campusId = null)
     {
         try {
-            $sql = "SELECT COUNT(*) FROM audit_logs al LEFT JOIN users u ON al.user_id = u.user_id WHERE 1=1";
+            $sql = "SELECT COUNT(*) 
+                    FROM audit_logs al 
+                    LEFT JOIN users u ON al.user_id = u.user_id 
+                    LEFT JOIN campuses c ON u.campus_id = c.campus_id
+                    WHERE (c.is_active = 1 OR u.campus_id IS NULL)";
             $params = [];
+
+            if ($campusId !== null) {
+                $sql .= " AND u.campus_id = :campus_id";
+                $params[':campus_id'] = $campusId;
+            }
 
             if (!empty($search)) {
                 $sql .= " AND (u.first_name LIKE :search OR u.last_name LIKE :search OR al.action LIKE :search OR al.resource LIKE :search OR al.details LIKE :search)";

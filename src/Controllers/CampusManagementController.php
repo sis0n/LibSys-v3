@@ -14,6 +14,13 @@ class CampusManagementController extends Controller
     public function __construct()
     {
     parent::__construct();
+        // RBAC: Only Superadmin can manage campuses
+        $role = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
+        if ($role !== 'superadmin') {
+            http_response_code(403);
+            die("Forbidden: Access denied. Only Superadmin can manage campuses.");
+        }
+
         $this->campusRepo = new CampusRepository();
         $this->auditRepo = new AuditLogRepository();
     }
