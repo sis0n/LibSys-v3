@@ -21,6 +21,7 @@ class UserManagementController extends Controller
 
   public function __construct()
   {
+    parent::__construct();
     $this->userRepo = new UserRepository();
     $this->studentRepo = new StudentRepository();
     $this->userPermissionRepo = new UserPermissionModuleRepository();
@@ -85,7 +86,7 @@ class UserManagementController extends Controller
     }
 
     $modules = [];
-    if (in_array($role, ['admin', 'librarian'])) {
+    if (in_array($role, ['admin', 'librarian', 'campus_admin', 'campus admin'])) {
       $modules = $this->userPermissionRepo->getModulesByUserId((int)$id);
     }
 

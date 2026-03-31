@@ -21,6 +21,7 @@ class FacultyTicketController extends Controller
 
   public function __construct()
   {
+    parent::__construct();
     $this->ticketRepo = new FacultyTicketRepository();
     $this->facultyProfileRepo = new FacultyProfileRepository();
     $this->policyRepo = new LibraryPolicyRepository();

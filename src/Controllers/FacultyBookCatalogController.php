@@ -14,6 +14,7 @@ class FacultyBookCatalogController extends Controller
 
   public function __construct()
   {
+    parent::__construct();
     $this->bookRepo = new BookCatalogRepository();
     $this->campusRepo = new CampusRepository();
   }

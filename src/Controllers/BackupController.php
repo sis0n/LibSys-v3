@@ -13,6 +13,7 @@ class BackupController extends Controller
 
   public function __construct()
   {
+    parent::__construct();
     $this->backupRepo = new BackupRepository();
     $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }

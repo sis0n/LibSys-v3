@@ -15,6 +15,7 @@ class ScannerController extends Controller
 
     public function __construct()
     {
+    parent::__construct();
         $this->userRepo = new UserRepository();
         $this->attendanceRepo = new AttendanceRepository();
     }

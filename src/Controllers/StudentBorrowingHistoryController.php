@@ -11,6 +11,7 @@ class StudentBorrowingHistoryController extends Controller
 
     public function __construct()
     {
+    parent::__construct();
         $this->repo = new StudentBorrowingHistoryRepository();
     }
 

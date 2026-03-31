@@ -14,6 +14,15 @@ class Controller
             session_start();
         }
 
+        // Refresh permissions from DB on every request to avoid "stale" session data
+        if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
+            $role = strtolower($_SESSION['role']);
+            if (in_array($role, ['admin', 'librarian', 'superadmin', 'campus_admin', 'campus admin'])) {
+                $userPermissionRepo = new \App\Repositories\UserPermissionModuleRepository();
+                $_SESSION['user_permissions'] = $userPermissionRepo->getModulesByUserId($_SESSION['user_id']);
+            }
+        }
+
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }

@@ -19,6 +19,7 @@ class TicketController extends Controller
 
   public function __construct()
   {
+    parent::__construct();
     $this->ticketRepo = new TicketRepository();
     $this->policyRepo = new LibraryPolicyRepository();
     $this->auditRepo = new \App\Repositories\AuditLogRepository();

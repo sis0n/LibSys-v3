@@ -14,6 +14,7 @@ class DataController extends Controller
 
   public function __construct()
   {
+    parent::__construct();
     $this->collegeCourseRepo = new CollegeCourseRepository();
     $this->campusRepo = new CampusRepository();
   }

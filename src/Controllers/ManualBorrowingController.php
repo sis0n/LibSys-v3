@@ -13,6 +13,7 @@ class ManualBorrowingController extends Controller
 
   public function __construct()
   {
+    parent::__construct();
     $this->manualRepo = new ManualBorrowingRepository();
     $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }

@@ -15,6 +15,7 @@ class DomPdfTemplateController extends Controller
 
     public function __construct()
     {
+    parent::__construct();
         $this->auditRepo = new \App\Repositories\AuditLogRepository();
     }
 

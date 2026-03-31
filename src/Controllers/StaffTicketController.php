@@ -21,6 +21,7 @@ class StaffTicketController extends Controller
 
   public function __construct()
   {
+    parent::__construct();
     $this->ticketRepo = new StaffTicketRepository();
     $this->staffProfileRepo = new StaffProfileRepository();
     $this->policyRepo = new LibraryPolicyRepository();

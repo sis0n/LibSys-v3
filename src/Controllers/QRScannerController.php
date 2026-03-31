@@ -14,6 +14,7 @@ class QRScannerController extends Controller
 
   public function __construct()
   {
+    parent::__construct();
     $this->qrScannerRepository = new QRScannerRepository();
     $this->policyRepo = new LibraryPolicyRepository();
     $this->auditRepo = new \App\Repositories\AuditLogRepository();

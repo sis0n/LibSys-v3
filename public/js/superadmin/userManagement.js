@@ -1035,11 +1035,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
                     const editModulesContainer = document.getElementById("editPermissionsContainer");
                     if (editModulesContainer) {
-                        if (userRole === 'admin' || userRole === 'librarian') {
+                        const isPrivileged = ['admin', 'librarian', 'campus admin', 'campus_admin'].includes(userRole);
+                        if (isPrivileged) {
                             editModulesContainer.classList.remove("hidden");
 
                             if (editUserUserManagementModuleWrapper) {
-                                if (userRole === 'admin') {
+                                if (userRole === 'admin' || userRole === 'librarian' || userRole === 'campus admin' || userRole === 'campus_admin') {
                                     editUserUserManagementModuleWrapper.classList.remove('hidden');
                                 } else {
                                     editUserUserManagementModuleWrapper.classList.add('hidden');
@@ -1047,8 +1048,9 @@ window.addEventListener("DOMContentLoaded", () => {
                             }
 
                             editModulesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                                const moduleVal = cb.value.toLowerCase().trim();
                                 cb.checked = data.modules?.some(
-                                    m => m.toLowerCase().trim() === cb.value.toLowerCase().trim()
+                                    m => m.toLowerCase().trim() === moduleVal
                                 ) || false;
                             });
 
@@ -1291,25 +1293,30 @@ window.addEventListener("DOMContentLoaded", () => {
     if (toggleConfirmPass) toggleConfirmPass.addEventListener('click', () => togglePassword('confirmPassword', toggleConfirmPass));
 
     function getRoleBadge(role) {
-        const base = "px-2 py-1 text-xs rounded-md font-medium";
-        switch (role.toLowerCase()) {
+        if (!role) return '<span class="bg-gray-300 text-gray-800 px-2 py-1 text-xs rounded-md font-medium">N/A</span>';
+        
+        const base = "px-2 py-1 text-xs rounded-md font-medium inline-block";
+        const normalizedRole = role.toLowerCase().trim();
+        const displayRole = normalizedRole.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        
+        switch (normalizedRole) {
             case "student":
-                return `<span class="bg-green-500 text-white ${base}">${role}</span>`;
+                return `<span class="bg-green-500 text-white ${base}">${displayRole}</span>`;
             case "librarian":
-                return `<span class="bg-amber-500 text-white ${base}">${role}</span>`;
+                return `<span class="bg-amber-500 text-white ${base}">${displayRole}</span>`;
             case "admin":
-                return `<span class="bg-orange-600 text-white ${base}">${role}</span>`;
-            case "campus admin":
+                return `<span class="bg-orange-600 text-white ${base}">${displayRole}</span>`;
             case "campus_admin":
-                return `<span class="bg-indigo-600 text-white ${base}">${role}</span>`;
+            case "campus admin":
+                return `<span class="bg-blue-600 text-white ${base}">${displayRole}</span>`;
             case "faculty":
-                return `<span class="bg-emerald-600 text-white ${base}">${role}</span>`;
+                return `<span class="bg-emerald-600 text-white ${base}">${displayRole}</span>`;
             case "staff":
-                return `<span class="bg-teal-600 text-white ${base}">${role}</span>`;
+                return `<span class="bg-teal-600 text-white ${base}">${displayRole}</span>`;
             case "superadmin":
-                return `<span class="bg-purple-600 text-white ${base}">${role}</span>`;
+                return `<span class="bg-purple-600 text-white ${base}">${displayRole}</span>`;
             default:
-                return `<span class="bg-gray-300 text-gray-800 ${base}">${role}</span>`;
+                return `<span class="bg-gray-300 text-gray-800 ${base}">${displayRole}</span>`;
         }
     }
 

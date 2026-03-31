@@ -11,6 +11,7 @@ class FacultyCartController extends Controller
 
   public function __construct()
   {
+    parent::__construct();
     $this->cartRepo = new CartRepository();
   }
 

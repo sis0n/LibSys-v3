@@ -11,6 +11,7 @@ class GuestController extends Controller
 
     public function __construct()
     {
+    parent::__construct();
         $this->BookCatalogRepository = new BookCatalogRepository();
     }
 

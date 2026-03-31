@@ -15,6 +15,7 @@ class OverdueController extends Controller
 
     public function __construct()
     {
+    parent::__construct();
         $this->overdueRepo = new OverdueRepository();
         $this->auditRepo = new AuditLogRepository();
         $this->mailService = new MailService();

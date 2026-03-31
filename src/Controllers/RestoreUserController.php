@@ -12,6 +12,7 @@ class RestoreUserController extends Controller
 
   public function __construct()
   {
+    parent::__construct();
     $this->restoreUserRepo = new RestoreUserRepository();
     $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }

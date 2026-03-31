@@ -13,6 +13,7 @@ class BookManagementController extends Controller
 
     public function __construct()
     {
+    parent::__construct();
         $this->bookRepo = new BookManagementRepository();
         $this->auditRepo = new \App\Repositories\AuditLogRepository();
     }

@@ -13,6 +13,7 @@ class CampusManagementController extends Controller
 
     public function __construct()
     {
+    parent::__construct();
         $this->campusRepo = new CampusRepository();
         $this->auditRepo = new AuditLogRepository();
     }

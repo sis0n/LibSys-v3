@@ -13,6 +13,7 @@ class StaffProfileController extends Controller
 
   public function __construct()
   {
+    parent::__construct();
     if (session_status() === PHP_SESSION_NONE) session_start();
 
     $this->staffRepo = new StaffProfileRepository();

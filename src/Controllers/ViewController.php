@@ -11,6 +11,7 @@ class ViewController extends Controller
 
   public function __construct()
   {
+    parent::__construct();
     $this->userPermissionsRepo = new UserPermissionModuleRepository();
   }
 
