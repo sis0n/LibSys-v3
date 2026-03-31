@@ -53,10 +53,8 @@ class ViewController extends Controller
           'attendance logs' => 'attendanceLogs',
           'reports' => 'topVisitor',
           'transaction history' => 'transactionHistory',
-          'library policies' => 'libraryPolicies'
         ];
 
-        // Campus Admin has access to these by default (except restricted ones)
         if ($role === 'campus_admin') {
             $view_path = $role . '/bookManagement';
             $current_page = 'bookManagement';

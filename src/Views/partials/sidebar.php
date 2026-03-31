@@ -260,7 +260,7 @@ $baseUrl = BASE_URL;
                     </div>
                 </div>
 
-            <?php elseif ($role === 'superadmin' || $role === 'campus_admin'): ?>
+            <?php elseif (in_array($role, ['superadmin', 'campus_admin', 'admin', 'librarian'])): ?>
 
                 <?php if ($role === 'superadmin'): ?>
                 <a href="<?= $baseUrl ?>/dashboard"
@@ -338,7 +338,7 @@ $baseUrl = BASE_URL;
                     if ($hasPermission('overdue tracking')) $logItems[] = ["url" => "overdue", "icon" => "ph ph-warning", "label" => "Overdue Tracking"];
                     if ($hasPermission('reports')) $logItems[] = ["url" => "topVisitor", "icon" => "ph ph-chart-bar", "label" => "Reports"];
                     if ($hasPermission('transaction history')) $logItems[] = ["url" => "transactionHistory", "icon" => "ph ph-arrows-left-right", "label" => "Transaction History"];
-                    if ($role === 'superadmin') $logItems[] = ["url" => "auditLogs", "icon" => "ph ph-shield-check", "label" => "Audit Trail"];
+                    if ($role === 'superadmin' || $role === 'admin') $logItems[] = ["url" => "auditLogs", "icon" => "ph ph-shield-check", "label" => "Audit Trail"];
                     
                     if (!empty($logItems)):
                         $logPages = array_column($logItems, 'url');
@@ -393,7 +393,7 @@ $baseUrl = BASE_URL;
                 </div>
                 <?php endif; ?>
 
-                <?php if ($hasPermission('library policies')): ?>
+                <?php if ($role === 'superadmin'): ?>
                 <a href="<?= $baseUrl ?>/libraryPolicies"
                     class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'libraryPolicies' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
                     <i class="ph ph-scroll text-2xl"></i>
@@ -420,101 +420,6 @@ $baseUrl = BASE_URL;
                         </a>
                     </div>
                 </div>
-
-            <?php elseif ($role === 'admin' || $role === 'librarian'): ?>
-                <?php if ($hasPermission('user management')): ?>
-                    <a href="<?= $baseUrl ?>/userManagement"
-                        class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'userManagement' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                        <i class="ph ph-users text-2xl"></i>
-                        <span class="text-base">User Management</span>
-                    </a>
-                <?php endif; ?>
-
-                <?php if ($hasPermission('book management')): ?>
-                    <a href="<?= $baseUrl ?>/bookManagement"
-                        class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'bookManagement' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                        <i class="ph ph-book-open text-2xl"></i>
-                        <span class="text-base">Book Management</span>
-                    </a>
-                <?php endif; ?>
-
-                <?php if ($hasPermission('equipment management')): ?>
-                    <a href="<?= $baseUrl ?>/equipmentManagement"
-                        class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'equipmentManagement' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                        <i class="ph ph-desktop text-2xl"></i>
-                        <span class="text-base">Equipment Management</span>
-                    </a>
-                <?php endif; ?>
-
-                <?php if ($hasPermission('qr scanner')): ?>
-                    <a href="<?= $baseUrl ?>/qrScanner"
-                        class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'qrScanner' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                        <i class="ph ph-qr-code text-2xl"></i>
-                        <span class="text-base">QR Scanner</span>
-                    </a>
-                <?php endif; ?>
-
-                <?php if ($hasPermission('returning')): ?>
-                    <a href="<?= $baseUrl ?>/returning"
-                        class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'returning' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                        <i class="ph ph-arrow-counter-clockwise text-2xl"></i>
-                        <span class="text-base">Returning</span>
-                    </a>
-                <?php endif; ?>
-
-                <?php if ($hasPermission('borrowing form')): ?>
-                    <a href="<?= $baseUrl ?>/borrowingForm"
-                        class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'borrowingForm' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                        <i class="ph ph-receipt text-2xl"></i>
-                        <span class="text-base">Borrowing Form</span>
-                    </a>
-                <?php endif; ?>
-
-                <?php if ($hasPermission('attendance logs')): ?>
-                    <a href="<?= $baseUrl ?>/attendanceLogs"
-                        class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'attendanceLogs' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                        <i class="ph ph-calendar-check text-2xl"></i>
-                        <span class="text-base">Attendance Logs</span>
-                    </a>
-                <?php endif; ?>
-
-                <?php if ($hasPermission('reports')): ?>
-                    <a href="<?= $baseUrl ?>/topVisitor"
-                        class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'topVisitor' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                        <i class="ph ph-chart-bar text-2xl"></i>
-                        <span class="text-base">Reports</span>
-                    </a>
-                <?php endif; ?>
-
-                <?php if ($hasPermission('transaction history')): ?>
-                    <a href="<?= $baseUrl ?>/transactionHistory"
-                        class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'transactionHistory' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                        <i class="ph ph-arrows-left-right text-2xl"></i>
-                        <span class="text-base">Transaction History</span>
-                    </a>
-                <?php endif; ?>
-
-                <?php if ($hasPermission('restore books')): ?>
-                    <a href="<?= $baseUrl ?>/restoreBooks"
-                        class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'restoreBooks' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                        <i class="ph ph-book text-2xl"></i>
-                        <span class="text-base">Restore Books</span>
-                    </a>
-                <?php endif; ?>
-
-                <?php if ($hasPermission('restore users')): ?>
-                    <a href="<?= $baseUrl ?>/restoreUser"
-                        class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'restoreUser' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                        <i class="ph ph-user-gear text-2xl"></i>
-                        <span class="text-base">Restore User</span>
-                    </a>
-                <?php endif; ?>
-
-                <a href="<?= $baseUrl ?>/changePassword"
-                    class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= ($currentPage === 'changePassword') ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                    <i class="ph ph-key text-2xl"></i>
-                    <span class="text-base">Change Password</span>
-                </a>
 
             <?php endif; ?>
         </nav>

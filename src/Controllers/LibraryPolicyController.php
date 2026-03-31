@@ -40,18 +40,12 @@ class LibraryPolicyController extends Controller
 
     public function index()
     {
-        $this->checkAccess(['superadmin', 'admin', 'campus_admin', 'librarian']);
+        $this->checkAccess(['superadmin']);
         
         $allCampuses = $this->campusRepo->getAllCampuses();
         $activeCampuses = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);
 
-        $campusFilter = $this->getCampusFilter();
-        $selectedCampusId = isset($_GET['campus_id']) ? (int)$_GET['campus_id'] : ($campusFilter ?? 1);
-
-        // If campus_admin/librarian, they can only see their own campus
-        if ($campusFilter && $selectedCampusId != $campusFilter) {
-            $selectedCampusId = $campusFilter;
-        }
+        $selectedCampusId = isset($_GET['campus_id']) ? (int)$_GET['campus_id'] : 1;
 
         $policies = $this->policyRepo->getPoliciesByCampus($selectedCampusId);
         
@@ -60,20 +54,15 @@ class LibraryPolicyController extends Controller
             "campuses" => $activeCampuses,
             "selectedCampusId" => $selectedCampusId,
             "title" => "Library Policy Management",
-            "isViewOnly" => !in_array(strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? '')), ['superadmin', 'admin'])
+            "isViewOnly" => false
         ]);
     }
 
     public function getAll()
     {
-        $this->checkAccess(['superadmin', 'admin', 'campus_admin', 'librarian']);
+        $this->checkAccess(['superadmin']);
         
-        $campusFilter = $this->getCampusFilter();
-        $campusId = !empty($_GET['campus_id']) ? (int)$_GET['campus_id'] : ($campusFilter ?? 1);
-
-        if ($campusFilter && $campusId != $campusFilter) {
-            $campusId = $campusFilter;
-        }
+        $campusId = !empty($_GET['campus_id']) ? (int)$_GET['campus_id'] : 1;
 
         $policies = $this->policyRepo->getPoliciesByCampus($campusId);
         $this->json(['success' => true, 'policies' => $policies]);
@@ -81,7 +70,7 @@ class LibraryPolicyController extends Controller
 
     public function update()
     {
-        $this->checkAccess(['superadmin', 'admin']);
+        $this->checkAccess(['superadmin']);
 
         $data = json_decode(file_get_contents("php://input"), true);
 
