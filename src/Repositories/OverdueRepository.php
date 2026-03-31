@@ -15,7 +15,17 @@ class OverdueRepository
         $this->db = Database::getInstance()->getConnection();
     }
 
-    public function getOverdueStats(): array
+    private function getBorrowerJoinSql()
+    {
+        return "
+            LEFT JOIN students s ON bt.student_id = s.student_id
+            LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+            LEFT JOIN staff st ON bt.staff_id = st.staff_id
+            JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+        ";
+    }
+
+    public function getOverdueStats(?int $campusId = null): array
     {
         // Refresh statuses first
         $this->db->query("UPDATE borrow_transactions SET status = 'overdue' WHERE status = 'borrowed' AND due_date < NOW()");
@@ -24,6 +34,9 @@ class OverdueRepository
                           SET bti.status = 'overdue' 
                           WHERE bt.status = 'overdue' AND bti.status = 'borrowed'");
 
+        $campusWhere = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+        $borrowerJoin = $this->getBorrowerJoinSql();
+
         $stats = [
             'total' => 0,
             'critical' => 0,
@@ -31,36 +44,39 @@ class OverdueRepository
             'notified_today' => 0
         ];
 
-        $stmt = $this->db->query("SELECT COUNT(*) FROM borrow_transaction_items WHERE status = 'overdue'");
+        $stmt = $this->db->query("SELECT COUNT(*) FROM borrow_transaction_items bti JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id $borrowerJoin WHERE bti.status = 'overdue' $campusWhere");
         $stats['total'] = (int)$stmt->fetchColumn();
 
         $stmt = $this->db->query("
             SELECT COUNT(*) FROM borrow_transaction_items bti
             JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
-            WHERE bti.status = 'overdue' AND DATEDIFF(NOW(), bt.due_date) > 7
+            $borrowerJoin
+            WHERE bti.status = 'overdue' AND DATEDIFF(NOW(), bt.due_date) > 7 $campusWhere
         ");
         $stats['critical'] = (int)$stmt->fetchColumn();
 
-        $stmt = $this->db->query("SELECT COUNT(*) FROM borrow_transactions WHERE DATE(due_date) = CURDATE() AND status = 'borrowed'");
+        $stmt = $this->db->query("SELECT COUNT(*) FROM borrow_transactions bt $borrowerJoin WHERE DATE(bt.due_date) = CURDATE() AND bt.status = 'borrowed' $campusWhere");
         $stats['due_today'] = (int)$stmt->fetchColumn();
 
-        $stmt = $this->db->query("SELECT COUNT(*) FROM notification_logs WHERE DATE(sent_at) = CURDATE()");
+        $stmt = $this->db->query("SELECT COUNT(*) FROM notification_logs nl JOIN users u ON nl.recipient_user_id = u.user_id WHERE DATE(nl.sent_at) = CURDATE() $campusWhere");
         $stats['notified_today'] = (int)$stmt->fetchColumn();
 
         return $stats;
     }
 
-    public function fetchOverdueList($filters = []): array
+    public function fetchOverdueList($filters = [], ?int $campusId = null): array
     {
+        $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+        
         $sql = "
             SELECT 
                 bti.item_id, bti.status, bti.returned_at,
                 bt.due_date, bt.borrowed_at, bt.transaction_id,
                 COALESCE(b.title, e.equipment_name) AS item_title, 
-                b.accession_number,
-                e.equipment_name, e.asset_tag,
+                COALESCE(b.accession_number, e.asset_tag) AS accession_number,
                 u.first_name, u.last_name, u.email, u.user_id,
-                s.student_number, s.year_level, s.section,
+                COALESCE(s.student_number, f.unique_faculty_id, st.employee_id) AS student_number,
+                s.year_level, s.section,
                 COALESCE(c.course_code, cl.college_code) as dept_code,
                 DATEDIFF(NOW(), bt.due_date) as days_late,
                 (SELECT MAX(sent_at) FROM notification_logs WHERE borrowing_item_id = bti.item_id) as last_notified,
@@ -72,17 +88,20 @@ class OverdueRepository
             LEFT JOIN students s ON bt.student_id = s.student_id
             LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
             LEFT JOIN staff st ON bt.staff_id = st.staff_id
-            LEFT JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+            JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
             LEFT JOIN courses c ON s.course_id = c.course_id
             LEFT JOIN colleges cl ON f.college_id = cl.college_id
-            WHERE bti.status = 'overdue'
+            WHERE bti.status = 'overdue' $campusWhere
         ";
 
         $params = [];
+        if ($campusId !== null) {
+            $params['campus_id'] = $campusId;
+        }
+
         if (!empty($filters['search'])) {
-            $sql .= " AND (u.first_name LIKE ? OR u.last_name LIKE ? OR s.student_number LIKE ? OR b.title LIKE ? OR e.equipment_name LIKE ?)";
-            $search = "%{$filters['search']}%";
-            array_push($params, $search, $search, $search, $search, $search);
+            $sql .= " AND (u.first_name LIKE :search OR u.last_name LIKE :search OR s.student_number LIKE :search OR b.title LIKE :search OR e.equipment_name LIKE :search)";
+            $params['search'] = "%{$filters['search']}%";
         }
 
         $sql .= " ORDER BY days_late DESC";

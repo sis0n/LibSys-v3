@@ -266,7 +266,7 @@ class RouteConfig
     $router->post('api/superadmin/campuses/delete/{id}', 'CampusManagementController@destroy', ['superadmin']);
     $router->get('campusManagement', 'CampusManagementController@index', ['superadmin']);
     $router->get('api/superadmin/auditLogs/fetch', 'AuditLogController@fetch', ['superadmin']);
-    $router->get('auditLogs', 'AuditLogController@index', ['superadmin']);
+    $router->get('auditLogs', 'AuditLogController@index', ['superadmin', 'admin']);
 
     $router->get('api/superadmin/studentPromotion/fetch', 'StudentPromotionController@fetch', ['superadmin']);
     $router->post('api/superadmin/studentPromotion/promote', 'StudentPromotionController@promote', ['superadmin']);
@@ -363,6 +363,9 @@ class RouteConfig
     $router->get('api/student/myprofile/get', 'StudentProfileController@getProfile', ['student']);
     $router->post('api/student/myprofile/update', 'StudentProfileController@updateProfile', ['student']);
     $router->get('api/data/getAllCourses', 'DataController@getAllCourses', ['student']);
+
+    $router->get('api/campus_admin/overdue/getTableData', 'OverdueController@getTableData', ['campus_admin']);
+    $router->post('api/campus_admin/overdue/sendReminder', 'OverdueController@sendReminder', ['campus_admin']);
 
     $router->get('api/superadmin/overdue/getTableData', 'OverdueController@getTableData', ['superadmin', 'overdue tracking', 'campus_admin']);
     $router->post('api/superadmin/overdue/sendReminder', 'OverdueController@sendReminder', ['superadmin', 'overdue tracking', 'campus_admin']);

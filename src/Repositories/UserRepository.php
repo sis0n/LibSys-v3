@@ -604,7 +604,10 @@ class UserRepository
     $baseQuery = "
         FROM users u
         LEFT JOIN user_module_permissions um ON um.user_id = u.user_id
-        WHERE u.deleted_at IS NULL AND u.role NOT IN ('superadmin')
+        INNER JOIN campuses c ON u.campus_id = c.campus_id
+        WHERE u.deleted_at IS NULL 
+        AND u.role NOT IN ('superadmin')
+        AND c.is_active = 1
     ";
     $params = [];
 
@@ -661,7 +664,12 @@ class UserRepository
 
   public function countPaginatedUsers(string $search, string $role, string $status, ?int $excludeUserId = null, ?int $campusId = null): int
   {
-    $query = "SELECT COUNT(DISTINCT u.user_id) FROM users u WHERE u.deleted_at IS NULL AND u.role NOT IN ('superadmin')";
+    $query = "SELECT COUNT(DISTINCT u.user_id) 
+              FROM users u 
+              INNER JOIN campuses c ON u.campus_id = c.campus_id
+              WHERE u.deleted_at IS NULL 
+              AND u.role NOT IN ('superadmin')
+              AND c.is_active = 1";
     $params = [];
 
     if ($excludeUserId !== null) {

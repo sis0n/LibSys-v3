@@ -99,5 +99,6 @@
 
 <script>
     const BASE_URL = "<?= BASE_URL ?>";
+    const IS_VIEW_ONLY = <?= $isViewOnly ? 'true' : 'false' ?>;
 </script>
 <script src="<?= BASE_URL ?>/js/superadmin/libraryPolicies.js" defer></script>

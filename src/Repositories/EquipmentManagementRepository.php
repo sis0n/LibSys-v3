@@ -46,6 +46,11 @@ class EquipmentManagementRepository
             $params[':campus_id'] = $campusId;
         }
 
+        if (!empty($search)) {
+            $query .= " AND (e.equipment_name LIKE :search OR e.asset_tag LIKE :search)";
+            $params[':search'] = "%$search%";
+        }
+
         switch ($sort) {
             case 'name_asc':  $query .= " ORDER BY e.equipment_name ASC"; break;
             case 'name_desc': $query .= " ORDER BY e.equipment_name DESC"; break;

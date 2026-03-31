@@ -15,7 +15,7 @@ class DashboardRepository
     $this->db = Database::getInstance()->getConnection();
   }
 
-  public function getDashboardStats(): array
+  public function getDashboardStats(?int $campusId = null): array
   {
     try {
       $this->db->query("UPDATE borrow_transactions SET status = 'overdue' WHERE status = 'borrowed' AND due_date < NOW()");
@@ -24,44 +24,62 @@ class DashboardRepository
                         SET bti.status = 'overdue' 
                         WHERE bt.status = 'overdue' AND bti.status = 'borrowed'");
 
-      $stmt = $this->db->query("SELECT COUNT(*) AS total_students FROM students WHERE status='enrolled' AND deleted_at IS NULL");
+      $userCampusWhere = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+      $bookCampusWhere = $campusId !== null ? " AND b.campus_id = " . (int)$campusId : "";
+
+      $stmt = $this->db->query("SELECT COUNT(*) AS total_students FROM students s JOIN users u ON s.user_id = u.user_id WHERE s.status='enrolled' AND u.deleted_at IS NULL $userCampusWhere");
       $totalStudents = (int) ($stmt->fetch(PDO::FETCH_ASSOC)['total_students'] ?? 0);
 
-      $stmt = $this->db->query("SELECT COUNT(*) AS total_staff FROM staff WHERE deleted_at IS NULL");
+      $stmt = $this->db->query("SELECT COUNT(*) AS total_staff FROM staff s JOIN users u ON s.user_id = u.user_id WHERE u.deleted_at IS NULL $userCampusWhere");
       $totalStaff = (int) ($stmt->fetch(PDO::FETCH_ASSOC)['total_staff'] ?? 0);
 
-      $stmt = $this->db->query("SELECT COUNT(*) AS total_faculty FROM faculty WHERE deleted_at IS NULL");
+      $stmt = $this->db->query("SELECT COUNT(*) AS total_faculty FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE u.deleted_at IS NULL $userCampusWhere");
       $totalFaculty = (int) ($stmt->fetch(PDO::FETCH_ASSOC)['total_faculty'] ?? 0);
 
       $totalUsers = $totalStudents + $totalFaculty + $totalStaff;
 
       $stmt = $this->db->query("
                 SELECT COUNT(*) AS added_this_month
-                FROM users
-                WHERE MONTH(created_at)=MONTH(CURDATE()) AND YEAR(created_at)=YEAR(CURDATE())
+                FROM users u
+                WHERE MONTH(u.created_at)=MONTH(CURDATE()) AND YEAR(u.created_at)=YEAR(CURDATE()) $userCampusWhere
             ");
       $usersAddedThisMonth = (int) ($stmt->fetch(PDO::FETCH_ASSOC)['added_this_month'] ?? 0);
 
       $stmt = $this->db->prepare("
-          SELECT COUNT(DISTINCT user_id) AS attendance_today 
-          FROM attendance 
-          WHERE DATE(first_scan_at) = CURDATE()
+          SELECT COUNT(DISTINCT a.user_id) AS attendance_today 
+          FROM attendance a
+          JOIN users u ON a.user_id = u.user_id
+          WHERE DATE(a.first_scan_at) = CURDATE() $userCampusWhere
       ");
       $stmt->execute();
       $row = $stmt->fetch(PDO::FETCH_ASSOC);
       $attendanceToday = (int) ($row['attendance_today'] ?? 0);
 
-      $stmt = $this->db->query("SELECT COUNT(*) AS total_books FROM books WHERE is_active = 1");
+      $stmt = $this->db->query("SELECT COUNT(*) AS total_books FROM books b WHERE b.is_active = 1 $bookCampusWhere");
       $totalBooks = (int) ($stmt->fetch(PDO::FETCH_ASSOC)['total_books'] ?? 0);
 
       $stmt = $this->db->query("
           SELECT COUNT(*) AS borrowed_books 
-          FROM borrow_transaction_items 
-          WHERE status = 'borrowed'
+          FROM borrow_transaction_items bti
+          JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+          LEFT JOIN students s ON bt.student_id = s.student_id
+          LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+          LEFT JOIN staff st ON bt.staff_id = st.staff_id
+          JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+          WHERE bti.status = 'borrowed' $userCampusWhere
       ");
       $borrowedBooks = (int) $stmt->fetchColumn();
 
-      $stmt = $this->db->query("SELECT COUNT(*) AS overdue_books FROM borrow_transaction_items WHERE status='overdue'");
+      $stmt = $this->db->query("
+          SELECT COUNT(*) AS overdue_books 
+          FROM borrow_transaction_items bti
+          JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+          LEFT JOIN students s ON bt.student_id = s.student_id
+          LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+          LEFT JOIN staff st ON bt.staff_id = st.staff_id
+          JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+          WHERE bti.status='overdue' $userCampusWhere
+      ");
       $overdueBooks = (int) ($stmt->fetch(PDO::FETCH_ASSOC)['overdue_books'] ?? 0);
 
       $availableBooks = $totalBooks - $borrowedBooks - $overdueBooks;
@@ -93,14 +111,19 @@ class DashboardRepository
     }
   }
 
-  public function getTopVisitors(int $limit = 5): array
+  public function getTopVisitors(int $limit = 5, ?int $campusId = null): array
   {
+    $where = "WHERE DATE(a.first_scan_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+    if ($campusId !== null) {
+        $where .= " AND u.campus_id = :campus_id";
+    }
+
     $sql = "
         SELECT u.first_name, u.last_name, s.student_number, s.year_level, s.section, COUNT(a.user_id) AS visits
         FROM attendance a
         JOIN users u ON u.user_id = a.user_id
         LEFT JOIN students s ON u.user_id = s.user_id
-        WHERE DATE(a.first_scan_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        $where
         GROUP BY a.user_id
         ORDER BY visits DESC
         LIMIT :limit
@@ -108,6 +131,7 @@ class DashboardRepository
 
     $stmt = $this->db->prepare($sql);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    if ($campusId !== null) $stmt->bindValue(':campus_id', $campusId, PDO::PARAM_INT);
     $stmt->execute();
 
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -123,19 +147,34 @@ class DashboardRepository
     }, $rows);
   }
 
-  public function getWeeklyActivity(): array
+  public function getWeeklyActivity(?int $campusId = null): array
   {
     $data = [];
     for ($i = 6; $i >= 0; $i--) {
       $date = date('Y-m-d', strtotime("-$i days"));
       $day = date('D', strtotime($date));
 
-      $stmt = $this->db->prepare("SELECT COUNT(DISTINCT user_id) FROM attendance WHERE DATE(first_scan_at) = :date");
-      $stmt->execute(['date' => $date]);
+      $stmt = $this->db->prepare("
+          SELECT COUNT(DISTINCT a.user_id) 
+          FROM attendance a 
+          JOIN users u ON a.user_id = u.user_id
+          WHERE DATE(a.first_scan_at) = :date " . ($campusId !== null ? " AND u.campus_id = :campus_id" : "")
+      );
+      $params = ['date' => $date];
+      if ($campusId !== null) $params['campus_id'] = $campusId;
+      $stmt->execute($params);
       $visitors = (int) $stmt->fetchColumn();
 
-      $stmt = $this->db->prepare("SELECT COUNT(*) FROM borrow_transactions WHERE DATE(borrowed_at) = :date");
-      $stmt->execute(['date' => $date]);
+      $stmt = $this->db->prepare("
+          SELECT COUNT(*) 
+          FROM borrow_transactions bt
+          LEFT JOIN students s ON bt.student_id = s.student_id
+          LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+          LEFT JOIN staff st ON bt.staff_id = st.staff_id
+          JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+          WHERE DATE(bt.borrowed_at) = :date " . ($campusId !== null ? " AND u.campus_id = :campus_id" : "")
+      );
+      $stmt->execute($params);
       $borrows = (int) $stmt->fetchColumn();
 
       $data[] = ['day' => $day, 'visitors' => $visitors, 'borrows' => $borrows];
@@ -144,39 +183,46 @@ class DashboardRepository
     return $data;
   }
 
-  public function getPopularBooks(int $limit = 5): array
+  public function getPopularBooks(int $limit = 5, ?int $campusId = null): array
   {
+    $where = $campusId !== null ? " WHERE b.campus_id = :campus_id" : "";
     $sql = "
         SELECT b.title, b.author, b.accession_number, COUNT(bti.item_id) AS borrow_count
         FROM borrow_transaction_items bti
         JOIN books b ON bti.book_id = b.book_id
+        $where
         GROUP BY b.book_id, b.title, b.author, b.accession_number
         ORDER BY borrow_count DESC
         LIMIT :limit
     ";
     $stmt = $this->db->prepare($sql);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    if ($campusId !== null) $stmt->bindValue(':campus_id', $campusId, PDO::PARAM_INT);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
 
-  public function getRecentActivities(int $limit = 5): array
+  public function getRecentActivities(int $limit = 5, ?int $campusId = null): array
   {
+    $where = $campusId !== null ? " WHERE u.campus_id = :campus_id" : "";
     $sql = "
         SELECT al.action, al.details, al.created_at, u.username, CONCAT(u.first_name, ' ', u.last_name) as full_name
         FROM audit_logs al
         LEFT JOIN users u ON al.user_id = u.user_id
+        $where
         ORDER BY al.created_at DESC
         LIMIT :limit
     ";
     $stmt = $this->db->prepare($sql);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    if ($campusId !== null) $stmt->bindValue(':campus_id', $campusId, PDO::PARAM_INT);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
 
-  public function getOverdueBooks(int $limit = 5): array
+  public function getOverdueBooks(int $limit = 5, ?int $campusId = null): array
   {
+    $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
     $sql = "
         SELECT 
             CONCAT(u.first_name, ' ', u.last_name) AS borrower_name,
@@ -191,17 +237,18 @@ class DashboardRepository
         LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
         LEFT JOIN staff st ON bt.staff_id = st.staff_id
         JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
-        WHERE bti.status = 'overdue'
+        WHERE bti.status = 'overdue' $campusWhere
         ORDER BY days_overdue DESC
         LIMIT :limit
     ";
     $stmt = $this->db->prepare($sql);
     $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    if ($campusId !== null) $stmt->bindValue(':campus_id', $campusId, PDO::PARAM_INT);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
 
-  public function getVisitorBreakdown(string $filter = 'month'): array
+  public function getVisitorBreakdown(string $filter = 'month', ?int $campusId = null): array
   {
     $whereClause = "";
     if ($filter === 'day') {
@@ -210,6 +257,10 @@ class DashboardRepository
         $whereClause = "WHERE MONTH(a.first_scan_at) = MONTH(CURDATE()) AND YEAR(a.first_scan_at) = YEAR(CURDATE())";
     } else { // year
         $whereClause = "WHERE YEAR(a.first_scan_at) = YEAR(CURDATE())";
+    }
+
+    if ($campusId !== null) {
+        $whereClause .= " AND u.campus_id = " . (int)$campusId;
     }
 
     $sqlRole = "
@@ -225,7 +276,8 @@ class DashboardRepository
     $sqlDept = "
         SELECT cl.college_name AS department, COUNT(a.id) AS count
         FROM attendance a
-        JOIN students s ON a.user_id = s.user_id
+        JOIN users u ON a.user_id = u.user_id
+        JOIN students s ON u.user_id = s.user_id
         JOIN courses c ON s.course_id = c.course_id
         JOIN colleges cl ON c.college_id = cl.college_id
         $whereClause

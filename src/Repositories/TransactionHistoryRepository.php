@@ -82,6 +82,9 @@ class TransactionHistoryRepository
             LEFT JOIN colleges cl ON f.college_id = cl.college_id
 
             LEFT JOIN users librarian ON bt.librarian_id = librarian.user_id
+            
+            -- Joined user table for campus filtering
+            JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
         ";
   }
 
@@ -89,7 +92,7 @@ class TransactionHistoryRepository
   {
     $whereClause = "bt.status != 'Pending'";
     if ($date) $whereClause .= " AND DATE(bt.borrowed_at) = :date";
-    if ($campusId !== null) $whereClause .= " AND bt.campus_id = :campus_id";
+    if ($campusId !== null) $whereClause .= " AND u.campus_id = :campus_id";
 
     $sql = $this->getBaseSelectQuery() . $this->getBaseFromJoinQuery() . "
             WHERE $whereClause
@@ -112,7 +115,7 @@ class TransactionHistoryRepository
 
     $whereClause = "bt.status = :status";
     if ($date) $whereClause .= " AND DATE(bt.borrowed_at) = :date";
-    if ($campusId !== null) $whereClause .= " AND bt.campus_id = :campus_id";
+    if ($campusId !== null) $whereClause .= " AND u.campus_id = :campus_id";
 
     $sql = $this->getBaseSelectQuery() . $this->getBaseFromJoinQuery() . "
             WHERE $whereClause

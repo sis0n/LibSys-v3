@@ -19,7 +19,8 @@ class DashboardController extends Controller
   {
     try {
       $filter = $_GET['filter'] ?? 'month';
-      $stats = $this->dashboardRepo->getDashboardStats()['data'] ?? [];
+      $campusId = $this->getCampusFilter();
+      $stats = $this->dashboardRepo->getDashboardStats($campusId)['data'] ?? [];
 
       $response = [
         'success' => true,
@@ -28,7 +29,7 @@ class DashboardController extends Controller
           'faculty' => $stats['faculty'] ?? 0,
           'staff' => $stats['staff'] ?? 0,
           'attendance_today' => $stats['attendance_today'] ?? 0,
-          'books' => ($stats['availableBooks'] ?? 0) + ($stats['borrowedBooks'] ?? 0),
+          'books' => $stats['books'] ?? 0,
           'borrowed_books' => $stats['borrowed_books'] ?? 0,
           'totalUsers' => $stats['totalUsers'] ?? 0,
           'usersAddedThisMonth' => $stats['usersAddedThisMonth'] ?? 0,
@@ -36,12 +37,12 @@ class DashboardController extends Controller
           'availableBooksPercent' => $stats['availableBooksPercent'] ?? 0,
           'borrowedBooksPercent' => $stats['borrowedBooksPercent'] ?? 0,
         ],
-        'topVisitors' => $this->dashboardRepo->getTopVisitors(),
-        'weeklyActivity' => $this->dashboardRepo->getWeeklyActivity(),
-        'visitorBreakdown' => $this->dashboardRepo->getVisitorBreakdown($filter),
-        'popularBooks' => $this->dashboardRepo->getPopularBooks(5),
-        'recentActivities' => $this->dashboardRepo->getRecentActivities(5),
-        'overdueBooks' => $this->dashboardRepo->getOverdueBooks(5),
+        'topVisitors' => $this->dashboardRepo->getTopVisitors(5, $campusId),
+        'weeklyActivity' => $this->dashboardRepo->getWeeklyActivity($campusId),
+        'visitorBreakdown' => $this->dashboardRepo->getVisitorBreakdown($filter, $campusId),
+        'popularBooks' => $this->dashboardRepo->getPopularBooks(5, $campusId),
+        'recentActivities' => $this->dashboardRepo->getRecentActivities(5, $campusId),
+        'overdueBooks' => $this->dashboardRepo->getOverdueBooks(5, $campusId),
       ];
 
       echo json_encode($response);

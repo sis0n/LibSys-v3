@@ -49,6 +49,7 @@
 
 ### 👥 User Management
 - [ ] **Campus Filtering:** Add a dropdown to filter users by campus in the Admin/Superadmin User Management table.
+- [ ] **Role-Based Dropdown Lockdown:** Restrict or disable campus selection dropdowns for `campus_admin` and `librarian` roles across all modules (User Management, Books, Reports). If a user is restricted to one campus, the dropdown should be locked to their assigned campus to prevent "empty" states from invalid selections.
 - [ ] **Bulk Import Alignment:** Ensure `campus_id` is correctly mapped during bulk student/staff imports.
 
 ### 🛠️ Librarian Controls

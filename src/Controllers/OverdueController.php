@@ -37,9 +37,11 @@ class OverdueController extends Controller
                 'search' => $_GET['search'] ?? '',
                 'urgency' => $_GET['urgency'] ?? ''
             ];
+            
+            $campusId = $this->getCampusFilter();
 
-            $stats = $this->overdueRepo->getOverdueStats();
-            $list = $this->overdueRepo->fetchOverdueList($filters);
+            $stats = $this->overdueRepo->getOverdueStats($campusId);
+            $list = $this->overdueRepo->fetchOverdueList($filters, $campusId);
 
             echo json_encode([
                 'success' => true,

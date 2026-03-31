@@ -36,22 +36,23 @@ class DomPdfTemplateController extends Controller
         }
 
         $reportRepo = new ReportRepository();
+        $campusId = $this->getCampusFilter();
 
         if (session_status() === PHP_SESSION_NONE) session_start();
         $userId = $_SESSION['user_id'] ?? null;
         $this->auditRepo->log($userId, 'GENERATE_REPORT', 'REPORTS', null, "Generated library report for period: $startDate to $endDate");
 
         $data = [
-            'deletedBooks'     => $reportRepo->getDeletedBooksData($startDate, $endDate),
-            'circulatedBooks'  => $reportRepo->getCirculatedBooksData($startDate, $endDate),
-            'circulatedEquipments' => $reportRepo->getCirculatedEquipmentsData($startDate, $endDate),
-            'lostDamagedBooks' => $reportRepo->getLostDamagedBooksData($startDate, $endDate),
-            'topVisitors'      => $reportRepo->getTopVisitorsData($startDate, $endDate),
-            'topBorrowers'     => $reportRepo->getTopBorrowersData($startDate, $endDate),
-            'mostBorrowedBooks'=> $reportRepo->getMostBorrowedBooksData($startDate, $endDate),
-            'overdueSummary'   => $reportRepo->getOverdueSummaryData($startDate, $endDate),
-            'libraryResources' => $reportRepo->getLibraryResourcesData(),
-            'libraryVisits'    => $reportRepo->getLibraryVisitsData($startDate, $endDate),
+            'deletedBooks'     => $reportRepo->getDeletedBooksData($startDate, $endDate, $campusId),
+            'circulatedBooks'  => $reportRepo->getCirculatedBooksData($startDate, $endDate, $campusId),
+            'circulatedEquipments' => $reportRepo->getCirculatedEquipmentsData($startDate, $endDate, $campusId),
+            'lostDamagedBooks' => $reportRepo->getLostDamagedBooksData($startDate, $endDate, $campusId),
+            'topVisitors'      => $reportRepo->getTopVisitorsData($startDate, $endDate, $campusId),
+            'topBorrowers'     => $reportRepo->getTopBorrowersData($startDate, $endDate, $campusId),
+            'mostBorrowedBooks'=> $reportRepo->getMostBorrowedBooksData($startDate, $endDate, $campusId),
+            'overdueSummary'   => $reportRepo->getOverdueSummaryData($startDate, $endDate, $campusId),
+            'libraryResources' => $reportRepo->getLibraryResourcesData($campusId),
+            'libraryVisits'    => $reportRepo->getLibraryVisitsData($startDate, $endDate, $campusId),
             'dateRange'        => [$startDate, $endDate],
         ];
 

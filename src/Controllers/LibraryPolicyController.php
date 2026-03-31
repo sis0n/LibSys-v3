@@ -13,7 +13,7 @@ class LibraryPolicyController extends Controller
 
     public function __construct()
     {
-    parent::__construct();
+        parent::__construct();
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
@@ -30,40 +30,58 @@ class LibraryPolicyController extends Controller
         exit;
     }
 
-    private function ensureSuperAdmin()
+    private function checkAccess(array $allowedRoles)
     {
-        if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'superadmin') {
+        $role = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
+        if (!in_array($role, $allowedRoles)) {
             $this->json(['success' => false, 'message' => 'Unauthorized access'], 403);
         }
     }
 
     public function index()
     {
-        $this->ensureSuperAdmin();
-        $campuses = $this->campusRepo->getAllCampuses();
-        $campusId = isset($_GET['campus_id']) ? (int)$_GET['campus_id'] : 1;
-        $policies = $this->policyRepo->getPoliciesByCampus($campusId);
+        $this->checkAccess(['superadmin', 'admin', 'campus_admin', 'librarian']);
+        
+        $allCampuses = $this->campusRepo->getAllCampuses();
+        $activeCampuses = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);
+
+        $campusFilter = $this->getCampusFilter();
+        $selectedCampusId = isset($_GET['campus_id']) ? (int)$_GET['campus_id'] : ($campusFilter ?? 1);
+
+        // If campus_admin/librarian, they can only see their own campus
+        if ($campusFilter && $selectedCampusId != $campusFilter) {
+            $selectedCampusId = $campusFilter;
+        }
+
+        $policies = $this->policyRepo->getPoliciesByCampus($selectedCampusId);
         
         $this->view("SuperAdmin/libraryPolicies", [
             "policies" => $policies,
-            "campuses" => $campuses,
-            "selectedCampusId" => $campusId,
-            "title" => "Library Policy Management"
+            "campuses" => $activeCampuses,
+            "selectedCampusId" => $selectedCampusId,
+            "title" => "Library Policy Management",
+            "isViewOnly" => !in_array(strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? '')), ['superadmin', 'admin'])
         ]);
     }
 
     public function getAll()
     {
-        $this->ensureSuperAdmin();
-        // Gumamit ng !empty para kung empty string ang maipasa, mag-default sa 1
-        $campusId = !empty($_GET['campus_id']) ? (int)$_GET['campus_id'] : 1;
+        $this->checkAccess(['superadmin', 'admin', 'campus_admin', 'librarian']);
+        
+        $campusFilter = $this->getCampusFilter();
+        $campusId = !empty($_GET['campus_id']) ? (int)$_GET['campus_id'] : ($campusFilter ?? 1);
+
+        if ($campusFilter && $campusId != $campusFilter) {
+            $campusId = $campusFilter;
+        }
+
         $policies = $this->policyRepo->getPoliciesByCampus($campusId);
         $this->json(['success' => true, 'policies' => $policies]);
     }
 
     public function update()
     {
-        $this->ensureSuperAdmin();
+        $this->checkAccess(['superadmin', 'admin']);
 
         $data = json_decode(file_get_contents("php://input"), true);
 

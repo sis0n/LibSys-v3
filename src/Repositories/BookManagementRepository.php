@@ -8,8 +8,8 @@ use PDO;
 class BookManagementRepository
 {
     private $db;
-    private $baseQuery = "SELECT b.*, c.campus_name FROM books b LEFT JOIN campuses c ON b.campus_id = c.campus_id WHERE 1=1";
-    private $countQuery = "SELECT COUNT(*) FROM books WHERE 1=1";
+    private $baseQuery = "SELECT b.*, c.campus_name FROM books b INNER JOIN campuses c ON b.campus_id = c.campus_id WHERE c.is_active = 1";
+    private $countQuery = "SELECT COUNT(*) FROM books b INNER JOIN campuses c ON b.campus_id = c.campus_id WHERE c.is_active = 1";
 
     public function __construct()
     {
@@ -44,7 +44,6 @@ class BookManagementRepository
             $params[] = $searchTerm;
             $params[] = $searchTerm;
         }
-
         if ($campus_id !== null && $campus_id > 0) {
             $query .= " AND b.campus_id = ?";
             $params[] = $campus_id;
@@ -79,17 +78,17 @@ class BookManagementRepository
         $params = [];
 
         if (strtolower($status) === 'inactive') {
-            $query .= " AND is_active = 0";
+            $query .= " AND b.is_active = 0";
         } else {
-            $query .= " AND is_active = 1";
+            $query .= " AND b.is_active = 1";
             if ($status !== '' && strtolower($status) !== 'all status') {
-                $query .= " AND availability = ?";
+                $query .= " AND b.availability = ?";
                 $params[] = strtolower($status);
             }
         }
 
         if ($search !== '') {
-            $query .= " AND (title LIKE ? OR author LIKE ? OR book_isbn LIKE ? OR accession_number LIKE ? OR call_number LIKE ? OR subject LIKE ?)";
+            $query .= " AND (b.title LIKE ? OR b.author LIKE ? OR b.book_isbn LIKE ? OR b.accession_number LIKE ? OR b.call_number LIKE ? OR b.subject LIKE ?)";
             $searchTerm = "%$search%";
             $params[] = $searchTerm;
             $params[] = $searchTerm;
@@ -99,7 +98,7 @@ class BookManagementRepository
             $params[] = $searchTerm;
         }
         if ($campus_id !== null && $campus_id > 0) {
-            $query .= " AND campus_id = ?";
+            $query .= " AND b.campus_id = ?";
             $params[] = $campus_id;
         }
 

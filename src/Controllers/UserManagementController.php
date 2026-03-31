@@ -41,21 +41,22 @@ class UserManagementController extends Controller
   {
     header('Content-Type: application/json');
     try {
+      $role = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
+      if ($role === 'librarian') {
+          throw new \Exception("Unauthorized: Librarians do not have access to User Management.");
+      }
+
       $limit = (int)($_GET['limit'] ?? 10);
       $offset = (int)($_GET['offset'] ?? 0);
       $search = $_GET['search'] ?? '';
-      $role = $_GET['role'] ?? 'All Roles';
+      $filterRole = $_GET['role'] ?? 'All Roles';
       $status = $_GET['status'] ?? 'All Status';
 
       $currentUserId = $_SESSION['user_id'] ?? null;
-      
-      $campusId = null;
-      if (isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'campus_admin') {
-        $campusId = $_SESSION['user_data']['campus_id'] ?? null;
-      }
+      $campusId = $this->getCampusFilter();
 
-      $users = $this->userRepo->getPaginatedUsers($limit, $offset, $search, $role, $status, $currentUserId, $campusId);
-      $totalCount = $this->userRepo->countPaginatedUsers($search, $role, $status, $currentUserId, $campusId);
+      $users = $this->userRepo->getPaginatedUsers($limit, $offset, $search, $filterRole, $status, $currentUserId, $campusId);
+      $totalCount = $this->userRepo->countPaginatedUsers($search, $filterRole, $status, $currentUserId, $campusId);
 
       echo json_encode(['success' => true, 'users' => $users, 'totalCount' => $totalCount]);
     } catch (\Exception $e) {

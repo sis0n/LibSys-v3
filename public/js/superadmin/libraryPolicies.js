@@ -106,10 +106,12 @@ document.addEventListener("DOMContentLoaded", function () {
                         Last updated: ${new Date(policy.updated_at).toLocaleString()}
                     </div>
                     
+                    ${!IS_VIEW_ONLY ? `
                     <button class="edit-policy-btn w-full mt-4 flex items-center justify-center gap-2 py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-orange-600 hover:border-orange-600 hover:text-white transition-all font-semibold shadow-sm" data-role="${policy.role}">
                         <i class="ph ph-pencil-simple"></i>
                         Edit Policy
                     </button>
+                    ` : ''}
                 </div>
             </div>
         `,

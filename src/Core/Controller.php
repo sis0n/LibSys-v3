@@ -42,10 +42,18 @@ class Controller
 
     protected function getCampusFilter(): ?int
     {
-        $role = strtolower($_SESSION['role'] ?? '');
+        $role = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
+        
+        // Superadmin and Admin have global access (Global/All Campuses)
+        if (in_array($role, ['superadmin', 'admin'])) {
+            return null;
+        }
+
+        // Campus Admin and Librarian are restricted to their own campus
         if (in_array($role, ['campus_admin', 'librarian'])) {
             return $_SESSION['user_data']['campus_id'] ?? null;
         }
+
         return null;
     }
 

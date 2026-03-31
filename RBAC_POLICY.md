@@ -69,8 +69,3 @@
 - **Gatekeeper Logic** — Pag inactive ang campus, hindi ma-a-access ang lahat ng books, equipment, at users nito
 
 ---
-
-## Notes
-- Ang RBAC ay module-based — pag may access ang role sa isang module, lahat ng functions sa module ay accessible
-- Ang `campus_admin` ay bagong role na idadagdag sa existing roles (`superadmin`, `admin`, `librarian`, `student`)
-- Ang `student` role ay may sariling modules na hindi kasama sa matrix na ito

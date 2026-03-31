@@ -20,9 +20,10 @@ class StudentPromotionController extends Controller
             session_start();
         }
 
-        if (($_SESSION['role'] ?? '') !== 'superadmin') {
+        $role = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
+        if (in_array($role, ['librarian', 'student', 'faculty', 'staff', 'scanner'])) {
             http_response_code(403);
-            die("Forbidden: Access restricted to Superadmin only.");
+            die("Forbidden: Access denied.");
         }
 
         $this->promoRepo = new StudentPromotionRepository();
@@ -35,6 +36,11 @@ class StudentPromotionController extends Controller
         $allCampuses = $this->campusRepo->getAllCampuses();
         $activeCampuses = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);
 
+        $campusId = $this->getCampusFilter();
+        if ($campusId) {
+            $activeCampuses = array_filter($activeCampuses, fn($c) => $c['campus_id'] == $campusId);
+        }
+
         $this->view('superadmin/studentPromotion', [
             'title' => 'Student Promotion',
             'currentPage' => 'studentPromotion',
@@ -46,9 +52,15 @@ class StudentPromotionController extends Controller
     {
         header('Content-Type: application/json');
         try {
+            $campusIdFilter = $this->getCampusFilter();
+            $requestedCampusId = $_GET['campus_id'] ?? null;
+            
+            // Enforce campus filter
+            $campusId = $campusIdFilter ?? $requestedCampusId;
+
             $filters = [
                 'course_id' => $_GET['course_id'] ?? null,
-                'campus_id' => $_GET['campus_id'] ?? null,
+                'campus_id' => $campusId,
                 'year_level' => $_GET['year_level'] ?? null,
                 'search' => $_GET['search'] ?? '',
                 'status' => $_GET['status'] ?? 1
