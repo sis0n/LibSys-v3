@@ -13,7 +13,7 @@ $normalizedPermissions = array_map(function ($p) {
 }, $userPermissions);
 
 $hasPermission = function ($code) use ($normalizedPermissions, $isSuperAdmin) {
-    if ($isSuperAdmin && empty($normalizedPermissions)) {
+    if ($isSuperAdmin) {
         return true;
     }
     return in_array(trim(strtolower($code)), $normalizedPermissions);
@@ -28,7 +28,7 @@ $baseUrl = BASE_URL;
         transition-transform duration-300 ease-in-out 
         z-40 overflow-hidden hover:overflow-y-auto">
 
-    <a href="<?= $baseUrl ?>/dashboard"
+    <a href="<?= $isSuperAdmin ? $baseUrl . '/dashboard' : '#' ?>"
         class="flex items-center gap-4 px-6 py-4 border-b border-orange-200 cursor-pointer">
         <img src="<?= $baseUrl ?>/assets/library-icons/apple-touch-icon.png" alt="Logo" class="h-18">
         <span class="font-semibold text-lg text-orange-700">
@@ -261,11 +261,14 @@ $baseUrl = BASE_URL;
                 </div>
 
             <?php elseif ($role === 'superadmin' || $role === 'campus_admin'): ?>
+
+                <?php if ($role === 'superadmin'): ?>
                 <a href="<?= $baseUrl ?>/dashboard"
                     class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'dashboard' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
                     <i class="ph ph-house text-2xl"></i>
                     <span>Dashboard</span>
                 </a>
+                <?php endif; ?>
 
                 <?php 
                     $mgmtItems = [];

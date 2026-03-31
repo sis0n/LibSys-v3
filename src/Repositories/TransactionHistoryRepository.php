@@ -85,36 +85,44 @@ class TransactionHistoryRepository
         ";
   }
 
-  public function getAllTransactions(?string $date = null): array
+  public function getAllTransactions(?string $date = null, ?int $campusId = null): array
   {
+    $whereClause = "bt.status != 'Pending'";
+    if ($date) $whereClause .= " AND DATE(bt.borrowed_at) = :date";
+    if ($campusId !== null) $whereClause .= " AND bt.campus_id = :campus_id";
+
     $sql = $this->getBaseSelectQuery() . $this->getBaseFromJoinQuery() . "
-            WHERE bt.status != 'Pending'
-            " . ($date ? " AND DATE(bt.borrowed_at) = :date" : "") . "
+            WHERE $whereClause
             ORDER BY bt.borrowed_at DESC
         ";
 
     $stmt = $this->db->prepare($sql);
     if ($date) $stmt->bindParam(':date', $date);
+    if ($campusId !== null) $stmt->bindParam(':campus_id', $campusId, PDO::PARAM_INT);
     $stmt->execute();
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
 
-  public function getTransactionsByStatus(string $status, ?string $date = null): array
+  public function getTransactionsByStatus(string $status, ?string $date = null, ?int $campusId = null): array
   {
     if (strtolower($status) === 'pending') {
       return [];
     }
 
+    $whereClause = "bt.status = :status";
+    if ($date) $whereClause .= " AND DATE(bt.borrowed_at) = :date";
+    if ($campusId !== null) $whereClause .= " AND bt.campus_id = :campus_id";
+
     $sql = $this->getBaseSelectQuery() . $this->getBaseFromJoinQuery() . "
-            WHERE bt.status = :status
-            " . ($date ? " AND DATE(bt.borrowed_at) = :date" : "") . "
+            WHERE $whereClause
             ORDER BY bt.borrowed_at DESC
         ";
 
     $stmt = $this->db->prepare($sql);
     $stmt->bindParam(':status', $status);
     if ($date) $stmt->bindParam(':date', $date);
+    if ($campusId !== null) $stmt->bindParam(':campus_id', $campusId, PDO::PARAM_INT);
     $stmt->execute();
 
     return $stmt->fetchAll(PDO::FETCH_ASSOC);

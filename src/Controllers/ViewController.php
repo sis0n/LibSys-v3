@@ -34,14 +34,16 @@ class ViewController extends Controller
       case 'faculty':
       case 'staff':
       case 'superadmin':
-      case 'campus_admin':
         $view_path = $role . '/dashboard';
         $current_page = 'dashboard';
         break;
 
+      case 'campus_admin':
       case 'admin':
       case 'librarian':
         $privilege_to_page = [
+          'user management' => 'userManagement',
+          'student promotion' => 'studentPromotion',
           'book management' => 'bookManagement',
           'equipment management' => 'equipmentManagement',
           'qr scanner' => 'qrScanner',
@@ -50,11 +52,16 @@ class ViewController extends Controller
           'attendance logs' => 'attendanceLogs',
           'reports' => 'topVisitor',
           'transaction history' => 'transactionHistory',
-          'restore books' => 'restoreBooks',
-          'restore equipment' => 'restoreEquipment',
-          'user management' => 'userManagement',
-          'restore users' => 'restoreUser'
+          'library policies' => 'libraryPolicies'
         ];
+
+        // Campus Admin has access to these by default (except restricted ones)
+        if ($role === 'campus_admin') {
+            $view_path = $role . '/bookManagement';
+            $current_page = 'bookManagement';
+            $title = 'Book Management';
+            break;
+        }
 
         foreach ($privilege_to_page as $privilege => $pageName) {
           if (in_array($privilege, $normalizedPermissions)) {

@@ -28,7 +28,8 @@ class ReturningController extends Controller
 
   public function getOverdue()
   {
-    $data = $this->returningRepo->getOverdue();
+    $campusId = $this->getCampusFilter();
+    $data = $this->returningRepo->getOverdue($campusId);
     if ($data === null) {
       $this->sendJson(['success' => false, 'message' => 'Failed to retrieve data.'], 500);
       return;
@@ -40,7 +41,8 @@ class ReturningController extends Controller
   {
     try {
       $limit = (int)($_GET['limit'] ?? 10);
-      $list = $this->returningRepo->getRecentReturns($limit);
+      $campusId = $this->getCampusFilter();
+      $list = $this->returningRepo->getRecentReturns($limit, $campusId);
       $this->sendJson(['success' => true, 'list' => $list]);
     } catch (\Exception $e) {
       $this->sendJson(['success' => false, 'message' => $e->getMessage()], 500);

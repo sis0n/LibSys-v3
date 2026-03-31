@@ -15,7 +15,7 @@ class ReportRepository
         $this->db = Database::getInstance()->getConnection();
     }
 
-    public function getCirculatedBooksSummary(string $filter = 'month')
+    public function getCirculatedBooksSummary(string $filter = 'month', ?int $campusId = null)
     {
         try {
             $whereClause = "";
@@ -25,6 +25,10 @@ class ReportRepository
                 $whereClause = "AND MONTH(bt.borrowed_at) = MONTH(CURDATE()) AND YEAR(bt.borrowed_at) = YEAR(CURDATE())";
             } else { // year
                 $whereClause = "AND YEAR(bt.borrowed_at) = YEAR(CURDATE())";
+            }
+
+            if ($campusId !== null) {
+                $whereClause .= " AND bt.campus_id = " . (int)$campusId;
             }
 
             $sql = "
@@ -224,7 +228,7 @@ class ReportRepository
         }
     }
 
-    public function getMostBorrowedBooks(string $filter = 'month')
+    public function getMostBorrowedBooks(string $filter = 'month', ?int $campusId = null)
     {
         try {
             $whereClause = "WHERE bti.book_id IS NOT NULL";
@@ -234,6 +238,10 @@ class ReportRepository
                 $whereClause .= " AND MONTH(bt.borrowed_at) = MONTH(CURDATE()) AND YEAR(bt.borrowed_at) = YEAR(CURDATE())";
             } else { // year
                 $whereClause .= " AND YEAR(bt.borrowed_at) = YEAR(CURDATE())";
+            }
+
+            if ($campusId !== null) {
+                $whereClause .= " AND bt.campus_id = " . (int)$campusId;
             }
 
             $sql = "
@@ -259,9 +267,14 @@ class ReportRepository
         }
     }
 
-    public function getLibraryVisitsByDepartment(string $filter = 'month')
+    public function getLibraryVisitsByDepartment(string $filter = 'month', ?int $campusId = null)
     {
         try {
+            $whereClause = "";
+            if ($campusId !== null) {
+                $whereClause = " AND a.campus_id = " . (int)$campusId;
+            }
+
             $sql = "
                 WITH DepartmentVisits AS (
                     SELECT
@@ -281,7 +294,7 @@ class ReportRepository
                         (u_combined.college_id = cl.college_id) OR 
                         (u_combined.course_id IN (SELECT course_id FROM courses WHERE college_id = cl.college_id))
                     )
-                    LEFT JOIN attendance a ON u_combined.user_id = a.user_id
+                    LEFT JOIN attendance a ON u_combined.user_id = a.user_id $whereClause
                     GROUP BY cl.college_name
                 )
                 SELECT * FROM DepartmentVisits
@@ -304,7 +317,7 @@ class ReportRepository
         }
     }
 
-    public function getDeletedBooksReport(string $filter = 'month')
+    public function getDeletedBooksReport(string $filter = 'month', ?int $campusId = null)
     {
         try {
             $whereClause = "";
@@ -314,6 +327,10 @@ class ReportRepository
                 $whereClause = "AND MONTH(deleted_at) = MONTH(CURDATE()) AND YEAR(deleted_at) = YEAR(CURDATE())";
             } else { // year
                 $whereClause = "AND YEAR(deleted_at) = YEAR(CURDATE())";
+            }
+
+            if ($campusId !== null) {
+                $whereClause .= " AND campus_id = " . (int)$campusId;
             }
 
             $sql = "
@@ -335,7 +352,7 @@ class ReportRepository
         }
     }
 
-    public function getLostDamagedBooksSummary(string $filter = 'month')
+    public function getLostDamagedBooksSummary(string $filter = 'month', ?int $campusId = null)
     {
         try {
             $whereClause = "";
@@ -347,6 +364,10 @@ class ReportRepository
                 $whereClause = "AND YEAR(bti.returned_at) = YEAR(CURDATE())";
             }
 
+            if ($campusId !== null) {
+                $whereClause .= " AND bt.campus_id = " . (int)$campusId;
+            }
+
             $sql = "
                 SELECT
                     'Lost' AS category,
@@ -356,6 +377,7 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bti.returned_at) = YEAR(CURDATE()) THEN bti.item_id END) AS year,
                     COUNT(bti.item_id) AS filtered_count
                 FROM borrow_transaction_items bti
+                JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
                 WHERE bti.status = 'lost' AND bti.book_id IS NOT NULL $whereClause
                 UNION ALL
                 SELECT
@@ -366,6 +388,7 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bti.returned_at) = YEAR(CURDATE()) THEN bti.item_id END) AS year,
                     COUNT(bti.item_id) AS filtered_count
                 FROM borrow_transaction_items bti
+                JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
                 WHERE bti.status = 'damaged' AND bti.book_id IS NOT NULL $whereClause
                 UNION ALL
                 SELECT
@@ -376,6 +399,7 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bti.returned_at) = YEAR(CURDATE()) THEN bti.item_id END) AS year,
                     COUNT(bti.item_id) AS filtered_count
                 FROM borrow_transaction_items bti
+                JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
                 WHERE bti.status IN ('lost', 'damaged') AND bti.book_id IS NOT NULL $whereClause;
             ";
             $stmt = $this->db->prepare($sql);

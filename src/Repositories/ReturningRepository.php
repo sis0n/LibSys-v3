@@ -15,7 +15,7 @@ class ReturningRepository
     $this->db = Database::getInstance()->getConnection();
   }
 
-  public function getOverdue(): ?array
+  public function getOverdue(?int $campusId = null): ?array
   {
     try {
       $this->db->query("UPDATE borrow_transactions SET status = 'overdue' WHERE status = 'borrowed' AND due_date < NOW()");
@@ -24,7 +24,12 @@ class ReturningRepository
                               SET bti.status = 'overdue' 
                               WHERE bt.status = 'overdue' AND bti.status = 'borrowed'");
 
-      $baseSelect = "
+      $whereClause = "(bti.status = 'borrowed' OR bti.status = 'overdue') AND bt.due_date < NOW()";
+      if ($campusId !== null) {
+          $whereClause .= " AND bt.campus_id = " . (int)$campusId;
+      }
+
+      $queryOverdue = "
                 SELECT 
                     bti.status,
                     bt.due_date,
@@ -40,9 +45,6 @@ class ReturningRepository
                     f.college_id, 
                     COALESCE(c.course_code, cl.college_code, st.position) AS department_course_code,
                     COALESCE(c.course_title, cl.college_name, st.position) AS department_course_name
-            ";
-
-      $baseFrom = "
                 FROM borrow_transaction_items bti
                 JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
                 JOIN books b ON bti.book_id = b.book_id
@@ -53,14 +55,11 @@ class ReturningRepository
                 LEFT JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
                 LEFT JOIN courses c ON s.course_id = c.course_id
                 LEFT JOIN colleges cl ON f.college_id = cl.college_id
+                WHERE $whereClause
+                ORDER BY bt.due_date ASC
             ";
 
-      $queryOverdue = $baseSelect . $baseFrom . "
-                WHERE (bti.status = 'borrowed' OR bti.status = 'overdue')
-                AND bt.due_date < NOW()
-            ";
-
-      $stmtOverdue = $this->db->prepare($queryOverdue . " ORDER BY bt.due_date ASC");
+      $stmtOverdue = $this->db->prepare($queryOverdue);
       $stmtOverdue->execute();
       $overdue = $stmtOverdue->fetchAll(PDO::FETCH_ASSOC);
 
@@ -75,8 +74,13 @@ class ReturningRepository
     }
   }
 
-  public function getRecentReturns(int $limit = 5): array
+  public function getRecentReturns(int $limit = 5, ?int $campusId = null): array
   {
+    $whereClause = "bti.status = 'returned'";
+    if ($campusId !== null) {
+        $whereClause .= " AND bt.campus_id = " . (int)$campusId;
+    }
+
     $sql = "
         SELECT 
             COALESCE(b.title, e.equipment_name) as item_title,
@@ -94,7 +98,7 @@ class ReturningRepository
         LEFT JOIN staff st ON bt.staff_id = st.staff_id
         LEFT JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
         LEFT JOIN colleges cl ON f.college_id = cl.college_id
-        WHERE bti.status = 'returned'
+        WHERE $whereClause
         ORDER BY bti.returned_at DESC
         LIMIT :limit
     ";

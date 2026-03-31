@@ -21,6 +21,7 @@ class TransactionHistoryController extends Controller
 
     $status = strtolower($_GET['status'] ?? 'all');
     $date   = $_GET['date'] ?? null;
+    $campusId = $this->getCampusFilter();
 
     if ($status === 'pending') {
       echo json_encode([]);
@@ -28,9 +29,9 @@ class TransactionHistoryController extends Controller
     }
 
     if ($status === 'all') {
-      $transactions = $this->repo->getAllTransactions($date);
+      $transactions = $this->repo->getAllTransactions($date, $campusId);
     } else {
-      $transactions = $this->repo->getTransactionsByStatus($status, $date);
+      $transactions = $this->repo->getTransactionsByStatus($status, $date, $campusId);
     }
 
     echo json_encode($transactions);

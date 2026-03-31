@@ -33,7 +33,8 @@ class Controller
 
     protected function getCampusFilter(): ?int
     {
-        if (isset($_SESSION['role']) && $_SESSION['role'] === 'campus_admin') {
+        $role = strtolower($_SESSION['role'] ?? '');
+        if (in_array($role, ['campus_admin', 'librarian'])) {
             return $_SESSION['user_data']['campus_id'] ?? null;
         }
         return null;

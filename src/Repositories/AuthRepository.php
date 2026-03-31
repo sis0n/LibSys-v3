@@ -49,7 +49,7 @@ class AuthRepository
         $departmentOrCourse = $college['college_code'] ?? 'N/A';
       }
 
-      if (in_array($role, ['admin', 'librarian', 'superadmin'])) {
+      if (in_array($role, ['admin', 'librarian', 'superadmin', 'campus_admin'])) {
         $modules = $this->userModuleRepo->getModulesByUserId($user['user_id']);
       }
 

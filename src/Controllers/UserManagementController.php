@@ -138,6 +138,11 @@ class UserManagementController extends Controller
     $role = strtolower(trim($data['role'] ?? ''));
     $contact = $data['contact'] ?? 'N/A';
 
+    $campusIdFilter = $this->getCampusFilter();
+    if ($campusIdFilter !== null) {
+      $campus_id = $campusIdFilter;
+    }
+
     if (!$first_name || !$last_name || !$username || !$role || !$campus_id) {
       echo json_encode([
         'success' => false,
@@ -325,6 +330,17 @@ class UserManagementController extends Controller
       }
 
       $user = $this->userRepo->getUserById($id);
+      if (!$user) {
+        echo json_encode(['success' => false, 'message' => 'User not found.']);
+        return;
+      }
+
+      $campusIdFilter = $this->getCampusFilter();
+      if ($campusIdFilter !== null && $user['campus_id'] != $campusIdFilter) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized: User belongs to another campus.']);
+        return;
+      }
+
       $deleted = $this->userRepo->deleteUserWithCascade((int)$id, $deletedBy);
 
       if ($deleted && $user) {
@@ -482,6 +498,12 @@ class UserManagementController extends Controller
         return;
       }
 
+      $campusIdFilter = $this->getCampusFilter();
+      if ($campusIdFilter !== null && $user['campus_id'] != $campusIdFilter) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized: User belongs to another campus.']);
+        return;
+      }
+
       if (strtolower($user['role']) === 'superadmin') {
         echo json_encode(['success' => false, 'message' => 'Superadmin status cannot be changed.']);
         return;
@@ -524,6 +546,17 @@ class UserManagementController extends Controller
       unset($data['modules']);
 
       $currentUser = $this->userRepo->getUserById((int)$id);
+      if (!$currentUser) {
+        echo json_encode(['success' => false, 'message' => 'User not found.']);
+        return;
+      }
+
+      $campusIdFilter = $this->getCampusFilter();
+      if ($campusIdFilter !== null && $currentUser['campus_id'] != $campusIdFilter) {
+        echo json_encode(['success' => false, 'message' => 'Unauthorized: User belongs to another campus.']);
+        return;
+      }
+
       $currentRole = strtolower($currentUser['role'] ?? '');
 
       $studentData = [];

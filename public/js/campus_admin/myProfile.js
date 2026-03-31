@@ -76,6 +76,9 @@ window.addEventListener("DOMContentLoaded", () => {
         if(inputElements[id]) {
             // Special case for genderOther: only enable if genderSelect value is 'Other'
             if (id === 'genderOther' && genderSelect && genderSelect.value !== 'Other') return;
+            
+            // Keep campus disabled for campus_admin
+            if (id === 'campus') return;
 
             inputElements[id].disabled = false;
             inputElements[id].classList.remove('bg-gray-50', 'border-gray-200');

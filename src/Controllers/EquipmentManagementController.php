@@ -105,9 +105,12 @@ class EquipmentManagementController extends Controller
     public function add()
     {
         try {
+            $campusIdFilter = $this->getCampusFilter();
+            $campusId = $campusIdFilter !== null ? $campusIdFilter : ($_POST['campus_id'] ?? null);
+
             $data = [
                 'equipment_name' => $_POST['equipment_name'] ?? '',
-                'campus_id'      => $_POST['campus_id'] ?? null,
+                'campus_id'      => $campusId,
                 'asset_tag'      => $this->generateAssetTag(),
                 'status'         => $_POST['status'] ?? 'available',
                 'is_active'      => 1
@@ -142,9 +145,19 @@ class EquipmentManagementController extends Controller
             $equipmentId = $id ?? $_POST['equipment_id'] ?? null;
             if (!$equipmentId) $this->json(['success' => false, 'message' => 'Equipment ID required'], 400);
 
+            $equipment = $this->equipmentRepo->getById($equipmentId);
+            if (!$equipment) {
+                return $this->json(['success' => false, 'message' => 'Equipment not found'], 404);
+            }
+
+            $campusIdFilter = $this->getCampusFilter();
+            if ($campusIdFilter !== null && $equipment['campus_id'] != $campusIdFilter) {
+                return $this->json(['success' => false, 'message' => 'Unauthorized: Equipment belongs to another campus.'], 403);
+            }
+
             $data = [
                 'equipment_name' => $_POST['equipment_name'] ?? '',
-                'campus_id'      => $_POST['campus_id'] ?? null,
+                'campus_id'      => $campusIdFilter !== null ? $campusIdFilter : ($_POST['campus_id'] ?? null),
                 'status'         => $_POST['status'] ?? 'available'
             ];
 
@@ -173,6 +186,17 @@ class EquipmentManagementController extends Controller
     {
         try {
             if (!$id) $this->json(['success' => false, 'message' => 'ID required'], 400);
+
+            $equipment = $this->equipmentRepo->getById($id);
+            if (!$equipment) {
+                return $this->json(['success' => false, 'message' => 'Equipment not found'], 404);
+            }
+
+            $campusIdFilter = $this->getCampusFilter();
+            if ($campusIdFilter !== null && $equipment['campus_id'] != $campusIdFilter) {
+                return $this->json(['success' => false, 'message' => 'Unauthorized: Equipment belongs to another campus.'], 403);
+            }
+
             $newStatus = $_POST['is_active'] ?? 0;
             
             $success = $this->equipmentRepo->toggleActiveStatus((int)$id, (int)$newStatus);
@@ -193,6 +217,17 @@ class EquipmentManagementController extends Controller
     {
         try {
             if (!$id) $this->json(['success' => false, 'message' => 'ID required'], 400);
+
+            $equipment = $this->equipmentRepo->getById($id);
+            if (!$equipment) {
+                return $this->json(['success' => false, 'message' => 'Equipment not found'], 404);
+            }
+
+            $campusIdFilter = $this->getCampusFilter();
+            if ($campusIdFilter !== null && $equipment['campus_id'] != $campusIdFilter) {
+                return $this->json(['success' => false, 'message' => 'Unauthorized: Equipment belongs to another campus.'], 403);
+            }
+
             $success = $this->equipmentRepo->deactivateEquipment((int)$id);
 
             if ($success) {

@@ -125,7 +125,12 @@ class BookManagementController extends Controller
         }
 
         // Ensure campus_id is handled
-        $data['campus_id'] = !empty($data['campus_id']) ? (int)$data['campus_id'] : null;
+        $campusIdFilter = $this->getCampusFilter();
+        if ($campusIdFilter !== null) {
+            $data['campus_id'] = $campusIdFilter;
+        } else {
+            $data['campus_id'] = !empty($data['campus_id']) ? (int)$data['campus_id'] : null;
+        }
 
         if (isset($_FILES['book_image']) && $_FILES['book_image']['error'] == 0) {
             $imagePath = $this->handleImageUpload($_FILES['book_image']);
@@ -183,6 +188,11 @@ class BookManagementController extends Controller
                 return $this->json(['success' => false, 'message' => 'Book not found.'], 404);
             }
 
+            $campusIdFilter = $this->getCampusFilter();
+            if ($campusIdFilter !== null && $book['campus_id'] != $campusIdFilter) {
+                return $this->json(['success' => false, 'message' => 'Unauthorized: Book belongs to another campus.'], 403);
+            }
+
             if (!isset($data['availability'])) {
                 $data['availability'] = $book['availability'];
             }
@@ -216,6 +226,11 @@ class BookManagementController extends Controller
                 return $this->json(['success' => false, 'message' => 'Book not found.'], 404);
             }
 
+            $campusIdFilter = $this->getCampusFilter();
+            if ($campusIdFilter !== null && $book['campus_id'] != $campusIdFilter) {
+                return $this->json(['success' => false, 'message' => 'Unauthorized: Book belongs to another campus.'], 403);
+            }
+
             $success = $this->bookRepo->toggleActiveStatus($bookId, 1, $updatedByUserId);
 
             if ($success) {
@@ -242,6 +257,11 @@ class BookManagementController extends Controller
             $book = $this->bookRepo->findBookById($bookId);
             if (!$book) {
                 return $this->json(['success' => false, 'message' => 'Book not found.'], 404);
+            }
+
+            $campusIdFilter = $this->getCampusFilter();
+            if ($campusIdFilter !== null && $book['campus_id'] != $campusIdFilter) {
+                return $this->json(['success' => false, 'message' => 'Unauthorized: Book belongs to another campus.'], 403);
             }
 
             if ($book['availability'] === 'borrowed') {
@@ -433,7 +453,13 @@ class BookManagementController extends Controller
             }
 
             // 3. Invalid campus check
-            $campusId = $campusMap[$campusInput] ?? null;
+            $campusIdFilter = $this->getCampusFilter();
+            if ($campusIdFilter !== null) {
+                $campusId = $campusIdFilter;
+            } else {
+                $campusId = $campusMap[$campusInput] ?? null;
+            }
+
             if ($campusId === null) {
                 fclose($handle);
                 echo json_encode([

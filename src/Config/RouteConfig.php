@@ -314,9 +314,6 @@ class RouteConfig
     $router->post('api/campus_admin/returning/checkBook', 'ReturningController@checkBookStatus', ['campus_admin']);
     $router->post('api/campus_admin/returning/markReturned', 'ReturningController@returnBook', ['campus_admin']);
     $router->post('api/campus_admin/returning/extend', 'ReturningController@extendDueDate', ['campus_admin']);
-    $router->get('api/campus_admin/restoreUser/fetch', 'RestoreUserController@getDeletedUsersJson', ['campus_admin']);
-    $router->post('api/campus_admin/restoreUser/restore', 'RestoreUserController@restore', ['campus_admin']);
-    $router->post('api/campus_admin/restoreUser/delete/{id}', 'RestoreUserController@archive', ['campus_admin']);
 
     $router->get('api/campus_admin/dashboard/stats', 'DashboardController@getStats', ['campus_admin']);
     $router->get('api/campus_admin/dashboard/top-visitors', 'DashboardController@getTopVisitors', ['campus_admin']);
@@ -339,11 +336,10 @@ class RouteConfig
     $router->get('api/campus_admin/reports/getActivityReport', 'ReportController@getActivityReport', ['campus_admin', 'reports']);
     $router->get('api/campus_admin/reports/getReportGraphData', 'ReportController@getReportGraphData', ['campus_admin', 'reports']);
     $router->post('api/campus_admin/reports/generate-report', 'DomPdfTemplateController@generateLibraryReport', ['campus_admin', 'reports']);
-    $router->get('api/campus_admin/myProfile/get', 'campus_adminProfileController@getProfile', ['campus_admin']);
-    $router->post('api/campus_admin/myProfile/update', 'campus_adminProfileController@updateProfile', ['campus_admin']);
+    $router->get('api/campus_admin/myProfile/get', 'CampusAdminProfileController@getProfile', ['campus_admin']);
+    $router->post('api/campus_admin/myProfile/update', 'CampusAdminProfileController@updateProfile', ['campus_admin']);
     $router->post('api/campus_admin/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['campus_admin']);
     $router->get('api/campus_admin/libraryPolicies/getAll', 'LibraryPolicyController@getAll', ['campus_admin']);
-    $router->post('api/campus_admin/libraryPolicies/update', 'LibraryPolicyController@update', ['campus_admin']);
 
     $router->get('api/campus_admin/studentPromotion/fetch', 'StudentPromotionController@fetch', ['campus_admin']);
     $router->post('api/campus_admin/studentPromotion/promote', 'StudentPromotionController@promote', ['campus_admin']);

@@ -34,8 +34,9 @@ class ReportController extends Controller
         header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
+            $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
-            $data = $repository->getCirculatedEquipmentsSummary($filter);
+            $data = $repository->getCirculatedEquipmentsSummary($filter, $campusId);
             echo json_encode(['success' => true, 'data' => $data]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -51,8 +52,9 @@ class ReportController extends Controller
         header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
+            $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
-            $data = $repository->getTopVisitorsFiltered($filter);
+            $data = $repository->getTopVisitorsFiltered($filter, $campusId);
             echo json_encode(['success' => true, 'data' => $data]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -65,8 +67,9 @@ class ReportController extends Controller
         header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
+            $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
-            $data = $repository->getTopBorrowers($filter);
+            $data = $repository->getTopBorrowers($filter, $campusId);
             echo json_encode(['success' => true, 'data' => $data]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -79,8 +82,9 @@ class ReportController extends Controller
         header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
+            $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
-            $data = $repository->getMostBorrowedBooks($filter);
+            $data = $repository->getMostBorrowedBooks($filter, $campusId);
             echo json_encode(['success' => true, 'data' => $data]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -96,8 +100,9 @@ class ReportController extends Controller
         header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
+            $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
-            $data = $repository->getLibraryVisitsByDepartment($filter);
+            $data = $repository->getLibraryVisitsByDepartment($filter, $campusId);
             echo json_encode(['success' => true, 'data' => $data]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -113,8 +118,9 @@ class ReportController extends Controller
         header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
+            $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
-            $dbData = $repository->getDeletedBooksReport($filter);
+            $dbData = $repository->getDeletedBooksReport($filter, $campusId);
 
             $statsByYear = [];
             foreach ($dbData as $row) {
@@ -166,8 +172,9 @@ class ReportController extends Controller
         header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
+            $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
-            $data = $repository->getLostDamagedBooksSummary($filter);
+            $data = $repository->getLostDamagedBooksSummary($filter, $campusId);
             echo json_encode(['success' => true, 'data' => $data]);
         } catch (Exception $e) {
             http_response_code(500);
