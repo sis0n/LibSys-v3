@@ -821,36 +821,43 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   multiDeleteBtn.addEventListener("click", async () => {
-    if (selectedBookIds.size === 0) return;
+    const count = selectedBookIds.size;
+    if (count === 0) return;
 
     const result = await showConfirmationModal(
       "Bulk Deactivate",
-      `Are you sure you want to deactivate ${selectedBookIds.size} books?`,
+      `Are you sure you want to deactivate ${count} books?`,
       "Yes, Deactivate Them!"
     );
+    if (!result) return;
 
-    if (result) {
-      try {
-        const response = await fetch(
-          "api/campus_admin/booksmanagement/deleteMultiple",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ book_ids: Array.from(selectedBookIds) }),
-          },
-        );
-        const data = await response.json();
-        if (data.success) {
-          showSuccessToast(`Successfully deactivated ${data.deleted_count} book(s)!`);
-          selectedBookIds.clear();
-          cancelSelectionBtn.click();
-          fetchBooks();
-        } else {
-          Swal.fire("Error", data.message, "error");
-        }
-      } catch (error) {
-        console.error("Error bulk deleting books:", error);
+    try {
+      showLoadingModal("Processing Request...", "Please wait.");
+      const response = await fetch(
+        "api/campus_admin/booksmanagement/deleteMultiple",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            book_ids: Array.from(selectedBookIds)
+          }),
+        },
+      );
+      const data = await response.json();
+      Swal.close();
+
+      if (data.success) {
+        showSuccessToast(`Successfully deactivated ${data.deleted_count} book(s)!`);
+        selectedBookIds.clear();
+        cancelSelectionBtn.click();
+        fetchBooks();
+      } else {
+        showErrorToast("Error", data.message);
       }
+    } catch (error) {
+      Swal.close();
+      console.error("Error bulk deleting books:", error);
+      showErrorToast("Error", "A server error occurred.");
     }
   });
 

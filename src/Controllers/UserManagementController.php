@@ -374,8 +374,11 @@ class UserManagementController extends Controller
     header('Content-Type: application/json');
     $data = json_decode(file_get_contents("php://input"), true);
     $userIds = $data['user_ids'] ?? [];
+    $reason = $data['reason'] ?? null;
 
     $deletedBy = $_SESSION['user_id'] ?? null;
+    $userRole = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
+
     if (!$deletedBy) {
       echo json_encode(['success' => false, 'message' => 'Unauthorized']);
       return;
@@ -384,6 +387,29 @@ class UserManagementController extends Controller
     if (empty($userIds) || !is_array($userIds)) {
       echo json_encode(['success' => false, 'message' => 'No user IDs provided.']);
       return;
+    }
+
+    // --- BULK APPROVAL LOGIC ---
+    // If Admin or Campus Admin attempts to delete 5 or more users, it requires approval.
+    if (in_array($userRole, ['admin', 'campus_admin']) && count($userIds) >= 5) {
+      try {
+        $bulkRepo = new \App\Repositories\BulkDeleteRepository();
+        $requestId = $bulkRepo->createRequest($deletedBy, $userIds, 'users', $reason);
+        
+        $this->auditRepo->log($deletedBy, 'REQUEST_BULK_DELETE', 'USERS', $requestId, "Requested bulk delete for " . count($userIds) . " users. Reason: $reason");
+
+        echo json_encode([
+          'success' => true,
+          'requires_approval' => true,
+          'message' => 'Bulk delete request for ' . count($userIds) . ' users has been submitted for Superadmin approval.',
+          'request_id' => $requestId
+        ]);
+        return;
+      } catch (\Exception $e) {
+        error_log("Bulk User Delete Request Error: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Failed to submit bulk delete request.']);
+        return;
+      }
     }
 
     $deletedCount = 0;
@@ -422,6 +448,10 @@ class UserManagementController extends Controller
       } catch (\Exception $e) {
         $errors[] = "Error deleting {$user['username']}: " . $e->getMessage();
       }
+    }
+
+    if ($deletedCount > 0) {
+        $this->auditRepo->log($deletedBy, 'DELETE_MULTIPLE', 'USERS', implode(',', $userIds), "Bulk deleted $deletedCount user(s).");
     }
 
     $response = [

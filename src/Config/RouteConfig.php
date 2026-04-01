@@ -184,6 +184,13 @@ class RouteConfig
     $router->get('api/admin/dashboard/getData', 'DashboardController@getData', ['reports', 'librarian', 'admin']);
     $router->post('api/admin/reports/generate-report', 'DomPdfTemplateController@generateLibraryReport', ['reports', 'librarian', 'admin']);
 
+    // Bulk Delete Routes
+    $router->get('bulkDeleteQueue', 'BulkDeleteController@index', ['superadmin', 'admin']);
+    $router->get('api/bulk-delete/pending', 'BulkDeleteController@fetchPending', ['superadmin', 'admin']);
+    $router->get('api/bulk-delete/get/{id}', 'BulkDeleteController@getDetails', ['superadmin', 'admin']);
+    $router->post('api/bulk-delete/approve', 'BulkDeleteController@approve', ['superadmin', 'admin']);
+    $router->post('api/bulk-delete/reject', 'BulkDeleteController@reject', ['superadmin', 'admin']);
+
     $router->get('api/superadmin/userManagement/pagination', 'UserManagementController@fetchPaginatedUsers', ['superadmin']);
     $router->get('api/superadmin/userManagement/get/{id}', 'UserManagementController@getUserById', ['superadmin']);
     $router->get('api/superadmin/userManagement/search', 'UserManagementController@search', ['superadmin']);

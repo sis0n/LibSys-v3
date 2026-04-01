@@ -49,7 +49,12 @@ class Router
 
         // --- HYBRID AUTHORIZATION CHECK ---
         if (!empty($allowedAccess)) {
-          $userRole = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
+          $normalize = function($str) {
+              return strtolower(trim(str_replace([' ', '-', '_'], '', $str)));
+          };
+
+          $userRoleRaw = $_SESSION['role'] ?? 'guest';
+          $userRole = $normalize($userRoleRaw);
           $userId = $_SESSION['user_id'] ?? null;
 
           if (!$userId) {
@@ -58,8 +63,7 @@ class Router
             return;
           }
 
-          // --- SESSION SYNC CHECK ---
-          // Ensure that if a Superadmin changes a user's campus, the session reflects it immediately.
+          // ... (Session Sync Check remains same)
           try {
             $db = \App\Core\Database::getInstance()->getConnection();
             $stmt = $db->prepare("SELECT campus_id, is_active FROM users WHERE user_id = ?");
@@ -67,12 +71,9 @@ class Router
             $currentData = $stmt->fetch(\PDO::FETCH_ASSOC);
 
             if ($currentData) {
-              // Update campus_id if it changed
               if (isset($_SESSION['user_data']) && $_SESSION['user_data']['campus_id'] != $currentData['campus_id']) {
                 $_SESSION['user_data']['campus_id'] = $currentData['campus_id'];
               }
-              
-              // Logout if deactivated
               if ($currentData['is_active'] == 0 && $userRole !== 'superadmin') {
                 session_destroy();
                 header('Location: /login');
@@ -83,10 +84,9 @@ class Router
             error_log("Session Sync Error: " . $e->getMessage());
           }
 
+          $allowedAccessNormalized = array_map($normalize, $allowedAccess);
+
           $hasAccess = false;
-          $allowedAccessNormalized = array_map(function($role) {
-              return strtolower(str_replace([' ', '-'], '_', $role));
-          }, $allowedAccess);
 
           // Superadmin has access to everything
           if ($userRole === 'superadmin') {
@@ -97,9 +97,9 @@ class Router
             $hasAccess = true;
           } 
           // Check module permissions for specific roles
-          elseif (in_array($userRole, ['admin', 'librarian', 'campus_admin'])) {
+          elseif (in_array($userRole, ['admin', 'librarian', 'campusadmin'])) {
             $userPermissions = $_SESSION['user_permissions'] ?? [];
-            $normalizedUserPermissions = array_map('strtolower', $userPermissions);
+            $normalizedUserPermissions = array_map($normalize, $userPermissions);
 
             $matches_permission = array_intersect($normalizedUserPermissions, $allowedAccessNormalized);
             if (count($matches_permission) > 0) {

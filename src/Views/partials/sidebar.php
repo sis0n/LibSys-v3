@@ -262,13 +262,11 @@ $baseUrl = BASE_URL;
 
             <?php elseif (in_array($role, ['superadmin', 'campus_admin', 'admin', 'librarian'])): ?>
 
-                <?php if ($role === 'superadmin'): ?>
                 <a href="<?= $baseUrl ?>/dashboard"
                     class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'dashboard' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
                     <i class="ph ph-house text-2xl"></i>
                     <span>Dashboard</span>
                 </a>
-                <?php endif; ?>
 
                 <?php 
                     $mgmtItems = [];
@@ -338,7 +336,10 @@ $baseUrl = BASE_URL;
                     if ($hasPermission('overdue tracking')) $logItems[] = ["url" => "overdue", "icon" => "ph ph-warning", "label" => "Overdue Tracking"];
                     if ($hasPermission('reports')) $logItems[] = ["url" => "topVisitor", "icon" => "ph ph-chart-bar", "label" => "Reports"];
                     if ($hasPermission('transaction history')) $logItems[] = ["url" => "transactionHistory", "icon" => "ph ph-arrows-left-right", "label" => "Transaction History"];
-                    if ($role === 'superadmin' || $role === 'admin') $logItems[] = ["url" => "auditLogs", "icon" => "ph ph-shield-check", "label" => "Audit Trail"];
+                    if ($role === 'superadmin' || $role === 'admin') {
+                        $logItems[] = ["url" => "auditLogs", "icon" => "ph ph-shield-check", "label" => "Audit Trail"];
+                        $logItems[] = ["url" => "bulkDeleteQueue", "icon" => "ph ph-trash-simple", "label" => "Bulk Delete Queue"];
+                    }
                     
                     if (!empty($logItems)):
                         $logPages = array_column($logItems, 'url');

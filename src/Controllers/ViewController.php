@@ -15,6 +15,20 @@ class ViewController extends Controller
     $this->userPermissionsRepo = new UserPermissionModuleRepository();
   }
 
+  private function getViewRoleFolder(string $role): string
+  {
+    $roleMap = [
+        'admin' => 'Admin',
+        'superadmin' => 'Superadmin',
+        'student' => 'Student',
+        'faculty' => 'Faculty',
+        'librarian' => 'Librarian',
+        'staff' => 'staff',
+        'campus_admin' => 'campus_admin'
+    ];
+    return $roleMap[$role] ?? $role;
+  }
+
   public function handleDashboard()
   {
     if (!isset($_SESSION['user_id'])) {
@@ -30,12 +44,14 @@ class ViewController extends Controller
     $current_page = null;
     $title = "Dashboard";
 
+    $viewFolder = $this->getViewRoleFolder($role);
+
     switch ($role) {
       case 'student':
       case 'faculty':
       case 'staff':
       case 'superadmin':
-        $view_path = $role . '/dashboard';
+        $view_path = $viewFolder . '/dashboard';
         $current_page = 'dashboard';
         break;
 
@@ -56,7 +72,7 @@ class ViewController extends Controller
         ];
 
         if ($role === 'campus_admin') {
-            $view_path = $role . '/bookManagement';
+            $view_path = $viewFolder . '/bookManagement';
             $current_page = 'bookManagement';
             $title = 'Book Management';
             break;
@@ -64,11 +80,24 @@ class ViewController extends Controller
 
         foreach ($privilege_to_page as $privilege => $pageName) {
           if (in_array($privilege, $normalizedPermissions)) {
-            $view_path = $role . '/' . $pageName;
+            $view_path = $viewFolder . '/' . $pageName;
             $current_page = $pageName;
             $title = ucwords(preg_replace('/(?<!^)[A-Z]/', ' $0', $pageName));
             break;
           }
+        }
+
+        // Fallback for Admin/Librarian if no specific permission page matched
+        if (!$view_path) {
+            if ($role === 'admin') {
+                $view_path = $viewFolder . '/userManagement';
+                $current_page = 'userManagement';
+                $title = 'User Management';
+            } else {
+                $view_path = $viewFolder . '/bookManagement';
+                $current_page = 'bookManagement';
+                $title = 'Book Management';
+            }
         }
         break;
     }
@@ -121,8 +150,8 @@ class ViewController extends Controller
       'borrowingHistory',
       'myAttendance',
       'dashboard',
-      'attendance'
-
+      'attendance',
+      'bulkDeleteQueue'
     ];
 
     if (array_key_exists($action, $protectedModules)) {
@@ -153,14 +182,15 @@ class ViewController extends Controller
       exit;
     }
 
-    $viewPath = $role . '/' . $action;
+    $viewFolder = $this->getViewRoleFolder($role);
+    $viewPath = $viewFolder . '/' . $action;
     $data = [
       "title" => ucfirst($action),
       "currentPage" => $action
     ];
 
     // Inject campuses data for management pages that need it
-    if (in_array($action, ['bookManagement', 'equipmentManagement', 'userManagement', 'libraryPolicies'])) {
+    if (in_array($action, ['bookManagement', 'equipmentManagement', 'userManagement', 'libraryPolicies', 'bulkDeleteQueue'])) {
       $campusRepo = new \App\Repositories\CampusRepository();
       $allCampuses = $campusRepo->getAllCampuses();
       $data['campuses'] = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);

@@ -241,4 +241,51 @@ class EquipmentManagementController extends Controller
             $this->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
+
+    public function deleteMultiple()
+    {
+        $data = json_decode(file_get_contents("php://input"), true);
+        $equipmentIds = $data['equipment_ids'] ?? [];
+
+        $deletedByUserId = $_SESSION['user_id'] ?? null;
+        if ($deletedByUserId === null) {
+            return $this->json(['success' => false, 'message' => 'Authentication required.'], 401);
+        }
+
+        if (empty($equipmentIds) || !is_array($equipmentIds)) {
+            return $this->json(['success' => false, 'message' => 'No equipment IDs provided.'], 400);
+        }
+
+        $deletedCount = 0;
+        $errors = [];
+
+        foreach ($equipmentIds as $id) {
+            try {
+                $equipment = $this->equipmentRepo->getById($id);
+                if (!$equipment) {
+                    $errors[] = "Equipment ID $id not found.";
+                    continue;
+                }
+
+                $success = $this->equipmentRepo->deactivateEquipment((int)$id);
+                if ($success) {
+                    $deletedCount++;
+                    $this->auditRepo->log($deletedByUserId, 'DELETE', 'EQUIPMENTS', $id, "Deactivated equipment: {$equipment['equipment_name']}");
+                } else {
+                    $errors[] = "Failed to deactivate '{$equipment['equipment_name']}'.";
+                }
+            } catch (\Exception $e) {
+                $errors[] = "Error deactivating ID $id: " . $e->getMessage();
+            }
+        }
+
+        $response = [
+            'success' => $deletedCount > 0,
+            'message' => "Successfully deactivated $deletedCount equipment(s).",
+            'deleted_count' => $deletedCount,
+            'errors' => $errors
+        ];
+
+        return $this->json($response);
+    }
 }

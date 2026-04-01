@@ -19,7 +19,6 @@
 - [x] **Books Table Cleanup:** Drop the `deleted_at` and `deleted_by` columns from the `books` table after the transition to the `is_active` toggle pattern.
 - [ ] **Bulk Delete Approval Workflow:** Implement a request-based bulk delete system for 10+ records requiring approval from a higher role.
 - [ ] **Approval Queue Module:** Create a separate module where approvers can view, approve, or reject pending bulk delete requests with a time-limited approval window.
-- [ ] **Database Schema:** Create `bulk_delete_requests` and `bulk_delete_request_items` tables to track all requests and their statuses (pending/approved/rejected/executed/expired).
 
 
 ### 🎨 UI & Usability Fixes

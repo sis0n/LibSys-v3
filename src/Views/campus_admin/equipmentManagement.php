@@ -8,6 +8,26 @@
     </div>
     <div class="flex gap-2 text-sm">
         <button
+            class="px-4 py-2 border border-orange-200 text-orange-700 font-bold rounded-lg hover:bg-orange-50 transition shadow-sm flex items-center gap-2"
+            id="multiSelectBtn">
+            <i class="ph ph-list-checks"></i>
+            Multi-Select
+        </button>
+        <div id="multiSelectActions" class="hidden flex items-center gap-2 animate-fadeIn">
+            <span class="text-xs font-bold text-orange-700 bg-orange-100 px-3 py-2 rounded-lg border border-orange-200 shadow-sm">
+                <span id="selectionCount">0</span> selected
+            </span>
+            <button id="selectAllBtn" class="px-3 py-2 bg-white border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50 transition font-bold text-xs shadow-sm flex items-center gap-1.5">
+                <i class="ph ph-check-square"></i> Select All
+            </button>
+            <button id="multiDeleteBtn" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-bold text-xs shadow-sm flex items-center gap-1.5">
+                <i class="ph ph-trash"></i> Delete
+            </button>
+            <button id="cancelSelectionBtn" class="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition font-bold text-xs shadow-sm flex items-center gap-1.5">
+                <i class="ph ph-x"></i> Cancel
+            </button>
+        </div>
+        <button
             class="px-4 py-2 bg-orange-500 text-white font-medium rounded-lg border border-orange-600 hover:bg-orange-600 gap-2 inline-flex items-center shadow-sm transition-all"
             id="openAddEqBtn">
             <i class="ph ph-plus"></i>

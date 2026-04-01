@@ -1400,15 +1400,45 @@ window.addEventListener("DOMContentLoaded", () => {
                 return showErrorToast("No Users Selected", "Please select users to delete.");
             }
 
-            const isConfirmed = await showConfirmationModal(
-                `Delete ${userIds.length} Users?`,
-                `Are you sure you want to permanently delete the selected ${userIds.length} user(s)? This action cannot be undone.`,
-                "Yes, Delete All"
-            );
+            // --- BULK APPROVAL CHECK (5+ USERS) ---
+            let reason = null;
+            if (userIds.length >= 5) {
+                const { value: inputReason, isConfirmed: isReasonConfirmed } = await Swal.fire({
+                    title: 'Bulk Deactivation Reason',
+                    text: `You are about to request deactivation for ${userIds.length} users. This requires Superadmin approval. Please provide a reason:`,
+                    input: 'textarea',
+                    inputPlaceholder: 'Type your reason here...',
+                    inputAttributes: {
+                        'aria-label': 'Type your reason here'
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: 'Submit Request',
+                    cancelButtonText: 'Cancel',
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'You need to write something!'
+                        }
+                    },
+                    customClass: {
+                        popup: "!rounded-xl !border-2 !border-orange-400 shadow-[0_0_15px_#ffb34780]",
+                        confirmButton: "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700 !mx-2 !font-semibold",
+                        cancelButton: "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300 !mx-2 !font-semibold"
+                    },
+                    buttonsStyling: false
+                });
 
-            if (!isConfirmed) return;
+                if (!isReasonConfirmed) return;
+                reason = inputReason;
+            } else {
+                const isConfirmed = await showConfirmationModal(
+                    `Delete ${userIds.length} Users?`,
+                    `Are you sure you want to permanently delete the selected ${userIds.length} user(s)? This action cannot be undone.`,
+                    "Yes, Delete All"
+                );
+                if (!isConfirmed) return;
+            }
 
-            showLoadingModal("Deleting Users...", `Processing ${userIds.length} user(s).`);
+            showLoadingModal("Processing Request...", `Handling ${userIds.length} user(s).`);
 
             try {
                 const res = await fetch('api/campus_admin/userManagement/deleteMultiple', {
@@ -1417,7 +1447,8 @@ window.addEventListener("DOMContentLoaded", () => {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        user_ids: userIds
+                        user_ids: userIds,
+                        reason: reason
                     })
                 });
 
@@ -1425,13 +1456,17 @@ window.addEventListener("DOMContentLoaded", () => {
                 Swal.close();
 
                 if (data.success) {
-                    showSuccessToast("Deletion Successful", data.message);
+                    if (data.requires_approval) {
+                        showSuccessToast("Request Submitted", data.message);
+                    } else {
+                        showSuccessToast("Deletion Successful", data.message);
+                    }
                 } else {
                     let errorMessage = data.message;
                     if (data.errors && data.errors.length > 0) {
                         errorMessage += ` ${data.errors.join(' ')}`;
                     }
-                    showErrorToast("Deletion Failed", errorMessage);
+                    showErrorToast("Action Failed", errorMessage);
                 }
 
                 isMultiSelectMode = false;

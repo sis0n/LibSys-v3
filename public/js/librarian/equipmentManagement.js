@@ -76,6 +76,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentStatus = "All Status";
     let currentCampus = "";
     let debounceTimer;
+    let isMultiSelectMode = false;
+    let selectedEqIds = new Set();
     const limit = 10;
 
     // --- Elements ---
@@ -86,6 +88,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const editModal = document.getElementById("editEqModal");
     const addForm = document.getElementById("addEqForm");
     const editForm = document.getElementById("editEqForm");
+
+    const multiSelectBtn = document.getElementById("multiSelectBtn");
+    const multiSelectActions = document.getElementById("multiSelectActions");
+    const selectAllBtn = document.getElementById("selectAllBtn");
+    const cancelSelectionBtn = document.getElementById("cancelSelectionBtn");
+    const multiDeleteBtn = document.getElementById("multiDeleteBtn");
+    const selectionCount = document.getElementById("selectionCount");
 
     // --- Core Functions ---
 
@@ -145,15 +154,36 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderTable() {
         tableBody.innerHTML = "";
         if (equipments.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-gray-500">No equipment found matching filters.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="${isMultiSelectMode ? '8' : '7'}" class="py-12 text-center text-gray-500">No equipment found matching filters.</td></tr>`;
             return;
         }
 
+        // Update header for multi-select
+        const headerRow = document.querySelector("thead tr");
+        if (isMultiSelectMode && !headerRow.querySelector(".selection-header")) {
+            const th = document.createElement("th");
+            th.className = "py-3 px-4 font-medium text-left selection-header";
+            th.innerHTML = '<i class="ph ph-check-square"></i>';
+            headerRow.prepend(th);
+        } else if (!isMultiSelectMode && headerRow.querySelector(".selection-header")) {
+            headerRow.querySelector(".selection-header").remove();
+        }
+
         equipments.forEach(eq => {
+            const isSelected = selectedEqIds.has(eq.equipment_id);
             const row = document.createElement("tr");
-            row.className = `hover:bg-orange-50/50 transition-colors ${!eq.is_active ? 'bg-gray-50/50 opacity-70' : ''}`;
+            row.className = `hover:bg-orange-50/50 transition-colors ${isSelected ? 'bg-orange-100' : ''} ${!eq.is_active ? 'bg-gray-50/50 opacity-70' : ''}`;
             
-            row.innerHTML = `
+            let rowHtml = "";
+            if (isMultiSelectMode) {
+                rowHtml += `
+                    <td class="px-6 py-4">
+                        <input type="checkbox" class="accent-orange-500" ${isSelected ? "checked" : ""} onchange="toggleEqSelection(${eq.equipment_id})">
+                    </td>
+                `;
+            }
+
+            rowHtml += `
                 <td class="px-6 py-4 font-medium text-gray-800">${eq.equipment_name}</td>
                 <td class="px-6 py-4 text-gray-600 font-medium">${eq.campus_name || 'N/A'}</td>
                 <td class="px-6 py-4 text-gray-600 font-mono text-xs">${eq.asset_tag || 'N/A'}</td>
@@ -179,9 +209,79 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                 </td>
             `;
+            row.innerHTML = rowHtml;
             tableBody.appendChild(row);
         });
     }
+
+    window.toggleEqSelection = (id) => {
+        if (selectedEqIds.has(id)) selectedEqIds.delete(id);
+        else selectedEqIds.add(id);
+        selectionCount.textContent = selectedEqIds.size;
+        renderTable();
+    };
+
+    multiSelectBtn.addEventListener("click", () => {
+        isMultiSelectMode = true;
+        multiSelectBtn.classList.add("hidden");
+        multiSelectActions.classList.remove("hidden");
+        renderTable();
+    });
+
+    cancelSelectionBtn.addEventListener("click", () => {
+        isMultiSelectMode = false;
+        selectedEqIds.clear();
+        selectionCount.textContent = "0";
+        multiSelectBtn.classList.remove("hidden");
+        multiSelectActions.classList.add("hidden");
+        renderTable();
+    });
+
+    selectAllBtn.addEventListener("click", () => {
+        if (selectedEqIds.size === equipments.length) selectedEqIds.clear();
+        else equipments.forEach(eq => selectedEqIds.add(eq.equipment_id));
+        selectionCount.textContent = selectedEqIds.size;
+        renderTable();
+    });
+
+    multiDeleteBtn.addEventListener("click", async () => {
+        const count = selectedEqIds.size;
+        if (count === 0) return;
+
+        const confirmed = await showConfirmationModal(
+            "Bulk Delete Equipment",
+            `Are you sure you want to delete ${count} equipment items?`,
+            "Yes, Delete Them!",
+            true
+        );
+        if (!confirmed) return;
+
+        try {
+            showLoadingModal("Processing Request...", "Please wait.");
+            const response = await fetch("api/librarian/equipmentManagement/deleteMultiple", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    equipment_ids: Array.from(selectedEqIds)
+                }),
+            });
+            const data = await response.json();
+            Swal.close();
+
+            if (data.success) {
+                showSuccessToast("Success", `Successfully deleted ${data.deleted_count} item(s)!`);
+                selectedEqIds.clear();
+                cancelSelectionBtn.click();
+                loadEquipments(currentPage, false);
+            } else {
+                showErrorToast("Error", data.message);
+            }
+        } catch (error) {
+            Swal.close();
+            console.error("Error bulk deleting equipment:", error);
+            showErrorToast("Error", "A server error occurred.");
+        }
+    });
 
     window.toggleActive = async (id, currentIsActive, name) => {
         const newStatus = currentIsActive ? 0 : 1;
