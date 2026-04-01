@@ -121,6 +121,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // BAGONG DAGDAG: ID para sa Edit Modal
     const editUserUserManagementModuleWrapper = document.getElementById("editUserUserManagementModuleWrapper");
+    const editUserRestoreUserModuleWrapper = document.getElementById("editUserRestoreUserModuleWrapper");
+    const editUserBulkDeleteQueueModuleWrapper = document.getElementById("editUserBulkDeleteQueueModuleWrapper");
 
     //updated
     const multiSelectBtn = document.getElementById("multiSelectBtn");
@@ -335,16 +337,17 @@ window.addEventListener("DOMContentLoaded", () => {
     function toggleModules(container, role, userModules = []) {
         if (!container) return;
         const normalizedRole = (role || "").trim().toLowerCase();
-        // console.log("toggleModules:", normalizedRole, userModules); // For debugging
 
         container.classList.add("hidden");
         const userMgmtWrapper = container.querySelector('#addUserUserManagementModuleWrapper') || document.getElementById('addUserUserManagementModuleWrapper');
         const restoreUserWrapper = container.querySelector('#addUserRestoreUserModuleWrapper') || document.getElementById('addUserRestoreUserModuleWrapper');
+        const bulkDeleteWrapper = container.querySelector('#addUserBulkDeleteQueueModuleWrapper') || document.getElementById('addUserBulkDeleteQueueModuleWrapper');
 
         if (userMgmtWrapper) userMgmtWrapper.classList.add('hidden');
         if (restoreUserWrapper) restoreUserWrapper.classList.add('hidden');
+        if (bulkDeleteWrapper) bulkDeleteWrapper.classList.add('hidden');
 
-        if (normalizedRole === "admin" || normalizedRole === "librarian" || normalizedRole === "campus admin") {
+        if (normalizedRole === "admin" || normalizedRole === "librarian" || normalizedRole === "campus admin" || normalizedRole === "campus_admin") {
             container.classList.remove("hidden");
 
             container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
@@ -354,11 +357,17 @@ window.addEventListener("DOMContentLoaded", () => {
             if (normalizedRole === 'admin') {
                 if (userMgmtWrapper) userMgmtWrapper.classList.remove('hidden');
                 if (restoreUserWrapper) restoreUserWrapper.classList.remove('hidden');
-            } else if (normalizedRole === 'librarian' || normalizedRole === 'campus admin') {
+                if (bulkDeleteWrapper) bulkDeleteWrapper.classList.remove('hidden');
+            } else if (normalizedRole === 'campus admin' || normalizedRole === 'campus_admin') {
                 if (userMgmtWrapper) userMgmtWrapper.classList.remove('hidden');
+                if (bulkDeleteWrapper) bulkDeleteWrapper.classList.remove('hidden');
+            } else if (normalizedRole === 'librarian') {
+                // Librarian doesn't have User Management, Restore User, or Bulk Delete Queue
+                if (userMgmtWrapper) userMgmtWrapper.classList.add('hidden');
+                if (restoreUserWrapper) restoreUserWrapper.classList.add('hidden');
+                if (bulkDeleteWrapper) bulkDeleteWrapper.classList.add('hidden');
             }
         } else {
-            // Kung hindi admin/librarian, siguraduhing naka-uncheck lahat
             container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
         }
     }
@@ -448,19 +457,48 @@ window.addEventListener("DOMContentLoaded", () => {
         const editModulesContainer = document.getElementById("editPermissionsContainer");
         const normalizedRole = (val || "").trim().toLowerCase();
 
+        const editUserUserManagementModuleWrapper = document.getElementById("editUserUserManagementModuleWrapper");
+        const editUserRestoreUserModuleWrapper = document.getElementById("editUserRestoreUserModuleWrapper");
+        const editUserBulkDeleteQueueModuleWrapper = document.getElementById("editUserBulkDeleteQueueModuleWrapper");
+
         if (editModulesContainer) {
-            if (normalizedRole === 'admin' || normalizedRole === 'librarian' || normalizedRole === 'campus admin') {
+            if (normalizedRole === 'admin' || normalizedRole === 'librarian' || normalizedRole === 'campus admin' || normalizedRole === 'campus_admin') {
                 editModulesContainer.classList.remove("hidden");
 
+                // User Management
                 if (editUserUserManagementModuleWrapper) {
-                    if (normalizedRole === 'admin') {
-                        editUserUserManagementModuleWrapper.classList.remove('hidden');
-                    } else if (normalizedRole === 'librarian' || normalizedRole === 'campus admin') {
+                    if (normalizedRole === 'admin' || normalizedRole === 'librarian' || normalizedRole === 'campus admin' || normalizedRole === 'campus_admin') {
                         editUserUserManagementModuleWrapper.classList.remove('hidden');
                     } else {
                         editUserUserManagementModuleWrapper.classList.add('hidden');
                     }
                 }
+
+                // Restore User (Admin only)
+                if (editUserRestoreUserModuleWrapper) {
+                    if (normalizedRole === 'admin') {
+                        editUserRestoreUserModuleWrapper.classList.remove('hidden');
+                    } else {
+                        editUserRestoreUserModuleWrapper.classList.add('hidden');
+                    }
+                }
+
+                // Bulk Delete Queue (Admin and Campus Admin only)
+                if (editUserBulkDeleteQueueModuleWrapper) {
+                    if (normalizedRole === 'admin' || normalizedRole === 'campus admin' || normalizedRole === 'campus_admin') {
+                        editUserBulkDeleteQueueModuleWrapper.classList.remove('hidden');
+                    } else {
+                        editUserBulkDeleteQueueModuleWrapper.classList.add('hidden');
+                    }
+                }
+                
+                // Extra safety for Librarian: hide specific wrappers
+                if (normalizedRole === 'librarian') {
+                    if (editUserUserManagementModuleWrapper) editUserUserManagementModuleWrapper.classList.add('hidden');
+                    if (editUserRestoreUserModuleWrapper) editUserRestoreUserModuleWrapper.classList.add('hidden');
+                    if (editUserBulkDeleteQueueModuleWrapper) editUserBulkDeleteQueueModuleWrapper.classList.add('hidden');
+                }
+
             } else {
                 editModulesContainer.classList.add("hidden");
             }
@@ -1045,6 +1083,31 @@ window.addEventListener("DOMContentLoaded", () => {
                                 } else {
                                     editUserUserManagementModuleWrapper.classList.add('hidden');
                                 }
+                            }
+
+                            // Restore User (Admin only)
+                            if (editUserRestoreUserModuleWrapper) {
+                                if (userRole === 'admin') {
+                                    editUserRestoreUserModuleWrapper.classList.remove('hidden');
+                                } else {
+                                    editUserRestoreUserModuleWrapper.classList.add('hidden');
+                                }
+                            }
+
+                            // Bulk Delete Queue (Admin and Campus Admin only)
+                            if (editUserBulkDeleteQueueModuleWrapper) {
+                                if (userRole === 'admin' || userRole === 'campus admin' || userRole === 'campus_admin') {
+                                    editUserBulkDeleteQueueModuleWrapper.classList.remove('hidden');
+                                } else {
+                                    editUserBulkDeleteQueueModuleWrapper.classList.add('hidden');
+                                }
+                            }
+
+                            // Extra safety for Librarian: hide specific wrappers
+                            if (userRole === 'librarian') {
+                                if (editUserUserManagementModuleWrapper) editUserUserManagementModuleWrapper.classList.add('hidden');
+                                if (editUserRestoreUserModuleWrapper) editUserRestoreUserModuleWrapper.classList.add('hidden');
+                                if (editUserBulkDeleteQueueModuleWrapper) editUserBulkDeleteQueueModuleWrapper.classList.add('hidden');
                             }
 
                             editModulesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {

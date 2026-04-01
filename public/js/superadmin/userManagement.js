@@ -1,7 +1,5 @@
 window.addEventListener("DOMContentLoaded", () => {
-    // --- SweetAlert Helper Functions (Final Shared Design) ---
 
-    // 1. SUCCESS/ADD/UPDATE Toast (Themed Border)
     function showSuccessToast(title, body = "Successfully processed.") {
         if (typeof Swal == "undefined") return alert(title);
         Swal.fire({
@@ -18,7 +16,6 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // 2. ERROR/VALIDATION Toast (Red Theme)
     function showErrorToast(title, body = "Please check the input details.") {
         if (typeof Swal == "undefined") return alert(title);
         Swal.fire({
@@ -35,7 +32,6 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // 3. LOADING Modal (Orange Theme)
     function showLoadingModal(message = "Processing request...", subMessage = "Please wait.") {
         if (typeof Swal == "undefined") return;
         Swal.fire({
@@ -54,7 +50,6 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // 4. CONFIRMATION Modal (Orange Border Final)
     async function showConfirmationModal(title, text, confirmText = "Confirm") {
         if (typeof Swal == "undefined") return confirm(title);
         const result = await Swal.fire({
@@ -78,14 +73,10 @@ window.addEventListener("DOMContentLoaded", () => {
             cancelButtonText: "Cancel",
 
             customClass: {
-                // FINAL FIX: Orange Border + White BG + Orange Shadow (Matching the theme)
                 popup:
                     "!rounded-xl !shadow-lg !p-6 !bg-white !border-2 !border-orange-400 shadow-[0_0_15px_#ffb34780]",
-
-                // Confirm Button (Orange, Large, Bold)
                 confirmButton:
                     "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700 !mx-2 !font-semibold !text-base",
-                // Cancel Button (Gray, Large, Bold)
                 cancelButton:
                     "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300 !mx-2 !font-semibold !text-base",
 
@@ -94,7 +85,6 @@ window.addEventListener("DOMContentLoaded", () => {
         });
         return result.isConfirmed;
     }
-    // --- End SweetAlert Helper Functions ---
 
     const programs = {};
     const departments = [];
@@ -119,10 +109,10 @@ window.addEventListener("DOMContentLoaded", () => {
     const modulesSection = document.getElementById("modulesSection");
     const addUserUserManagementModuleWrapper = document.getElementById("addUserUserManagementModuleWrapper");
 
-    // BAGONG DAGDAG: ID para sa Edit Modal
     const editUserUserManagementModuleWrapper = document.getElementById("editUserUserManagementModuleWrapper");
+    const editUserRestoreUserModuleWrapper = document.getElementById("editUserRestoreUserModuleWrapper");
+    const editUserBulkDeleteQueueModuleWrapper = document.getElementById("editUserBulkDeleteQueueModuleWrapper");
 
-    //updated
     const multiSelectBtn = document.getElementById("multiSelectBtn");
     const multiSelectActions = document.getElementById("multiSelectActions");
     const selectAllBtn = document.getElementById("selectAllBtn");
@@ -130,18 +120,14 @@ window.addEventListener("DOMContentLoaded", () => {
     const multiDeleteBtn = document.getElementById("multiDeleteBtn");
     const multiAllowEditBtn = document.getElementById("multiAllowEditBtn");
     const selectionCount = document.getElementById("selectionCount");
-    //end
     const userRoleValueEl = document.getElementById("userRoleDropdownValue");
 
-    let allUsers = [];
     let users = [];
     let selectedRole = "All Roles";
     let selectedStatus = "All Status";
     let currentEditingUserId = null;
-    //updated
     let isMultiSelectMode = false;
     let selectedUsers = new Set();
-    //end
     let currentPage = 1;
     const limit = 10;
     let totalUsers = 0;
@@ -233,7 +219,7 @@ window.addEventListener("DOMContentLoaded", () => {
         }
         createPageLink("next", `Next <i class="flex ph ph-caret-right text-lg"></i>`, page + 1, page === totalPages);
 
-        paginationList.addEventListener('click', async (e) => { //Updated nalag lagay ng async
+        paginationList.addEventListener('click', async (e) => { 
             e.preventDefault();
             if (isLoading) return;
             const target = e.target.closest('a[data-page]');
@@ -242,8 +228,6 @@ window.addEventListener("DOMContentLoaded", () => {
             if (pageStr === '...') return;
             const pageNum = parseInt(pageStr, 10);
             if (!isNaN(pageNum) && pageNum !== currentPage) {
-                 // Gumamit ng default behavior (may loading modal) kapag nagpapalit ng page number
-                 //updated
                 if (isMultiSelectMode && selectedUsers.size > 0) {
                     const isConfirmed = await showConfirmationModal(
                         "Clear Selection?",
@@ -258,7 +242,6 @@ window.addEventListener("DOMContentLoaded", () => {
                 } else {
                     loadUsers(pageNum);
                 }
-                //end
             }
         });
     }
@@ -307,7 +290,6 @@ window.addEventListener("DOMContentLoaded", () => {
         wrapper.classList.add('hidden');
         if (studentFieldsWrapper) studentFieldsWrapper.classList.add('hidden');
 
-        // Always load campuses for the general field since it replaced gender
         loadCampuses('addCampus');
 
         if (normalizedRole === 'student') {
@@ -335,16 +317,17 @@ window.addEventListener("DOMContentLoaded", () => {
     function toggleModules(container, role, userModules = []) {
         if (!container) return;
         const normalizedRole = (role || "").trim().toLowerCase();
-        // console.log("toggleModules:", normalizedRole, userModules); // For debugging
 
         container.classList.add("hidden");
         const userMgmtWrapper = container.querySelector('#addUserUserManagementModuleWrapper') || document.getElementById('addUserUserManagementModuleWrapper');
         const restoreUserWrapper = container.querySelector('#addUserRestoreUserModuleWrapper') || document.getElementById('addUserRestoreUserModuleWrapper');
+        const bulkDeleteWrapper = container.querySelector('#addUserBulkDeleteQueueModuleWrapper') || document.getElementById('addUserBulkDeleteQueueModuleWrapper');
 
         if (userMgmtWrapper) userMgmtWrapper.classList.add('hidden');
         if (restoreUserWrapper) restoreUserWrapper.classList.add('hidden');
+        if (bulkDeleteWrapper) bulkDeleteWrapper.classList.add('hidden');
 
-        if (normalizedRole === "admin" || normalizedRole === "librarian" || normalizedRole === "campus admin") {
+        if (normalizedRole === "admin" || normalizedRole === "librarian" || normalizedRole === "campus admin" || normalizedRole === "campus_admin") {
             container.classList.remove("hidden");
 
             container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
@@ -354,11 +337,16 @@ window.addEventListener("DOMContentLoaded", () => {
             if (normalizedRole === 'admin') {
                 if (userMgmtWrapper) userMgmtWrapper.classList.remove('hidden');
                 if (restoreUserWrapper) restoreUserWrapper.classList.remove('hidden');
-            } else if (normalizedRole === 'librarian' || normalizedRole === 'campus admin') {
+                if (bulkDeleteWrapper) bulkDeleteWrapper.classList.remove('hidden');
+            } else if (normalizedRole === 'campus admin' || normalizedRole === 'campus_admin') {
                 if (userMgmtWrapper) userMgmtWrapper.classList.remove('hidden');
+                if (bulkDeleteWrapper) bulkDeleteWrapper.classList.remove('hidden');
+            } else if (normalizedRole === 'librarian') {
+                if (userMgmtWrapper) userMgmtWrapper.classList.add('hidden');
+                if (restoreUserWrapper) restoreUserWrapper.classList.add('hidden');
+                if (bulkDeleteWrapper) bulkDeleteWrapper.classList.add('hidden');
             }
         } else {
-            // Kung hindi admin/librarian, siguraduhing naka-uncheck lahat
             container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
         }
     }
@@ -448,19 +436,44 @@ window.addEventListener("DOMContentLoaded", () => {
         const editModulesContainer = document.getElementById("editPermissionsContainer");
         const normalizedRole = (val || "").trim().toLowerCase();
 
+        const editUserUserManagementModuleWrapper = document.getElementById("editUserUserManagementModuleWrapper");
+        const editUserRestoreUserModuleWrapper = document.getElementById("editUserRestoreUserModuleWrapper");
+        const editUserBulkDeleteQueueModuleWrapper = document.getElementById("editUserBulkDeleteQueueModuleWrapper");
+
         if (editModulesContainer) {
-            if (normalizedRole === 'admin' || normalizedRole === 'librarian' || normalizedRole === 'campus admin') {
+            if (normalizedRole === 'admin' || normalizedRole === 'librarian' || normalizedRole === 'campus admin' || normalizedRole === 'campus_admin') {
                 editModulesContainer.classList.remove("hidden");
 
                 if (editUserUserManagementModuleWrapper) {
-                    if (normalizedRole === 'admin') {
-                        editUserUserManagementModuleWrapper.classList.remove('hidden');
-                    } else if (normalizedRole === 'librarian' || normalizedRole === 'campus admin') {
+                    if (normalizedRole === 'admin' || normalizedRole === 'librarian' || normalizedRole === 'campus admin' || normalizedRole === 'campus_admin') {
                         editUserUserManagementModuleWrapper.classList.remove('hidden');
                     } else {
                         editUserUserManagementModuleWrapper.classList.add('hidden');
                     }
                 }
+
+                if (editUserRestoreUserModuleWrapper) {
+                    if (normalizedRole === 'admin') {
+                        editUserRestoreUserModuleWrapper.classList.remove('hidden');
+                    } else {
+                        editUserRestoreUserModuleWrapper.classList.add('hidden');
+                    }
+                }
+
+                if (editUserBulkDeleteQueueModuleWrapper) {
+                    if (normalizedRole === 'admin' || normalizedRole === 'campus admin' || normalizedRole === 'campus_admin') {
+                        editUserBulkDeleteQueueModuleWrapper.classList.remove('hidden');
+                    } else {
+                        editUserBulkDeleteQueueModuleWrapper.classList.add('hidden');
+                    }
+                }
+                
+                if (normalizedRole === 'librarian') {
+                    if (editUserUserManagementModuleWrapper) editUserUserManagementModuleWrapper.classList.add('hidden');
+                    if (editUserRestoreUserModuleWrapper) editUserRestoreUserModuleWrapper.classList.add('hidden');
+                    if (editUserBulkDeleteQueueModuleWrapper) editUserBulkDeleteQueueModuleWrapper.classList.add('hidden');
+                }
+
             } else {
                 editModulesContainer.classList.add("hidden");
             }
@@ -1047,6 +1060,31 @@ window.addEventListener("DOMContentLoaded", () => {
                                 }
                             }
 
+                            // Restore User (Admin only)
+                            if (editUserRestoreUserModuleWrapper) {
+                                if (userRole === 'admin') {
+                                    editUserRestoreUserModuleWrapper.classList.remove('hidden');
+                                } else {
+                                    editUserRestoreUserModuleWrapper.classList.add('hidden');
+                                }
+                            }
+
+                            // Bulk Delete Queue (Admin and Campus Admin only)
+                            if (editUserBulkDeleteQueueModuleWrapper) {
+                                if (userRole === 'admin' || userRole === 'campus admin' || userRole === 'campus_admin') {
+                                    editUserBulkDeleteQueueModuleWrapper.classList.remove('hidden');
+                                } else {
+                                    editUserBulkDeleteQueueModuleWrapper.classList.add('hidden');
+                                }
+                            }
+
+                            // Extra safety for Librarian: hide specific wrappers
+                            if (userRole === 'librarian') {
+                                if (editUserUserManagementModuleWrapper) editUserUserManagementModuleWrapper.classList.add('hidden');
+                                if (editUserRestoreUserModuleWrapper) editUserRestoreUserModuleWrapper.classList.add('hidden');
+                                if (editUserBulkDeleteQueueModuleWrapper) editUserBulkDeleteQueueModuleWrapper.classList.add('hidden');
+                            }
+
                             editModulesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
                                 const moduleVal = cb.value.toLowerCase().trim();
                                 cb.checked = data.modules?.some(
@@ -1505,5 +1543,4 @@ window.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
-    // end
 });

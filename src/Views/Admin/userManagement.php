@@ -331,16 +331,19 @@
                             'restore books',
                             'restore equipment',
                             'user management',
-                            'restore users'
+                            'restore users',
+                            'bulk delete queue'
                         ];
 
                         foreach ($modules as $module):
                             $isUserManagement = ($module === 'user management');
                             $isRestoreUser = ($module === 'restore users');
+                            $isBulkDelete = ($module === 'bulk delete queue');
                             $wrapperId = $isUserManagement ? 'id="addUserUserManagementModuleWrapper"' : '';
                             $restoreId = $isRestoreUser ? 'id="addUserRestoreUserModuleWrapper"' : '';
+                            $bulkDeleteId = $isBulkDelete ? 'id="addUserBulkDeleteQueueModuleWrapper"' : '';
                         ?>
-                        <div <?= $wrapperId ?> <?= $restoreId ?>
+                        <div <?= $wrapperId ?> <?= $restoreId ?> <?= $bulkDeleteId ?>
                             class="border rounded-md p-3 bg-orange-50/50 border-orange-200">
                             <label class="inline-flex items-center text-sm text-gray-700">
                                 <input type="checkbox" class="mr-2 accent-orange-500" name="modules[]"
@@ -589,15 +592,18 @@
                         'restore books',
                         'restore equipment',
                         'user management',
-                        'restore users'
+                        'restore users',
+                        'bulk delete queue'
                     ];
                     foreach ($modules as $module):
                         $isUserManagement = ($module === 'user management');
                         $isRestoreUser = ($module === 'restore users');
+                        $isBulkDelete = ($module === 'bulk delete queue');
                         $wrapperId = $isUserManagement ? 'id="editUserUserManagementModuleWrapper"' : '';
                         $restoreId = $isRestoreUser ? 'id="editUserRestoreUserModuleWrapper"' : '';
+                        $bulkDeleteId = $isBulkDelete ? 'id="editUserBulkDeleteQueueModuleWrapper"' : '';
                     ?>
-                    <div <?= $wrapperId ?> <?= $restoreId ?>
+                    <div <?= $wrapperId ?> <?= $restoreId ?> <?= $bulkDeleteId ?>
                         class="border rounded-md p-3 bg-orange-50/50 border-orange-200">
                         <label class="inline-flex items-center text-sm text-gray-700">
                             <input type="checkbox" class="mr-2 accent-orange-500" name="editModules[]"

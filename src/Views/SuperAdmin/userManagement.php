@@ -331,16 +331,21 @@
                             'reports',
                             'transaction history',
                             'user management',
-                            'restore users'
+                            'restore users',
+                            'bulk delete queue'
                         ];
 
                         foreach ($modules as $module):
                             $isUserManagement = ($module === 'user management');
                             $isRestoreUser = ($module === 'restore users');
-                            $wrapperId = $isUserManagement ? 'id="addUserUserManagementModuleWrapper"' : '';
-                            $restoreId = $isRestoreUser ? 'id="addUserRestoreUserModuleWrapper"' : '';
+                            $isBulkDelete = ($module === 'bulk delete queue');
+                            
+                            $wrapperId = '';
+                            if ($isUserManagement) $wrapperId = 'id="addUserUserManagementModuleWrapper"';
+                            elseif ($isRestoreUser) $wrapperId = 'id="addUserRestoreUserModuleWrapper"';
+                            elseif ($isBulkDelete) $wrapperId = 'id="addUserBulkDeleteQueueModuleWrapper"';
                         ?>
-                        <div <?= $wrapperId ?> <?= $restoreId ?>
+                        <div <?= $wrapperId ?>
                             class="border rounded-md p-3 bg-orange-50/50 border-orange-200">
                             <label class="inline-flex items-center text-sm text-gray-700">
                                 <input type="checkbox" class="mr-2 accent-orange-500" name="modules[]"
@@ -588,18 +593,21 @@
                         'attendance logs',
                         'reports',
                         'transaction history',
-                        'restore books',
-                        'restore equipment',
                         'user management',
-                        'restore users'
+                        'restore users',
+                        'bulk delete queue'
                     ];
                     foreach ($modules as $module):
                         $isUserManagement = ($module === 'user management');
                         $isRestoreUser = ($module === 'restore users');
-                        $wrapperId = $isUserManagement ? 'id="editUserUserManagementModuleWrapper"' : '';
-                        $restoreId = $isRestoreUser ? 'id="editUserRestoreUserModuleWrapper"' : '';
+                        $isBulkDelete = ($module === 'bulk delete queue');
+                        
+                        $wrapperId = '';
+                        if ($isUserManagement) $wrapperId = 'id="editUserUserManagementModuleWrapper"';
+                        elseif ($isRestoreUser) $wrapperId = 'id="editUserRestoreUserModuleWrapper"';
+                        elseif ($isBulkDelete) $wrapperId = 'id="editUserBulkDeleteQueueModuleWrapper"';
                     ?>
-                    <div <?= $wrapperId ?> <?= $restoreId ?>
+                    <div <?= $wrapperId ?>
                         class="border rounded-md p-3 bg-orange-50/50 border-orange-200">
                         <label class="inline-flex items-center text-sm text-gray-700">
                             <input type="checkbox" class="mr-2 accent-orange-500" name="editModules[]"

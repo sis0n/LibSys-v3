@@ -27,7 +27,8 @@
 | Audit Trail          | ✅ Full    | ✅ Full| ❌               | ❌                 |
 | Backup               | ✅ Full    | ❌     | ❌               | ❌                 |
 | Restore User         | ✅ Full    | ✅ Full| ❌               | ❌                 |
-| Library Policies     | ✅ Full    | ✅ Full| ✅ View Only     | ✅ View Only       |
+| Bulk Delete Queue    | ✅ Full    | ✅ Full| ✅ campus only   | ❌                 |
+| Library Policies     | ✅ Full    | ❌     | ❌               | ❌                 |
 
 ---
 
