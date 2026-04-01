@@ -36,6 +36,9 @@
     - *Message:* "Are you sure? This book belongs to [Campus Name]."
 
 ### 🎫 QR Borrowing & Scanning
+- [ ] **Attendance Overdue Warning:** In `src/Controllers/ScannerController.php`, check if the student has overdue items during an attendance scan and display a "Soft Warning" badge in the SweetAlert.
+- [ ] **Actionable Profile Errors:** Improve the "Incomplete Profile" error message in the scanner to specify which fields are missing (Course/Year) and where the student can update them.
+- [ ] **Profile Requirement Audit:** Review mandatory fields in `ScannerController.php`. Ensure critical data (Course, Year) blocks attendance for report accuracy, but evaluate if non-critical missing data (e.g., Profile Picture) should still allow entry.
 - [ ] **Campus Visibility on Scan:** In `src/Controllers/QRScannerController.php`, update the scan result to display the student's home campus and the specific campus where each item in the ticket belongs.
 
 ### 📜 Transaction History

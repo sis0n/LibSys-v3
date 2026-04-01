@@ -21,7 +21,8 @@ class ManualBorrowingController extends Controller
   public function getEquipments(): void
   {
     try {
-      $equipments = $this->manualRepo->getEquipments();
+      $campusId = $this->getCampusFilter();
+      $equipments = $this->manualRepo->getEquipments($campusId);
       $this->sendJson($equipments);
     } catch (Exception $e) {
       $this->sendJson(['error' => 'Failed to fetch equipments'], 500);
@@ -53,9 +54,10 @@ class ManualBorrowingController extends Controller
       $this->sendJson(['success' => false, 'message' => 'No input_user_id provided']);
     }
 
-    $role = $this->manualRepo->checkIfUserExists($input_user_id);
+    $campusId = $this->getCampusFilter();
+    $role = $this->manualRepo->checkIfUserExists($input_user_id, $campusId);
     if ($role) {
-      $userInfo = $this->manualRepo->getUserInfo($input_user_id);
+      $userInfo = $this->manualRepo->getUserInfo($input_user_id, $campusId);
       $this->sendJson(['success' => true, 'exists' => true, 'data' => $userInfo]);
     } else {
       $this->sendJson(['success' => true, 'exists' => false]);
@@ -96,12 +98,13 @@ class ManualBorrowingController extends Controller
         }
       }
 
-      $existingRole = $this->manualRepo->checkIfUserExists($data['input_user_id']);
+      $campusId = $this->getCampusFilter();
+      $existingRole = $this->manualRepo->checkIfUserExists($data['input_user_id'], $campusId);
       $borrowerType = null;
       $borrowerId = null;
 
       if ($existingRole) {
-        $userInfo = $this->manualRepo->getUserInfo($data['input_user_id']);
+        $userInfo = $this->manualRepo->getUserInfo($data['input_user_id'], $campusId);
         if (empty($userInfo['profile_updated'])) {
           $this->sendJson(['success' => false, 'message' => 'Profile incomplete. Borrower must update their profile first.']);
         }
@@ -119,7 +122,7 @@ class ManualBorrowingController extends Controller
 
       $itemId = null; 
       if ($data['equipment_type'] === 'Book') {
-        $book = $this->manualRepo->checkBook($data['accession_number']);
+        $book = $this->manualRepo->checkBook($data['accession_number'], $campusId);
         if (!$book['exists']) {
           $this->sendJson(['success' => false, 'message' => 'Book not found']);
         }
@@ -135,7 +138,8 @@ class ManualBorrowingController extends Controller
         'borrower_type' => $borrowerType,
         'borrower_id'   => $borrowerId,
         'collateral_id' => $data['collateral_id'],
-        'librarian_id'  => $_SESSION['user_id'] ?? null
+        'librarian_id'  => $_SESSION['user_id'] ?? null,
+        'campus_id'     => $campusId
       ];
 
       if ($data['equipment_type'] === 'Book') {

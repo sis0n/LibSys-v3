@@ -79,7 +79,8 @@ class AttendanceController extends Controller
                 break;
         }
 
-        $logs = $this->attendanceRepo->getLogsByPeriod($start, $end, $search, $courseName);
+        $campusId = $this->getCampusFilter();
+        $logs = $this->attendanceRepo->getLogsByPeriod($start, $end, $search, $courseName, $campusId);
 
         $formattedLogs = [];
         foreach ($logs as $log) {

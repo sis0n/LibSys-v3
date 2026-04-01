@@ -31,7 +31,9 @@ class AttendanceRepository
                     al.timestamp
                 FROM attendance_logs al
                 LEFT JOIN courses c ON al.course_id = c.course_id
-                WHERE al.user_id = :user_id
+                JOIN users u ON al.user_id = u.user_id
+                JOIN campuses cp ON u.campus_id = cp.campus_id
+                WHERE al.user_id = :user_id AND cp.is_active = 1
                 ORDER BY al.timestamp DESC
             ");
             $stmt->execute(['user_id' => $userId]);
@@ -63,14 +65,27 @@ class AttendanceRepository
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function getAllLogs(): array
+    public function getAllLogs(?int $campusId = null): array
     {
+        $where = " WHERE cp.is_active = 1 ";
+        if ($campusId !== null) {
+            $where .= " AND u.campus_id = :campus_id ";
+        }
+
         $sql = "SELECT al.id, al.user_id, al.student_number, al.full_name, 
                        c.course_title AS course, al.year_level, al.method, al.timestamp
                 FROM attendance_logs al
                 LEFT JOIN courses c ON al.course_id = c.course_id
+                JOIN users u ON al.user_id = u.user_id
+                JOIN campuses cp ON u.campus_id = cp.campus_id
+                $where
                 ORDER BY al.timestamp DESC";
-        $stmt = $this->db->query($sql);
+        
+        $stmt = $this->db->prepare($sql);
+        if ($campusId !== null) {
+            $stmt->bindValue(':campus_id', $campusId, PDO::PARAM_INT);
+        }
+        $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -85,11 +100,15 @@ class AttendanceRepository
         try {
             $this->db->beginTransaction();
 
-            $this->db->query("UPDATE borrow_transactions SET status = 'overdue' WHERE status = 'borrowed' AND due_date < NOW()");
+            $this->db->query("UPDATE borrow_transactions bt 
+                              JOIN campuses cp ON bt.campus_id = cp.campus_id 
+                              SET bt.status = 'overdue' 
+                              WHERE bt.status = 'borrowed' AND bt.due_date < NOW() AND cp.is_active = 1");
             $this->db->query("UPDATE borrow_transaction_items bti 
                               INNER JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+                              INNER JOIN campuses cp ON bt.campus_id = cp.campus_id
                               SET bti.status = 'overdue' 
-                              WHERE bt.status = 'overdue' AND bti.status = 'borrowed'");
+                              WHERE bt.status = 'overdue' AND bti.status = 'borrowed' AND cp.is_active = 1");
 
             $stmtCourse = $this->db->prepare("SELECT course_id FROM students WHERE student_number = :student_number");
             $stmtCourse->execute([':student_number' => $attendance->getStudentNumber()]);
@@ -167,13 +186,15 @@ class AttendanceRepository
         }
     }
 
-    public function getLogsByPeriod(?string $start = null, ?string $end = null, string $search = '', ?string $courseName = null): array
+    public function getLogsByPeriod(?string $start = null, ?string $end = null, string $search = '', ?string $courseName = null, ?int $campusId = null): array
     {
         $query = "
             SELECT al.full_name, al.student_number, al.timestamp, c.course_title AS course 
             FROM attendance_logs al
             LEFT JOIN courses c ON al.course_id = c.course_id
-            WHERE 1=1
+            JOIN users u ON al.user_id = u.user_id
+            JOIN campuses cp ON u.campus_id = cp.campus_id
+            WHERE cp.is_active = 1
         ";
         $params = [];
 
@@ -192,6 +213,11 @@ class AttendanceRepository
         if ($courseName) {
             $query .= " AND c.course_title = :courseName";
             $params[':courseName'] = $courseName;
+        }
+
+        if ($campusId !== null) {
+            $query .= " AND u.campus_id = :campus_id";
+            $params[':campus_id'] = $campusId;
         }
 
         $query .= " ORDER BY al.timestamp DESC";

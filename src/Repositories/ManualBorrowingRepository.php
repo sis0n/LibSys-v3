@@ -15,38 +15,49 @@ class ManualBorrowingRepository
     $this->db = Database::getInstance()->getConnection();
   }
 
-  public function checkIfUserExists(string $input_user_id): ?string
+  public function checkIfUserExists(string $input_user_id, ?int $campusId = null): ?string
   {
-    $stmt = $this->db->prepare("SELECT s.student_id FROM students s JOIN users u ON s.user_id = u.user_id WHERE s.student_number = ? AND s.deleted_at IS NULL");
-    $stmt->execute([$input_user_id]);
+    $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+    
+    // Student Check
+    $stmt = $this->db->prepare("SELECT s.student_id FROM students s JOIN users u ON s.user_id = u.user_id JOIN campuses cp ON u.campus_id = cp.campus_id WHERE s.student_number = :user_id AND cp.is_active = 1 AND s.deleted_at IS NULL $campusWhere");
+    $params = [':user_id' => $input_user_id];
+    if ($campusId !== null) $params[':campus_id'] = $campusId;
+    $stmt->execute($params);
     if ($stmt->fetch(PDO::FETCH_ASSOC)) return 'student';
 
-    $stmt = $this->db->prepare("SELECT f.faculty_id FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.unique_faculty_id = ? AND f.deleted_at IS NULL");
-    $stmt->execute([$input_user_id]);
+    // Faculty Check
+    $stmt = $this->db->prepare("SELECT f.faculty_id FROM faculty f JOIN users u ON f.user_id = u.user_id JOIN campuses cp ON u.campus_id = cp.campus_id WHERE f.unique_faculty_id = :user_id AND cp.is_active = 1 AND f.deleted_at IS NULL $campusWhere");
+    $stmt->execute($params);
     if ($stmt->fetch(PDO::FETCH_ASSOC)) return 'faculty';
 
-    $stmt = $this->db->prepare("SELECT st.staff_id FROM staff st JOIN users u ON st.user_id = u.user_id WHERE st.employee_id = ? AND st.deleted_at IS NULL");
-    $stmt->execute([$input_user_id]);
+    // Staff Check
+    $stmt = $this->db->prepare("SELECT st.staff_id FROM staff st JOIN users u ON st.user_id = u.user_id JOIN campuses cp ON u.campus_id = cp.campus_id WHERE st.employee_id = :user_id AND cp.is_active = 1 AND st.deleted_at IS NULL $campusWhere");
+    $stmt->execute($params);
     if ($stmt->fetch(PDO::FETCH_ASSOC)) return 'staff';
 
     return null;
   }
 
-  public function getUserIdByIdentifier(string $borrowerType, string $identifier): ?int
+  public function getUserIdByIdentifier(string $borrowerType, string $identifier, ?int $campusId = null): ?int
   {
     $sql = "";
+    $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+    
     if ($borrowerType === 'student') {
-      $sql = "SELECT user_id FROM students WHERE student_number = ? AND deleted_at IS NULL";
+      $sql = "SELECT s.user_id FROM students s JOIN users u ON s.user_id = u.user_id WHERE s.student_number = :id AND s.deleted_at IS NULL $campusWhere";
     } elseif ($borrowerType === 'faculty') {
-      $sql = "SELECT user_id FROM faculty WHERE unique_faculty_id = ? AND deleted_at IS NULL";
+      $sql = "SELECT f.user_id FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.unique_faculty_id = :id AND f.deleted_at IS NULL $campusWhere";
     } elseif ($borrowerType === 'staff') {
-      $sql = "SELECT user_id FROM staff WHERE employee_id = ? AND deleted_at IS NULL";
+      $sql = "SELECT st.user_id FROM staff st JOIN users u ON st.user_id = u.user_id WHERE st.employee_id = :id AND st.deleted_at IS NULL $campusWhere";
     } else {
       return null;
     }
 
     $stmt = $this->db->prepare($sql);
-    $stmt->execute([$identifier]);
+    $params = [':id' => $identifier];
+    if ($campusId !== null) $params[':campus_id'] = $campusId;
+    $stmt->execute($params);
     return $stmt->fetchColumn() ?: null;
   }
 
@@ -70,26 +81,35 @@ class ManualBorrowingRepository
     return (int)($res['total'] ?? 0);
   }
 
-  public function getUserInfo(string $input_user_id): ?array
+  public function getUserInfo(string $input_user_id, ?int $campusId = null): ?array
   {
-    $stmt = $this->db->prepare("SELECT u.first_name, u.middle_name, u.last_name, u.suffix, u.email, s.contact, s.profile_updated, 'student' AS role FROM students s JOIN users u ON s.user_id = u.user_id WHERE s.student_number = ? AND s.deleted_at IS NULL");
-    $stmt->execute([$input_user_id]);
+    $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+    $params = [':user_id' => $input_user_id];
+    if ($campusId !== null) $params[':campus_id'] = $campusId;
+
+    $stmt = $this->db->prepare("SELECT u.first_name, u.middle_name, u.last_name, u.suffix, u.email, s.contact, s.profile_updated, 'student' AS role FROM students s JOIN users u ON s.user_id = u.user_id JOIN campuses cp ON u.campus_id = cp.campus_id WHERE s.student_number = :user_id AND cp.is_active = 1 AND s.deleted_at IS NULL $campusWhere");
+    $stmt->execute($params);
     if ($data = $stmt->fetch(PDO::FETCH_ASSOC)) return $data;
 
-    $stmt = $this->db->prepare("SELECT u.first_name, u.middle_name, u.last_name, u.suffix, u.email, f.contact, f.profile_updated, 'faculty' AS role FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.unique_faculty_id = ? AND f.deleted_at IS NULL");
-    $stmt->execute([$input_user_id]);
+    $stmt = $this->db->prepare("SELECT u.first_name, u.middle_name, u.last_name, u.suffix, u.email, f.contact, f.profile_updated, 'faculty' AS role FROM faculty f JOIN users u ON f.user_id = u.user_id JOIN campuses cp ON u.campus_id = cp.campus_id WHERE f.unique_faculty_id = :user_id AND cp.is_active = 1 AND f.deleted_at IS NULL $campusWhere");
+    $stmt->execute($params);
     if ($data = $stmt->fetch(PDO::FETCH_ASSOC)) return $data;
 
-    $stmt = $this->db->prepare("SELECT u.first_name, u.middle_name, u.last_name, u.suffix, u.email, st.contact, st.profile_updated, 'staff' AS role FROM staff st JOIN users u ON st.user_id = u.user_id WHERE st.employee_id = ? AND st.deleted_at IS NULL");
-    $stmt->execute([$input_user_id]);
+    $stmt = $this->db->prepare("SELECT u.first_name, u.middle_name, u.last_name, u.suffix, u.email, st.contact, st.profile_updated, 'staff' AS role FROM staff st JOIN users u ON st.user_id = u.user_id JOIN campuses cp ON u.campus_id = cp.campus_id WHERE st.employee_id = :user_id AND cp.is_active = 1 AND st.deleted_at IS NULL $campusWhere");
+    $stmt->execute($params);
     if ($data = $stmt->fetch(PDO::FETCH_ASSOC)) return $data;
 
     return null;
   }
 
-  public function getEquipments(): array
+  public function getEquipments(?int $campusId = null): array
   {
-    $stmt = $this->db->prepare("SELECT equipment_id, equipment_name, asset_tag FROM equipments WHERE status = 'available' AND is_active = 1 ORDER BY equipment_name ASC");
+    $where = " WHERE status = 'available' AND is_active = 1 ";
+    if ($campusId !== null) {
+        $where .= " AND campus_id = :campus_id ";
+    }
+    $stmt = $this->db->prepare("SELECT equipment_id, equipment_name, asset_tag FROM equipments $where ORDER BY equipment_name ASC");
+    if ($campusId !== null) $stmt->bindValue(':campus_id', $campusId, PDO::PARAM_INT);
     $stmt->execute();
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
@@ -101,10 +121,16 @@ class ManualBorrowingRepository
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
 
-  public function checkBook(string $accession_number): array
+  public function checkBook(string $accession_number, ?int $campusId = null): array
   {
-    $stmt = $this->db->prepare("SELECT * FROM books WHERE accession_number = :acc LIMIT 1");
-    $stmt->execute(['acc' => $accession_number]);
+    $where = " WHERE accession_number = :acc ";
+    if ($campusId !== null) {
+        $where .= " AND campus_id = :campus_id ";
+    }
+    $stmt = $this->db->prepare("SELECT * FROM books $where LIMIT 1");
+    $params = ['acc' => $accession_number];
+    if ($campusId !== null) $params['campus_id'] = $campusId;
+    $stmt->execute($params);
     $book = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($book) {
       return [
@@ -135,6 +161,7 @@ class ManualBorrowingRepository
       $transactionCode = strtoupper(bin2hex(random_bytes(4)));
       $studentId = $facultyId = $staffId = $guestId = null;
       $userId = null;
+      $campusId = $borrowData['campus_id'] ?? null;
 
       if ($borrowData['borrower_type'] !== 'guest') {
         $userId = $this->getUserIdByIdentifier($borrowData['borrower_type'], $borrowData['borrower_id']);
@@ -143,18 +170,24 @@ class ManualBorrowingRepository
 
       switch ($borrowData['borrower_type']) {
         case 'student':
-          $stmt = $this->db->prepare("SELECT student_id FROM students WHERE student_number = ? AND deleted_at IS NULL");
-          $stmt->execute([$borrowData['borrower_id']]);
+          $stmt = $this->db->prepare("SELECT s.student_id FROM students s JOIN users u ON s.user_id = u.user_id WHERE s.student_number = :id AND s.deleted_at IS NULL" . ($campusId ? " AND u.campus_id = :campus_id" : ""));
+          $params = [':id' => $borrowData['borrower_id']];
+          if ($campusId) $params[':campus_id'] = $campusId;
+          $stmt->execute($params);
           $studentId = $stmt->fetchColumn();
           break;
         case 'faculty':
-          $stmt = $this->db->prepare("SELECT faculty_id FROM faculty WHERE unique_faculty_id = ? AND deleted_at IS NULL");
-          $stmt->execute([$borrowData['borrower_id']]);
+          $stmt = $this->db->prepare("SELECT f.faculty_id FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE f.unique_faculty_id = :id AND f.deleted_at IS NULL" . ($campusId ? " AND u.campus_id = :campus_id" : ""));
+          $params = [':id' => $borrowData['borrower_id']];
+          if ($campusId) $params[':campus_id'] = $campusId;
+          $stmt->execute($params);
           $facultyId = $stmt->fetchColumn();
           break;
         case 'staff':
-          $stmt = $this->db->prepare("SELECT staff_id FROM staff WHERE employee_id = ? AND deleted_at IS NULL");
-          $stmt->execute([$borrowData['borrower_id']]);
+          $stmt = $this->db->prepare("SELECT st.staff_id FROM staff st JOIN users u ON st.user_id = u.user_id WHERE st.employee_id = :id AND st.deleted_at IS NULL" . ($campusId ? " AND u.campus_id = :campus_id" : ""));
+          $params = [':id' => $borrowData['borrower_id']];
+          if ($campusId) $params[':campus_id'] = $campusId;
+          $stmt->execute($params);
           $staffId = $stmt->fetchColumn();
           break;
         case 'guest':
@@ -169,8 +202,14 @@ class ManualBorrowingRepository
       $dueDate = null;
 
       if ($isBook && $borrowData['borrower_type'] !== 'guest') {
-        $stmtPolicy = $this->db->prepare("SELECT max_books, borrow_duration_days FROM library_policies WHERE role = ? LIMIT 1");
-        $stmtPolicy->execute([$borrowData['borrower_type']]);
+        $policyWhere = "role = ?";
+        $policyParams = [$borrowData['borrower_type']];
+        if ($campusId) {
+            $policyWhere .= " AND campus_id = ?";
+            $policyParams[] = $campusId;
+        }
+        $stmtPolicy = $this->db->prepare("SELECT max_books, borrow_duration_days FROM library_policies WHERE $policyWhere LIMIT 1");
+        $stmtPolicy->execute($policyParams);
         $policy = $stmtPolicy->fetch(PDO::FETCH_ASSOC);
         if ($policy) {
           $maxAllowed = (int)$policy['max_books'];
@@ -182,8 +221,14 @@ class ManualBorrowingRepository
       }
 
       if ($isEquipment) {
-        $stmtPolicy = $this->db->prepare("SELECT max_books, borrow_duration_days FROM library_policies WHERE role = 'equipment' LIMIT 1");
-        $stmtPolicy->execute();
+        $policyWhere = "role = 'equipment'";
+        $policyParams = [];
+        if ($campusId) {
+            $policyWhere .= " AND campus_id = ?";
+            $policyParams[] = $campusId;
+        }
+        $stmtPolicy = $this->db->prepare("SELECT max_books, borrow_duration_days FROM library_policies WHERE $policyWhere LIMIT 1");
+        $stmtPolicy->execute($policyParams);
         $policy = $stmtPolicy->fetch(PDO::FETCH_ASSOC);
         if ($policy) {
           $duration = (int)$policy['borrow_duration_days'];
@@ -200,8 +245,8 @@ class ManualBorrowingRepository
       $collateralId = !empty($borrowData['collateral_id']) ? (int)$borrowData['collateral_id'] : null;
 
       $stmt = $this->db->prepare("
-            INSERT INTO borrow_transactions (student_id, staff_id, faculty_id, guest_id, transaction_code, borrowed_at, due_date, status, method, collateral_id, librarian_id)
-            VALUES (:student_id, :staff_id, :faculty_id, :guest_id, :transaction_code, NOW(), :due_date, 'borrowed', 'manual', :collateral_id, :librarian_id)
+            INSERT INTO borrow_transactions (student_id, staff_id, faculty_id, guest_id, transaction_code, borrowed_at, due_date, status, method, collateral_id, librarian_id, campus_id)
+            VALUES (:student_id, :staff_id, :faculty_id, :guest_id, :transaction_code, NOW(), :due_date, 'borrowed', 'manual', :collateral_id, :librarian_id, :campus_id)
         ");
       $stmt->execute([
         ':student_id' => $studentId,
@@ -211,7 +256,8 @@ class ManualBorrowingRepository
         ':transaction_code' => $transactionCode,
         ':due_date' => $dueDate,
         ':collateral_id' => $collateralId,
-        ':librarian_id' => $borrowData['librarian_id'] ?? null
+        ':librarian_id' => $borrowData['librarian_id'] ?? null,
+        ':campus_id' => $campusId
       ]);
 
       $transactionId = $this->db->lastInsertId();
