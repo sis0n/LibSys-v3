@@ -258,15 +258,9 @@ $baseUrl = BASE_URL;
                             <span class="text-base text-sm">Change Password</span>
                         </a>
                     </div>
-                </div>
+                    <?php endif; ?>
 
-            <?php elseif (in_array($role, ['superadmin', 'campus_admin', 'admin', 'librarian'])): ?>
-
-                <a href="<?= $baseUrl ?>/dashboard"
-                    class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'dashboard' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                    <i class="ph ph-house text-2xl"></i>
-                    <span>Dashboard</span>
-                </a>
+                    <?php if (in_array($role, ['superadmin', 'campus_admin', 'admin', 'librarian'])): ?>
 
                 <?php 
                     $mgmtItems = [];
@@ -336,8 +330,12 @@ $baseUrl = BASE_URL;
                     if ($hasPermission('overdue tracking')) $logItems[] = ["url" => "overdue", "icon" => "ph ph-warning", "label" => "Overdue Tracking"];
                     if ($hasPermission('reports')) $logItems[] = ["url" => "topVisitor", "icon" => "ph ph-chart-bar", "label" => "Reports"];
                     if ($hasPermission('transaction history')) $logItems[] = ["url" => "transactionHistory", "icon" => "ph ph-arrows-left-right", "label" => "Transaction History"];
-                    if ($role === 'superadmin' || $role === 'admin') {
+                    
+                    if ($role === 'superadmin') {
                         $logItems[] = ["url" => "auditLogs", "icon" => "ph ph-shield-check", "label" => "Audit Trail"];
+                    }
+                    
+                    if ($hasPermission('bulk delete queue')) {
                         $logItems[] = ["url" => "bulkDeleteQueue", "icon" => "ph ph-trash-simple", "label" => "Bulk Delete Queue"];
                     }
                     
@@ -411,11 +409,11 @@ $baseUrl = BASE_URL;
                         <i class="ph ph-caret-down text-xl dropdown-icon transition-transform"></i>
                     </button>
                     <div class="pl-5 pt-1 space-y-1 hidden">
-                        <a href="<?= BASE_URL ?>/myProfile" class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= ($currentPage === 'myProfile') ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
+                        <a href="<?= $baseUrl ?>/myProfile" class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= ($currentPage === 'myProfile') ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
                             <i class="ph ph-user-circle text-xl"></i>
                             <span class="text-base text-sm">Profile</span>
                         </a>
-                        <a href="<?= BASE_URL ?>/changePassword" class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= ($currentPage === 'changePassword') ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
+                        <a href="<?= $baseUrl ?>/changePassword" class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= ($currentPage === 'changePassword') ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
                             <i class="ph ph-key text-xl"></i>
                             <span class="text-base text-sm">Change Password</span>
                         </a>

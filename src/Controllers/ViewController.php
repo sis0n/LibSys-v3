@@ -137,8 +137,10 @@ class ViewController extends Controller
       'restoreUser' => 'restore users',
       'userManagement' => 'user management',
       'libraryPolicies' => 'superadmin',
-      'overdue' => 'superadmin',
-      'campusManagement' => 'superadmin'
+      'overdue' => 'overdue tracking',
+      'campusManagement' => 'superadmin',
+      'auditLogs' => 'superadmin',
+      'bulkDeleteQueue' => 'bulk delete queue'
     ];
 
     $universalPages = [
@@ -149,10 +151,13 @@ class ViewController extends Controller
       'qrBorrowingTicket',
       'borrowingHistory',
       'myAttendance',
-      'dashboard',
-      'attendance',
-      'bulkDeleteQueue'
+      'attendance'
     ];
+
+    if ($action === 'dashboard' && ($role === 'admin' || $role === 'librarian' || $role === 'campus_admin')) {
+        $this->handleDashboard();
+        return;
+    }
 
     if (array_key_exists($action, $protectedModules)) {
 
@@ -168,7 +173,7 @@ class ViewController extends Controller
       } else if ($role === 'admin' || $role === 'librarian') {
         $permissionName = $protectedModules[$action];
 
-        if (!$this->userPermissionsRepo->hasAccess($userId, $permissionName)) {
+        if ($permissionName !== 'universal' && !$this->userPermissionsRepo->hasAccess($userId, $permissionName)) {
           $this->view("errors/403", ["title" => "Forbidden"], false);
           exit;
         }

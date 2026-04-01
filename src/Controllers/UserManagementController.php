@@ -287,7 +287,8 @@ class UserManagementController extends Controller
             'user management',
             'restore users',
             'student promotion',
-            'library policies'
+            'library policies',
+            'bulk delete queue'
           ];
           $modules = array_filter($data['modules'], fn($m) => in_array($m, $validModules));
 

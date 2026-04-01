@@ -166,6 +166,13 @@ class RouteConfig
     $router->get('api/admin/reports/getGraphData', 'ReportController@getReportGraphData', ['reports', 'librarian', 'admin']);
     $router->get('api/admin/reports/getActivityReport', 'ReportController@getActivityReport', ['reports', 'librarian', 'admin']);
     $router->get('api/admin/reports/getGraphData', 'ReportController@getReportGraphData', ['reports', 'librarian', 'admin']);
+    $router->get('api/admin/myProfile/get', 'SuperadminProfileController@getProfile', ['admin']);
+    $router->post('api/admin/myProfile/update', 'SuperadminProfileController@updateProfile', ['admin']);
+    $router->get('api/librarian/myProfile/get', 'SuperadminProfileController@getProfile', ['librarian']);
+    $router->post('api/librarian/myProfile/update', 'SuperadminProfileController@updateProfile', ['librarian']);
+    $router->get('api/campus_admin/myProfile/get', 'SuperadminProfileController@getProfile', ['campus_admin']);
+    $router->post('api/campus_admin/myProfile/update', 'SuperadminProfileController@updateProfile', ['campus_admin']);
+
     $router->get('api/admin/userManagement/pagination', 'UserManagementController@fetchPaginatedUsers', ['user management']);
     $router->get('api/admin/userManagement/get/{id}', 'UserManagementController@getUserById', ['user management']);
     $router->get('api/admin/userManagement/search', 'UserManagementController@search', ['user management']);
@@ -185,11 +192,11 @@ class RouteConfig
     $router->post('api/admin/reports/generate-report', 'DomPdfTemplateController@generateLibraryReport', ['reports', 'librarian', 'admin']);
 
     // Bulk Delete Routes
-    $router->get('bulkDeleteQueue', 'BulkDeleteController@index', ['superadmin', 'admin']);
-    $router->get('api/bulk-delete/pending', 'BulkDeleteController@fetchPending', ['superadmin', 'admin']);
-    $router->get('api/bulk-delete/get/{id}', 'BulkDeleteController@getDetails', ['superadmin', 'admin']);
-    $router->post('api/bulk-delete/approve', 'BulkDeleteController@approve', ['superadmin', 'admin']);
-    $router->post('api/bulk-delete/reject', 'BulkDeleteController@reject', ['superadmin', 'admin']);
+    $router->get('bulkDeleteQueue', 'BulkDeleteController@index', ['bulk delete queue']);
+    $router->get('api/bulk-delete/pending', 'BulkDeleteController@fetchPending', ['bulk delete queue']);
+    $router->get('api/bulk-delete/get/{id}', 'BulkDeleteController@getDetails', ['bulk delete queue']);
+    $router->post('api/bulk-delete/approve', 'BulkDeleteController@approve', ['bulk delete queue']);
+    $router->post('api/bulk-delete/reject', 'BulkDeleteController@reject', ['bulk delete queue']);
 
     $router->get('api/superadmin/userManagement/pagination', 'UserManagementController@fetchPaginatedUsers', ['superadmin']);
     $router->get('api/superadmin/userManagement/get/{id}', 'UserManagementController@getUserById', ['superadmin']);
