@@ -1,12 +1,33 @@
 # LibSys v3.0 - Campus Integration Roadmap
 
 ## 🔴 [PRIORITY 1: CRITICAL & FOUNDATION]
-*Essential infrastructure to make the multi-campus logic work correctly.*
+*Essential infrastructure and architectural refactoring.*
 
 ### 🏢 Campus Management (CRUD)
 - [x] **Dynamic Campus CRUD:** Create a management interface for Superadmins to add, edit, and delete campuses.
 - [x] **Campus API Endpoints:** Implement API routes for creating and deleting records in the `campuses` table.
 - [x] **Integrity Checks:** Add validation to prevent deleting a campus if it still has books or users assigned to it.
+
+### 🏗️ Architectural Hardening (Service Layer)
+- [ ] **Service Layer Implementation:** Refactor business logic from Controllers into dedicated Services.
+    - [ ] `BorrowingService`: Centralize policy checks, overdue validation, and stock updates.
+    - [ ] `ReturningService`: Calculate fines, handle damaged/lost items, and inventory return.
+    - [ ] `OverdueService`: Background logic for scanning and flagging overdue transactions.
+    - [ ] `UserService`: RBAC enforcement, campus-based filtering, and bulk import validation.
+    - [ ] `AuthService`: Centralized login, session security, and role normalization.
+    - [ ] `BookService` & `EquipmentService`: Resource management and availability logic.
+    - [ ] `CampusService`: Multi-campus integrity and validation logic.
+    - [ ] `NotificationService`: Orchestrate email, SMS, and in-app alerts.
+    - [ ] `AuditLogService`: Detailed activity tracking with state snapshots.
+    - [ ] `ReportService`: Data aggregation logic for complex PDF reports.
+    - [ ] `PromotionService`: Year-level updates and student archiving logic.
+    - [ ] `TicketService`: QR code generation and validation.
+    - [ ] `SearchService`: Advanced filtering and cross-campus catalog logic.
+    - [ ] `DashboardService`: Statistical aggregation and analytics for the dashboard.
+    - [ ] `CartService`: Reservation rules and inter-campus cart validation.
+    - [ ] `StorageService`: Centralized file management (Local vs Cloud abstraction).
+- [ ] **API Standardization:** Transition existing `api/` routes to a strict RESTful standard (consistent status codes and JSON structure).
+- [ ] **Role Normalization:** Audit and centralize role-checking logic (Superadmin vs Super_admin) across the entire system to prevent 403/401 leaks.
 
 ### 📜 Library Policy (Per Campus)
 - [x] **Schema Update:** Add `campus_id` to the `library_policies` table to allow per-campus rules.
@@ -24,6 +45,7 @@
 ### 🎨 UI & Usability Fixes
 - [ ] **Dropdown Z-Index Fix:** Fix the layering issue where book catalog dropdowns (Campus, Sort, Status) appear behind the book cards in `public/js/student/bookCatalog.js`.
 - [ ] **Modal Layering Fix:** Ensure the Sidebar and Header are correctly covered by the backdrop when any modal (Book details, Returning, etc.) is active.
+
 ---
 
 ## 🟠 [PRIORITY 2: CORE OPERATIONS]
@@ -66,7 +88,7 @@
 ---
 
 ## 🟢 [PRIORITY 4: FUTURE & LOGISTICS]
-*Features to make the system more intelligent and scalable.*
+*Inter-campus operations and smart features.*
 
 ### 🚚 Inter-Campus Logistics
 - [ ] **Inter-Campus Transfer Request:** Allow students to request books from other campuses, creating a "Transfer Task" for librarians to move physical books between branches.
@@ -76,3 +98,18 @@
 - [ ] **Campus Capacity Tracker:** Use QR Attendance data to show a "Real-time Occupancy" percentage for each campus library on the dashboard.
 - [ ] **Campus-specific Reports:** Add campus filters to all report types (Most Borrowed, Top Visitors, etc.).
 - [ ] **Audit Log Campus Tracking:** Include the campus name in Audit Logs to see which branch initiated an action.
+
+---
+
+## 🔵 [PRIORITY 5: ADVANCED SCALABILITY]
+*Performance optimization and high-load hardening.*
+
+### ⚡ Performance & Data
+- [ ] **Database Indexing Audit:** Full audit to ensure all frequently filtered columns (`status`, `campus_id`, `role`) have optimized indexes.
+- [ ] **Caching Layer (Redis):** Implement Redis to cache slow-changing data like Library Policies and User Permissions.
+- [ ] **Asynchronous Task Queue:** Set up a background worker for non-blocking tasks like sending overdue emails.
+
+### ☁️ Storage & Infrastructure
+- [ ] **Cloud Storage Integration:** Support AWS S3 or Google Cloud Storage for media assets.
+- [ ] **Image Optimization Pipeline:** Automatic resizing and compression for book covers on upload.
+- [ ] **Centralized Error Tracking:** Integrate Sentry for real-time production error capturing.
