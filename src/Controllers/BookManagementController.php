@@ -18,55 +18,6 @@ class BookManagementController extends Controller
         $this->auditRepo = new \App\Repositories\AuditLogRepository();
     }
 
-    private function json($data, $statusCode = 200)
-    {
-        http_response_code($statusCode);
-        header('Content-Type: application/json');
-        echo json_encode($data);
-        exit;
-    }
-
-    /**
-     * Save file locally to public/storage/uploads/
-     */
-    private function saveFileLocally($file, $subFolder)
-    {
-        if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
-            return null;
-        }
-
-        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        $uniqueId = uniqid();
-        $fileName = "book_{$uniqueId}.{$extension}";
-
-        $uploadDir = ROOT_PATH . "/public/storage/uploads/{$subFolder}/";
-
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0777, true);
-        }
-
-        $destPath = $uploadDir . $fileName;
-
-        if (move_uploaded_file($file['tmp_name'], $destPath)) {
-            return "storage/uploads/{$subFolder}/" . $fileName;
-        }
-
-        return null;
-    }
-
-    private function validateImageUpload($file)
-    {
-        $maxSize = 2 * 1024 * 1024;
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        if ($file['error'] !== UPLOAD_ERR_OK) return "Upload error.";
-        if ($file['size'] > $maxSize) return "Image must be less than 2MB.";
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
-        if (!in_array($mime, $allowedTypes)) return "Invalid image type. Only JPG, PNG, GIF, WEBP allowed.";
-        return true;
-    }
-
     private function handleImageUpload($file)
     {
         $validation = $this->validateImageUpload($file);
@@ -74,7 +25,7 @@ class BookManagementController extends Controller
             return null;
         }
 
-        return $this->saveFileLocally($file, "book_covers");
+        return $this->saveFileLocally($file, "book_covers", "book");
     }
 
     public function fetch()

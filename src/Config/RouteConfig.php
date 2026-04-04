@@ -51,8 +51,8 @@ class RouteConfig
     $router->get('api/faculty/cart/json', 'FacultyCartController@getCartJson', ['faculty']);
     $router->post('api/faculty/cart/checkout', 'FacultyTicketController@checkout', ['faculty']);
     $router->get('api/faculty/qrBorrowingTicket', 'FacultyTicketController@show', ['faculty']);
-    $router->get('api/faculty/myprofile/get', 'FacultyProfileController@getProfile', ['faculty']);
-    $router->post('api/faculty/myprofile/update', 'FacultyProfileController@updateProfile', ['faculty']);
+    $router->get('api/faculty/myprofile/get', 'UserProfileController@getProfile', ['faculty']);
+    $router->post('api/faculty/myprofile/update', 'UserProfileController@updateProfile', ['faculty']);
     $router->get('api/faculty/borrowing-history/pagination', 'FacultyBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['faculty']);
     $router->get('api/faculty/borrowing-history/stats', 'FacultyBorrowingHistoryController@fetchStats', ['faculty']);
     $router->get('api/data/getColleges', 'DataController@getColleges', ['faculty']);
@@ -68,8 +68,8 @@ class RouteConfig
     $router->get('api/staff/cart/json', 'StaffCartController@getCartJson', ['staff']);
     $router->post('api/staff/cart/checkout', 'StaffTicketController@checkout', ['staff']);
     $router->get('api/staff/qrBorrowingTicket', 'StaffTicketController@show', ['staff']);
-    $router->get('api/staff/myprofile/get', 'StaffProfileController@getProfile', ['staff']);
-    $router->post('api/staff/myprofile/update', 'StaffProfileController@updateProfile', ['staff']);
+    $router->get('api/staff/myprofile/get', 'UserProfileController@getProfile', ['staff']);
+    $router->post('api/staff/myprofile/update', 'UserProfileController@updateProfile', ['staff']);
     $router->get('api/staff/borrowing-history/pagination', 'StaffBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['staff']);
     $router->get('api/staff/borrowing-history/stats', 'StaffBorrowingHistoryController@fetchStats', ['staff']);
 
@@ -166,12 +166,12 @@ class RouteConfig
     $router->get('api/admin/reports/getGraphData', 'ReportController@getReportGraphData', ['reports', 'librarian', 'admin']);
     $router->get('api/admin/reports/getActivityReport', 'ReportController@getActivityReport', ['reports', 'librarian', 'admin']);
     $router->get('api/admin/reports/getGraphData', 'ReportController@getReportGraphData', ['reports', 'librarian', 'admin']);
-    $router->get('api/admin/myProfile/get', 'SuperadminProfileController@getProfile', ['admin']);
-    $router->post('api/admin/myProfile/update', 'SuperadminProfileController@updateProfile', ['admin']);
-    $router->get('api/librarian/myProfile/get', 'SuperadminProfileController@getProfile', ['librarian']);
-    $router->post('api/librarian/myProfile/update', 'SuperadminProfileController@updateProfile', ['librarian']);
-    $router->get('api/campus_admin/myProfile/get', 'SuperadminProfileController@getProfile', ['campus_admin']);
-    $router->post('api/campus_admin/myProfile/update', 'SuperadminProfileController@updateProfile', ['campus_admin']);
+    $router->get('api/admin/myProfile/get', 'UserProfileController@getProfile', ['admin']);
+    $router->post('api/admin/myProfile/update', 'UserProfileController@updateProfile', ['admin']);
+    $router->get('api/librarian/myProfile/get', 'UserProfileController@getProfile', ['librarian']);
+    $router->post('api/librarian/myProfile/update', 'UserProfileController@updateProfile', ['librarian']);
+    $router->get('api/campus_admin/myProfile/get', 'UserProfileController@getProfile', ['campus_admin']);
+    $router->post('api/campus_admin/myProfile/update', 'UserProfileController@updateProfile', ['campus_admin']);
 
     $router->get('api/admin/userManagement/pagination', 'UserManagementController@fetchPaginatedUsers', ['user management']);
     $router->get('api/admin/userManagement/get/{id}', 'UserManagementController@getUserById', ['user management']);
@@ -268,8 +268,8 @@ class RouteConfig
     $router->get('api/superadmin/reports/getActivityReport', 'ReportController@getActivityReport', ['superadmin', 'reports']);
     $router->get('api/superadmin/reports/getReportGraphData', 'ReportController@getReportGraphData', ['superadmin', 'reports']);
     $router->post('api/superadmin/reports/generate-report', 'DomPdfTemplateController@generateLibraryReport', ['superadmin', 'reports']);
-    $router->get('api/superadmin/myProfile/get', 'SuperadminProfileController@getProfile', ['superadmin']);
-    $router->post('api/superadmin/myProfile/update', 'SuperadminProfileController@updateProfile', ['superadmin']);
+    $router->get('api/superadmin/myProfile/get', 'UserProfileController@getProfile', ['superadmin']);
+    $router->post('api/superadmin/myProfile/update', 'UserProfileController@updateProfile', ['superadmin']);
     $router->post('api/superadmin/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['superadmin']);
     $router->get('api/superadmin/libraryPolicies/getAll', 'LibraryPolicyController@getAll', ['superadmin']);
     $router->post('api/superadmin/libraryPolicies/update', 'LibraryPolicyController@update', ['superadmin']);
@@ -350,8 +350,8 @@ class RouteConfig
     $router->get('api/campus_admin/reports/getActivityReport', 'ReportController@getActivityReport', ['campus_admin', 'reports']);
     $router->get('api/campus_admin/reports/getReportGraphData', 'ReportController@getReportGraphData', ['campus_admin', 'reports']);
     $router->post('api/campus_admin/reports/generate-report', 'DomPdfTemplateController@generateLibraryReport', ['campus_admin', 'reports']);
-    $router->get('api/campus_admin/myProfile/get', 'CampusAdminProfileController@getProfile', ['campus_admin']);
-    $router->post('api/campus_admin/myProfile/update', 'CampusAdminProfileController@updateProfile', ['campus_admin']);
+    $router->get('api/campus_admin/myProfile/get', 'UserProfileController@getProfile', ['campus_admin']);
+    $router->post('api/campus_admin/myProfile/update', 'UserProfileController@updateProfile', ['campus_admin']);
     $router->post('api/campus_admin/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['campus_admin']);
     $router->get('api/campus_admin/libraryPolicies/getAll', 'LibraryPolicyController@getAll', ['campus_admin']);
 
@@ -374,8 +374,9 @@ class RouteConfig
     $router->get('api/student/borrowingHistory/fetch', 'StudentBorrowingHistoryController@fetchHistory', ['student']);
     $router->get('api/student/borrowing-history/stats', 'StudentBorrowingHistoryController@fetchStats', ['student']);
     $router->get('api/student/borrowing-history/pagination', 'StudentBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['student']);
-    $router->get('api/student/myprofile/get', 'StudentProfileController@getProfile', ['student']);
-    $router->post('api/student/myprofile/update', 'StudentProfileController@updateProfile', ['student']);
+    $router->get('api/student/myprofile/get', 'UserProfileController@getProfile', ['student']);
+    $router->post('api/student/myprofile/update', 'UserProfileController@updateProfile', ['student']);
+
     $router->get('api/data/getAllCourses', 'DataController@getAllCourses', ['student']);
 
     $router->get('api/campus_admin/overdue/getTableData', 'OverdueController@getTableData', ['campus_admin']);

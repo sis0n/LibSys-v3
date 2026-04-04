@@ -22,14 +22,6 @@ class LibraryPolicyController extends Controller
         $this->campusRepo = new \App\Repositories\CampusRepository();
     }
 
-    private function json($data, int $statusCode = 200)
-    {
-        http_response_code($statusCode);
-        header('Content-Type: application/json');
-        echo json_encode($data);
-        exit;
-    }
-
     private function checkAccess(array $allowedRoles)
     {
         $role = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));

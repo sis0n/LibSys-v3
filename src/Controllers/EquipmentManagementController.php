@@ -24,14 +24,6 @@ class EquipmentManagementController extends Controller
         $this->auditRepo = new \App\Repositories\AuditLogRepository();
     }
 
-    private function json($data, int $statusCode = 200)
-    {
-        http_response_code($statusCode);
-        header('Content-Type: application/json');
-        echo json_encode($data);
-        exit;
-    }
-
     private function generateAssetTag(): string
     {
         $prefix = "EQP-" . date('Y') . "-";

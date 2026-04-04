@@ -262,6 +262,14 @@ $baseUrl = BASE_URL;
 
                     <?php if (in_array($role, ['superadmin', 'campus_admin', 'admin', 'librarian'])): ?>
 
+                <?php if ($role === 'superadmin'): ?>
+                    <a href="<?= $baseUrl ?>/dashboard"
+                        class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= ($currentPage === 'dashboard') ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
+                        <i class="ph ph-house text-2xl"></i>
+                        <span class="text-base">Dashboard</span>
+                    </a>
+                <?php endif; ?>
+
                 <?php 
                     $mgmtItems = [];
                     if ($hasPermission('user management')) $mgmtItems[] = ["url" => "userManagement", "icon" => "ph ph-users", "label" => "User Management"];
