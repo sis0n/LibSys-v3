@@ -29,6 +29,11 @@
 - [ ] **API Standardization:** Transition existing `api/` routes to a strict RESTful standard (consistent status codes and JSON structure).
 - [ ] **Role Normalization:** Audit and centralize role-checking logic (Superadmin vs Super_admin) across the entire system to prevent 403/401 leaks.
 
+### 🛠️ Development Workflow & Quality Assurance
+- [ ] **Automated Testing Framework:** Set up PHPUnit for backend logic and a JS testing library (e.g., Jest) to verify Service Layer rules before deployment.
+- [ ] **API Documentation (Swagger/OpenAPI):** Implement automated API documentation so that any developer (or future mobile app) knows how to use the Service Layer endpoints.
+- [ ] **Enhanced CI/CD Pipeline:** Update GitHub Actions to run automated tests on every push and block deployments if any test fails.
+
 ### 📜 Library Policy (Per Campus)
 - [x] **Schema Update:** Add `campus_id` to the `library_policies` table to allow per-campus rules.
 - [x] **Policy Management:** Update the Library Policy settings page to allow Superadmins to select a campus and set its specific rules (Max books, borrowing duration).
@@ -108,6 +113,7 @@
 - [ ] **Database Indexing Audit:** Full audit to ensure all frequently filtered columns (`status`, `campus_id`, `role`) have optimized indexes.
 - [ ] **Caching Layer (Redis):** Implement Redis to cache slow-changing data like Library Policies and User Permissions.
 - [ ] **Asynchronous Task Queue:** Set up a background worker for non-blocking tasks like sending overdue emails.
+- [ ] **API Rate Limiting:** Implement request throttling to protect the server from abuse or accidental DoS attacks.
 
 ### ☁️ Storage & Infrastructure
 - [ ] **Cloud Storage Integration:** Support AWS S3 or Google Cloud Storage for media assets.
