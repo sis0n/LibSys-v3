@@ -4,15 +4,18 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Repositories\UserPermissionModuleRepository;
+use App\Repositories\LibraryPolicyRepository;
 
 class ViewController extends Controller
 {
   private $userPermissionsRepo;
+  private $policyRepo;
 
   public function __construct()
   {
     parent::__construct();
     $this->userPermissionsRepo = new UserPermissionModuleRepository();
+    $this->policyRepo = new LibraryPolicyRepository();
   }
 
   private function getViewRoleFolder(string $role): string
@@ -164,7 +167,7 @@ class ViewController extends Controller
       if ($role === 'superadmin' || $role === 'campus_admin') {
         if ($role === 'campus_admin') {
           // Restricted modules for Campus Admin based on RBAC_POLICY.md
-          $restrictedForCampusAdmin = ['campusManagement', 'backup', 'restoreUser', 'auditLogs'];
+          $restrictedForCampusAdmin = ['campusManagement', 'backup', 'restoreUser', 'auditLogs', 'libraryPolicies'];
           if (in_array($action, $restrictedForCampusAdmin)) {
             $this->view("errors/403", ["title" => "Forbidden"], false);
             exit;
@@ -199,6 +202,12 @@ class ViewController extends Controller
       $campusRepo = new \App\Repositories\CampusRepository();
       $allCampuses = $campusRepo->getAllCampuses();
       $data['campuses'] = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);
+    }
+
+    if ($action === 'libraryPolicies') {
+        $data['selectedCampusId'] = isset($_GET['campus_id']) ? (int)$_GET['campus_id'] : 1;
+        $data['policies'] = $this->policyRepo->getPoliciesByCampus($data['selectedCampusId']);
+        $data['isViewOnly'] = false;
     }
 
     $this->view($viewPath, $data);

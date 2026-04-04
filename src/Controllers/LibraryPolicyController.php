@@ -24,36 +24,26 @@ class LibraryPolicyController extends Controller
 
     private function checkAccess(array $allowedRoles)
     {
-        $role = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
-        if (!in_array($role, $allowedRoles)) {
+        $normalize = function ($str) {
+            return strtolower(trim(str_replace([' ', '-', '_'], '', $str)));
+        };
+
+        $userRole = $normalize($_SESSION['role'] ?? 'guest');
+        $allowedRolesNormalized = array_map($normalize, $allowedRoles);
+
+        if ($userRole === 'superadmin') {
+            return; // Superadmin always has access
+        }
+
+        if (!in_array($userRole, $allowedRolesNormalized)) {
             $this->json(['success' => false, 'message' => 'Unauthorized access'], 403);
         }
-    }
-
-    public function index()
-    {
-        $this->checkAccess(['superadmin']);
-        
-        $allCampuses = $this->campusRepo->getAllCampuses();
-        $activeCampuses = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);
-
-        $selectedCampusId = isset($_GET['campus_id']) ? (int)$_GET['campus_id'] : 1;
-
-        $policies = $this->policyRepo->getPoliciesByCampus($selectedCampusId);
-        
-        $this->view("SuperAdmin/libraryPolicies", [
-            "policies" => $policies,
-            "campuses" => $activeCampuses,
-            "selectedCampusId" => $selectedCampusId,
-            "title" => "Library Policy Management",
-            "isViewOnly" => false
-        ]);
     }
 
     public function getAll()
     {
         $this->checkAccess(['superadmin']);
-        
+
         $campusId = !empty($_GET['campus_id']) ? (int)$_GET['campus_id'] : 1;
 
         $policies = $this->policyRepo->getPoliciesByCampus($campusId);

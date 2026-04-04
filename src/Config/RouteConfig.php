@@ -353,7 +353,6 @@ class RouteConfig
     $router->get('api/campus_admin/myProfile/get', 'UserProfileController@getProfile', ['campus_admin']);
     $router->post('api/campus_admin/myProfile/update', 'UserProfileController@updateProfile', ['campus_admin']);
     $router->post('api/campus_admin/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['campus_admin']);
-    $router->get('api/campus_admin/libraryPolicies/getAll', 'LibraryPolicyController@getAll', ['campus_admin']);
 
     $router->get('api/campus_admin/studentPromotion/fetch', 'StudentPromotionController@fetch', ['campus_admin']);
     $router->post('api/campus_admin/studentPromotion/promote', 'StudentPromotionController@promote', ['campus_admin']);
