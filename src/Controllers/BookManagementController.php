@@ -133,6 +133,8 @@ class BookManagementController extends Controller
             $data['campus_id'] = !empty($data['campus_id']) ? (int)$data['campus_id'] : null;
         }
 
+        $data['borrowing_duration_override'] = (!empty($data['borrowing_duration_override']) || $data['borrowing_duration_override'] === '0') ? (int)$data['borrowing_duration_override'] : null;
+
         if (isset($_FILES['book_image']) && $_FILES['book_image']['error'] == 0) {
             $imagePath = $this->handleImageUpload($_FILES['book_image']);
             if ($imagePath) {
@@ -171,6 +173,8 @@ class BookManagementController extends Controller
 
         // Ensure campus_id is handled
         $data['campus_id'] = !empty($data['campus_id']) ? (int)$data['campus_id'] : null;
+
+        $data['borrowing_duration_override'] = (!empty($data['borrowing_duration_override']) || $data['borrowing_duration_override'] === '0') ? (int)$data['borrowing_duration_override'] : null;
 
         if (isset($_FILES['book_image']) && $_FILES['book_image']['error'] == 0) {
             $imagePath = $this->handleImageUpload($_FILES['book_image']);
@@ -406,6 +410,7 @@ class BookManagementController extends Controller
             'supp'             => $headerMap['book_supplementary'] ?? null,
             'subj'             => $headerMap['subject']          ?? null,
             'campus'           => $headerMap['campus']           ?? null,
+            'borrowing_duration_override' => $headerMap['borrowing_duration_override'] ?? null,
         ];
 
         $missingHeaders = [];
@@ -523,6 +528,15 @@ class BookManagementController extends Controller
                 return;
             }
 
+            $overrideValue = null;
+            $overrideIdx = $columnMapping['borrowing_duration_override'] ?? null;
+            if ($overrideIdx !== null && isset($row[$overrideIdx])) {
+                $val = trim($row[$overrideIdx]);
+                if ($val !== '') {
+                    $overrideValue = (int)$val;
+                }
+            }
+
             $booksToInsert[] = [
                 'accession_number'    => $accessionNumber,
                 'call_number'         => trim($row[$columnMapping['call_number']] ?? '') ?: null,
@@ -538,6 +552,7 @@ class BookManagementController extends Controller
                 'subject'             => trim($row[$columnMapping['subj']]        ?? '') ?: null,
                 'campus_id'           => $campusId,
                 'availability'        => 'available',
+                'borrowing_duration_override' => $overrideValue,
             ];
 
             if (count($booksToInsert) >= $batchSize) {

@@ -17,8 +17,8 @@
 - [x] **Remove Soft Delete:** Replace `deleted_at` (soft delete) with `is_active` status toggle for Books and Equipment to align with the new Campus Management pattern. User Management will retain soft delete functionality.
 - [x] **Remove Restore Module:** Completely remove the 'Restore Books' module as it will be obsolete once soft delete is replaced by the `is_active` toggle.
 - [x] **Books Table Cleanup:** Drop the `deleted_at` and `deleted_by` columns from the `books` table after the transition to the `is_active` toggle pattern.
-- [ ] **Bulk Delete Approval Workflow:** Implement a request-based bulk delete system for 10+ records requiring approval from a higher role.
-- [ ] **Approval Queue Module:** Create a separate module where approvers can view, approve, or reject pending bulk delete requests with a time-limited approval window.
+- [x] **Bulk Delete Approval Workflow:** Implement a request-based bulk delete system for 10+ records requiring approval from a higher role.
+- [x] **Approval Queue Module:** Create a separate module where approvers can view, approve, or reject pending bulk delete requests with a time-limited approval window.
 
 
 ### 🎨 UI & Usability Fixes
@@ -29,6 +29,11 @@
 ## 🟠 [PRIORITY 2: CORE OPERATIONS]
 *Improving the daily borrowing and searching experience for students and librarians.*
 
+
+### 📖 Book-Specific Policies
+- [x] **Individual Book Borrowing Duration:** Allow management to override the default campus borrowing policy for specific books (e.g., change a 3-day limit to 2 days for high-demand books).
+- [x] **Schema Update:** Add `borrowing_duration_override` or similar column to the `books` table.
+- [x] **Policy Enforcement:** Update borrowing logic to prioritize book-specific duration before falling back to campus-wide `library_policies`.
 
 ### 📚 Book Catalog Enhancements
 - [ ] **Inter-campus Warning:** In `public/js/student/bookCatalog.js`, add a SweetAlert2 confirmation modal when a user attempts to "Add to Cart" a book from a different campus.

@@ -598,6 +598,8 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("edit_author").value = book.author;
         document.getElementById("edit_availability").value = book.availability;
         document.getElementById("edit_campus_id").value = book.campus_id || "";
+        document.getElementById("edit_borrowing_duration_override").value =
+          book.borrowing_duration_override || "";
         document.getElementById("edit_book_isbn").value = book.book_isbn || "";
         document.getElementById("edit_book_place").value =
           book.book_place || "";

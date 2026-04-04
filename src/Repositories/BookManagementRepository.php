@@ -159,11 +159,11 @@ class BookManagementRepository
             'book_isbn',
             'book_supplementary',
             'subject',
-            'availability'
+            'availability',
+            'borrowing_duration_override'
         ];
 
         $columns = implode(", ", $fields);
-
         $rowPlaceholders = "(" . implode(", ", array_fill(0, count($fields), "?")) . ")";
         $allPlaceholders = implode(", ", array_fill(0, count($allBooksData), $rowPlaceholders));
 
@@ -196,7 +196,8 @@ class BookManagementRepository
             'book_isbn',
             'book_supplementary',
             'subject',
-            'availability'
+            'availability',
+            'borrowing_duration_override'
         ];
 
         if (!empty($data['cover'])) {
@@ -225,7 +226,7 @@ class BookManagementRepository
             ':updated_by' => $updated_by_user_id
         ];
 
-        $allowedFields = ['accession_number', 'call_number', 'title', 'author', 'book_place', 'book_publisher', 'campus_id', 'year', 'book_edition', 'description', 'book_isbn', 'book_supplementary', 'subject', 'availability', 'cover'];
+        $allowedFields = ['accession_number', 'call_number', 'title', 'author', 'book_place', 'book_publisher', 'campus_id', 'year', 'book_edition', 'description', 'book_isbn', 'book_supplementary', 'subject', 'availability', 'cover', 'borrowing_duration_override'];
 
         foreach ($allowedFields as $field) {
             if (array_key_exists($field, $data)) {

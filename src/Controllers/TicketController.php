@@ -144,7 +144,21 @@ class TicketController extends Controller
       }
 
       $transactionCode = strtoupper(uniqid());
-      $dueDate = date("Y-m-d H:i:s", strtotime("+{$DURATION_DAYS} days"));
+
+      // Calculate effective duration based on overrides
+      $effectiveDuration = $DURATION_DAYS;
+      $bookRepo = new \App\Repositories\BookManagementRepository();
+      foreach ($cartItems as $item) {
+          $book = $bookRepo->findBookById($item['book_id']);
+          if ($book && $book['borrowing_duration_override'] !== null) {
+              $override = (int)$book['borrowing_duration_override'];
+              if ($override < $effectiveDuration) {
+                  $effectiveDuration = $override;
+              }
+          }
+      }
+
+      $dueDate = date("Y-m-d H:i:s", strtotime("+{$effectiveDuration} days"));
       
       $builder = new Builder(
         writer: new SvgWriter(),

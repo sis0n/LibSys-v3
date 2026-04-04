@@ -604,10 +604,10 @@ class UserRepository
     $baseQuery = "
         FROM users u
         LEFT JOIN user_module_permissions um ON um.user_id = u.user_id
-        INNER JOIN campuses c ON u.campus_id = c.campus_id
+        LEFT JOIN campuses c ON u.campus_id = c.campus_id
         WHERE u.deleted_at IS NULL 
         AND u.role NOT IN ('superadmin')
-        AND c.is_active = 1
+        AND (c.is_active = 1 OR c.is_active IS NULL)
     ";
     $params = [];
 

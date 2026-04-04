@@ -84,6 +84,10 @@
                         </select>
                     </div>
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1"> Borrow Duration Override (Days) </label>
+                        <input type="number" name="borrowing_duration_override" min="0" placeholder="Default from policy" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1"> ISBN </label>
                         <input type="text" name="book_isbn" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
                     </div>
@@ -321,6 +325,11 @@
                     <option value="">Select Campus</option>
                     <!-- Options loaded by JS -->
                 </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Borrow Duration Override (Days)</label>
+                <input type="number" id="edit_borrowing_duration_override" name="borrowing_duration_override" min="0" placeholder="Default from policy"
+                    class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">ISBN</label>

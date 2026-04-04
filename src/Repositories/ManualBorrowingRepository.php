@@ -215,8 +215,18 @@ class ManualBorrowingRepository
           $maxAllowed = (int)$policy['max_books'];
           $currentActive = $this->countActiveBorrowedItems($userId);
           if ($currentActive >= $maxAllowed) throw new Exception("Borrow limit exceeded. User already has $currentActive active items.");
-          $duration = (int)$policy['borrow_duration_days'];
-          $dueDate = date('Y-m-d H:i:s', strtotime("+{$duration} days"));
+          
+          $effectiveDuration = (int)$policy['borrow_duration_days'];
+          
+          // Check for book-specific override
+          $stmtOverride = $this->db->prepare("SELECT borrowing_duration_override FROM books WHERE book_id = ?");
+          $stmtOverride->execute([$borrowData['book_id']]);
+          $book = $stmtOverride->fetch(PDO::FETCH_ASSOC);
+          if ($book && $book['borrowing_duration_override'] !== null) {
+              $effectiveDuration = (int)$book['borrowing_duration_override'];
+          }
+
+          $dueDate = date('Y-m-d H:i:s', strtotime("+{$effectiveDuration} days"));
         }
       }
 
