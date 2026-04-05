@@ -10,22 +10,22 @@
 
 ### 🏗️ Architectural Hardening (Service Layer)
 - [ ] **Service Layer Implementation:** Refactor business logic from Controllers into dedicated Services.
-    - [ ] `BorrowingService`: Centralize policy checks, overdue validation, and stock updates.
-    - [ ] `ReturningService`: Calculate fines, handle damaged/lost items, and inventory return.
-    - [ ] `OverdueService`: Background logic for scanning and flagging overdue transactions.
-    - [ ] `UserService`: RBAC enforcement, campus-based filtering, and bulk import validation.
-    - [ ] `AuthService`: Centralized login, session security, and role normalization.
-    - [ ] `BookService` & `EquipmentService`: Resource management and availability logic.
-    - [ ] `CampusService`: Multi-campus integrity and validation logic.
-    - [ ] `NotificationService`: Orchestrate email, SMS, and in-app alerts.
-    - [ ] `AuditLogService`: Detailed activity tracking with state snapshots.
-    - [ ] `ReportService`: Data aggregation logic for complex PDF reports.
-    - [ ] `PromotionService`: Year-level updates and student archiving logic.
-    - [ ] `TicketService`: QR code generation and validation.
-    - [ ] `SearchService`: Advanced filtering and cross-campus catalog logic.
-    - [ ] `DashboardService`: Statistical aggregation and analytics for the dashboard.
-    - [ ] `CartService`: Reservation rules and inter-campus cart validation.
-    - [ ] `StorageService`: Centralized file management (Local vs Cloud abstraction).
+    - [x] `BorrowingService`: Centralize policy checks, overdue validation, and stock updates.
+    - [x] `ReturningService`: Calculate fines, handle damaged/lost items, and inventory return.
+    - [x] `OverdueService`: Background logic for scanning and flagging overdue transactions.
+    - [x] `UserService`: RBAC enforcement, campus-based filtering, and bulk import validation.
+    - [x] `AuthService`: Centralized login, session security, and role normalization.
+    - [x] `BookService` & `EquipmentService`: Resource management and availability logic.
+    - [x] `CampusService`: Multi-campus integrity and validation logic.
+    - [x] `NotificationService`: Orchestrate email, SMS, and in-app alerts.
+    - [x] `AuditLogService`: Detailed activity tracking with state snapshots.
+    - [x] `ReportService`: Data aggregation logic for complex PDF reports.
+    - [x] `PromotionService`: Year-level updates and student archiving logic.
+    - [x] `TicketService`: QR code generation and validation.
+    - [x] `SearchService`: Advanced filtering and cross-campus catalog logic.
+    - [x] `DashboardService`: Statistical aggregation and analytics for the dashboard.
+    - [x] `CartService`: Reservation rules and inter-campus cart validation.
+    - [x] `StorageService`: Centralized file management (Local vs Cloud abstraction).
 - [ ] **API Standardization:** Transition existing `api/` routes to a strict RESTful standard (consistent status codes and JSON structure).
 - [ ] **Role Normalization:** Audit and centralize role-checking logic (Superadmin vs Super_admin) across the entire system to prevent 403/401 leaks.
 
