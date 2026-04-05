@@ -84,6 +84,13 @@ class Controller
         return $this->sanitize($_POST);
     }
 
+    protected function getJsonData(): array
+    {
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true) ?: [];
+        return $this->sanitize($data);
+    }
+
     public function view(string $view, array $data = [], bool $withLayout = true): void
     {
         extract($data, EXTR_SKIP);

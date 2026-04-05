@@ -119,6 +119,29 @@ class EquipmentManagementRepository
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function addEquipment(array $data)
+    {
+        $stmt = $this->db->prepare("INSERT INTO equipments (equipment_name, campus_id, asset_tag, status, is_active) VALUES (?, ?, ?, ?, ?)");
+        return $stmt->execute([
+            $data['equipment_name'],
+            $data['campus_id'],
+            $data['asset_tag'],
+            $data['status'],
+            $data['is_active']
+        ]);
+    }
+
+    public function updateEquipment(int $id, array $data)
+    {
+        $stmt = $this->db->prepare("UPDATE equipments SET equipment_name = ?, campus_id = ?, status = ?, updated_at = NOW() WHERE equipment_id = ?");
+        return $stmt->execute([
+            $data['equipment_name'],
+            $data['campus_id'],
+            $data['status'],
+            $id
+        ]);
+    }
+
     public function toggleActiveStatus($id, $newStatus)
     {
         $stmt = $this->db->prepare("UPDATE equipments SET is_active = ?, updated_at = NOW() WHERE equipment_id = ?");

@@ -22,57 +22,88 @@ class StudentPromotionController extends Controller
     public function index()
     {
         $courses = $this->courseRepo->getAllCourses();
-        $this->view('superadmin/studentPromotion', [
+        $role = strtolower(str_replace([' ', '-', '_'], '', $_SESSION['role'] ?? ''));
+        $viewPath = ($role === 'superadmin' || $role === 'admin') ? 'Superadmin/studentPromotion' : 'campus_admin/studentPromotion';
+
+        $this->view($viewPath, [
             'title' => 'Student Promotion',
             'currentPage' => 'studentPromotion',
             'courses' => $courses
         ]);
     }
 
-    public function promote()
+    public function fetch()
     {
         header('Content-Type: application/json');
         try {
-            $studentId = $_POST['student_id'] ?? null;
-            $adminId = $_SESSION['user_id'] ?? null;
+            $campusId = $this->getCampusFilter();
+            
+            $filters = [
+                'search' => $_GET['search'] ?? '',
+                'course_id' => $_GET['course_id'] ?? '',
+                'campus_id' => $campusId ?? $_GET['campus_id'] ?? '',
+                'year_level' => $_GET['year_level'] ?? '',
+                'status' => $_GET['status'] ?? 1
+            ];
 
-            if (!$studentId || !$adminId) throw new Exception('Missing information.');
+            $limit = (int)($_GET['limit'] ?? 100);
+            $offset = (int)($_GET['offset'] ?? 0);
 
-            $this->promotionService->promoteStudent((int)$studentId, (int)$adminId);
-            echo json_encode(['success' => true, 'message' => 'Student promoted successfully!']);
+            $result = $this->promotionService->getStudentsForPromotion($filters, $limit, $offset);
+            $stats = $this->promotionService->getPromotionStats((int)$filters['status'], $filters['campus_id'] ?: null);
+
+            echo json_encode([
+                'success' => true,
+                'students' => $result['students'],
+                'totalCount' => $result['totalCount'],
+                'totalPages' => $result['totalPages'],
+                'stats' => $stats
+            ]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 
-    public function bulkPromote()
+    public function promote()
     {
         header('Content-Type: application/json');
         try {
-            $courseId = $_POST['course_id'] ?? null;
-            $yearLevel = $_POST['year_level'] ?? null;
+            $data = $this->getJsonData();
             $adminId = $_SESSION['user_id'] ?? null;
+            if (!$adminId) throw new Exception('Unauthorized.');
 
-            if (!$courseId || !$yearLevel || !$adminId) throw new Exception('Missing information.');
-
-            $count = $this->promotionService->bulkPromote((int)$courseId, (int)$yearLevel, (int)$adminId);
+            $count = $this->promotionService->processBulkPromotion($data, $adminId);
             echo json_encode(['success' => true, 'message' => "Successfully promoted $count students!"]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 
-    public function archiveGraduates()
+    public function deactivate()
     {
         header('Content-Type: application/json');
         try {
-            $courseId = $_POST['course_id'] ?? null;
+            $data = $this->getJsonData();
             $adminId = $_SESSION['user_id'] ?? null;
+            if (!$adminId) throw new Exception('Unauthorized.');
 
-            if (!$courseId || !$adminId) throw new Exception('Missing information.');
+            $count = $this->promotionService->processBulkDeactivation($data, $adminId);
+            echo json_encode(['success' => true, 'message' => "Successfully deactivated $count students!"]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
 
-            $count = $this->promotionService->archiveGraduates((int)$courseId, (int)$adminId);
-            echo json_encode(['success' => true, 'message' => "Successfully archived $count graduates!"]);
+    public function activate()
+    {
+        header('Content-Type: application/json');
+        try {
+            $data = $this->getJsonData();
+            $adminId = $_SESSION['user_id'] ?? null;
+            if (!$adminId) throw new Exception('Unauthorized.');
+
+            $count = $this->promotionService->processBulkActivation($data, $adminId);
+            echo json_encode(['success' => true, 'message' => "Successfully activated $count students!"]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }

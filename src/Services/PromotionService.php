@@ -17,43 +17,78 @@ class PromotionService
         $this->auditRepo = new AuditLogRepository();
     }
 
+    public function getStudentsForPromotion(array $filters, int $limit, int $offset): array
+    {
+        $students = $this->promotionRepo->fetchStudents($filters, $limit, $offset);
+        $totalCount = $this->promotionRepo->countStudents($filters);
+        
+        return [
+            'students' => $students,
+            'totalCount' => (int)$totalCount,
+            'totalPages' => ceil($totalCount / $limit)
+        ];
+    }
+
+    public function getPromotionStats(int $status = 1, ?int $campusId = null): array
+    {
+        return $this->promotionRepo->getYearLevelStats($status, $campusId);
+    }
+
+    public function processBulkPromotion(array $data, int $adminId): int
+    {
+        $count = 0;
+        if ($data['is_all']) {
+            $count = $this->promotionRepo->bulkPromoteByFilter($data['filters']);
+        } else {
+            $count = $this->promotionRepo->bulkPromote($data['student_ids']);
+        }
+
+        if ($count > 0) {
+            $this->auditRepo->log($adminId, 'BULK_PROMOTE', 'STUDENTS', null, "Bulk promoted $count students.");
+        }
+        return (int)$count;
+    }
+
+    public function processBulkDeactivation(array $data, int $adminId): int
+    {
+        $count = 0;
+        if ($data['is_all']) {
+            $count = $this->promotionRepo->bulkDeactivateByFilter($data['filters']);
+        } else {
+            $count = $this->promotionRepo->bulkDeactivate($data['student_ids']);
+        }
+
+        if ($count > 0) {
+            $this->auditRepo->log($adminId, 'BULK_DEACTIVATE', 'STUDENTS', null, "Bulk deactivated $count students.");
+        }
+        return (int)$count;
+    }
+
+    public function processBulkActivation(array $data, int $adminId): int
+    {
+        $count = 0;
+        if ($data['is_all']) {
+            $count = $this->promotionRepo->bulkActivateByFilter($data['filters']);
+        } else {
+            $count = $this->promotionRepo->bulkActivate($data['student_ids']);
+        }
+
+        if ($count > 0) {
+            $this->auditRepo->log($adminId, 'BULK_ACTIVATE', 'STUDENTS', null, "Bulk activated $count students.");
+        }
+        return (int)$count;
+    }
+
     /**
      * Promote a single student
      */
     public function promoteStudent(int $studentId, int $adminId): bool
     {
-        $student = $this->promotionRepo->getStudentById($studentId);
-        if (!$student) throw new Exception('Student not found.');
-
-        if ($this->promotionRepo->promote($studentId)) {
-            $this->auditRepo->log($adminId, 'PROMOTE', 'STUDENTS', $studentId, "Promoted student {$student['first_name']} {$student['last_name']} to the next year level.");
+        if ($this->promotionRepo->bulkPromote([$studentId])) {
+            $this->auditRepo->log($adminId, 'PROMOTE', 'STUDENTS', $studentId, "Promoted student ID $studentId to the next year level.");
             return true;
         }
 
         return false;
-    }
-
-    /**
-     * Bulk promote students by course and year level
-     */
-    public function bulkPromote(int $courseId, int $yearLevel, int $adminId): int
-    {
-        $count = $this->promotionRepo->bulkPromote($courseId, $yearLevel);
-        if ($count > 0) {
-            $this->auditRepo->log($adminId, 'BULK_PROMOTE', 'STUDENTS', null, "Bulk promoted $count students from Course ID $courseId, Year Level $yearLevel.");
-        }
-        return $count;
-    }
-
-    /**
-     * Archive/Graduate students (mark as inactive or specific status)
-     */
-    public function archiveGraduates(int $courseId, int $adminId): int
-    {
-        $count = $this->promotionRepo->archiveGraduates($courseId);
-        if ($count > 0) {
-            $this->auditRepo->log($adminId, 'ARCHIVE_GRADUATES', 'STUDENTS', null, "Archived $count graduating students from Course ID $courseId.");
-        }
-        return $count;
     }
 }
