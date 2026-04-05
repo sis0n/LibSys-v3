@@ -56,7 +56,7 @@ class CartService
     /**
      * Process checkout
      */
-    public function checkout(int $userId, array $cartIds): string
+    public function checkout(int $userId, array $cartIds, string $role = 'student'): string
     {
         if (empty($cartIds)) {
             throw new Exception("No items selected for checkout.");
@@ -64,16 +64,29 @@ class CartService
 
         $ticketRepo = new TicketRepository();
         
-        // 1. Get Student ID
-        $studentId = $ticketRepo->getStudentIdByUserId($userId);
-        if (!$studentId) {
-            throw new Exception("Student record not found.");
-        }
+        $roleId = null;
+        $roleColumn = '';
 
-        // 2. Check Profile Completion
-        $profileStatus = $ticketRepo->checkProfileCompletion($studentId);
-        if (!$profileStatus['complete']) {
-            throw new Exception($profileStatus['message']);
+        if ($role === 'student') {
+            $roleId = $ticketRepo->getStudentIdByUserId($userId);
+            $roleColumn = 'student_id';
+            if (!$roleId) throw new Exception("Student record not found.");
+            
+            // Check Profile Completion (Student only for now as per requirement or keep it for all)
+            $profileStatus = $ticketRepo->checkProfileCompletion($roleId);
+            if (!$profileStatus['complete']) {
+                throw new Exception($profileStatus['message']);
+            }
+        } elseif ($role === 'faculty') {
+            $roleId = $ticketRepo->getFacultyIdByUserId($userId);
+            $roleColumn = 'faculty_id';
+            if (!$roleId) throw new Exception("Faculty record not found.");
+        } elseif ($role === 'staff') {
+            $roleId = $ticketRepo->getStaffIdByUserId($userId);
+            $roleColumn = 'staff_id';
+            if (!$roleId) throw new Exception("Staff record not found.");
+        } else {
+            throw new Exception("Invalid role for checkout.");
         }
 
         // 3. Get Cart Items Details
@@ -118,10 +131,11 @@ class CartService
             $dueDate = date('Y-m-d H:i:s', strtotime('+7 days'));
 
             $transactionId = $ticketRepo->createPendingTransaction(
-                $studentId,
+                $roleId,
                 $transactionCode,
                 $dueDate,
-                $qrPath
+                $qrPath,
+                $roleColumn
             );
 
             $ticketRepo->addTransactionItems($transactionId, $items);

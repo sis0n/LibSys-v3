@@ -57,12 +57,15 @@ class TicketService
             $ticketId = (int)$ticket['transaction_id'];
             $books = $this->ticketRepo->getTransactionItems($ticketId);
 
+            $userData = $_SESSION['user_data'] ?? [];
+            $fullName = $userData['fullname'] ?? 'User';
+            
             $studentData = [
-                'student_number' => 'N/A',
-                'name' => ($_SESSION['user_data']['first_name'] ?? '') . ' ' . ($_SESSION['user_data']['last_name'] ?? ''),
-                'year_level' => 'N/A',
+                'student_number' => $userData['username'] ?? 'N/A',
+                'name' => $fullName,
+                'year_level' => ucfirst($role),
                 'section' => '',
-                'course' => 'N/A'
+                'course' => $userData['program_department'] ?? 'N/A'
             ];
 
             if ($role === 'student') {
@@ -70,32 +73,40 @@ class TicketService
                 if ($studentId) {
                     $details = $this->ticketRepo->getStudentInfo($studentId);
                     $studentData = [
-                        'student_number' => $details['student_number'] ?? 'N/A',
-                        'name' => ($_SESSION['user_data']['first_name'] ?? '') . ' ' . ($_SESSION['user_data']['last_name'] ?? ''),
+                        'id' => $details['student_number'] ?? 'N/A',
+                        'name' => $fullName,
                         'year_level' => $details['year_level'] ?? 'N/A',
                         'section' => $details['section'] ?? '',
                         'course' => $details['course'] ?? 'N/A'
                     ];
+                } else {
+                    $studentData = [
+                        'id' => $userData['username'] ?? 'N/A',
+                        'name' => $fullName,
+                        'year_level' => 'N/A',
+                        'section' => '',
+                        'course' => $userData['program_department'] ?? 'N/A'
+                    ];
                 }
             } elseif ($role === 'faculty') {
                 $facultyId = $ticket['faculty_id'] ?? $this->ticketRepo->getFacultyIdByUserId($userId);
-                if ($facultyId) {
-                    $details = $this->ticketRepo->getFacultyInfo((int)$facultyId);
-                    $studentData['student_number'] = $details['student_number'] ?? 'N/A';
-                    $studentData['year_level'] = 'Faculty';
-                    $studentData['course'] = $details['course'] ?? 'N/A';
-                }
+                $details = $facultyId ? $this->ticketRepo->getFacultyInfo((int)$facultyId) : null;
+                $studentData = [
+                    'id' => $details['student_number'] ?? $userData['username'] ?? 'N/A',
+                    'name' => $fullName,
+                    'department' => $details['course'] ?? $userData['program_department'] ?? 'N/A'
+                ];
             } elseif ($role === 'staff') {
                 $staffId = $ticket['staff_id'] ?? $this->ticketRepo->getStaffIdByUserId($userId);
-                if ($staffId) {
-                    $details = $this->ticketRepo->getStaffInfo((int)$staffId);
-                    $studentData['student_number'] = $details['student_number'] ?? 'N/A';
-                    $studentData['year_level'] = 'Staff';
-                    $studentData['course'] = $details['course'] ?? 'N/A';
-                }
+                $details = $staffId ? $this->ticketRepo->getStaffInfo((int)$staffId) : null;
+                $studentData = [
+                    'id' => $details['student_number'] ?? $userData['username'] ?? 'N/A',
+                    'name' => $fullName,
+                    'position' => $details['course'] ?? $userData['program_department'] ?? 'N/A'
+                ];
             }
 
-            return array_merge(['status' => 'pending', 'books' => $books, 'student' => $studentData], $ticket);
+            return array_merge(['status' => 'pending', 'books' => $books, 'borrower' => $studentData], $ticket);
         }
 
         return ['status' => $ticket['status'], 'transaction_code' => $ticket['transaction_code']];

@@ -169,8 +169,7 @@ class UserService
                 break;
 
             case 'faculty':
-                $collegeId = filter_var($data['college_id'] ?? null, FILTER_VALIDATE_INT);
-                if (!$collegeId) throw new Exception('Department is required!');
+                $collegeId = !empty($data['college_id']) ? (int)$data['college_id'] : null;
                 $this->facultyRepo->insertFaculty($userId, $collegeId, $data['contact'] ?? 'N/A', 'active');
                 break;
 

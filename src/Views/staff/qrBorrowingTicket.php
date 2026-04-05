@@ -201,10 +201,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateDetails(data) {
-        if (data.student) {
-            detailsElems.number.textContent = data.student.student_number || 'N/A';
-            detailsElems.name.textContent = data.student.name || 'N/A';
-            detailsElems.course.textContent = data.student.course || 'N/A';
+        if (data.borrower) {
+            detailsElems.number.textContent = data.borrower.id || 'N/A';
+            detailsElems.name.textContent = data.borrower.name || 'N/A';
+            detailsElems.course.textContent = data.borrower.position || 'N/A';
         }
         detailsElems.count.textContent = data.books ? `${data.books.length} Item(s)` : '0 Item(s)';
 

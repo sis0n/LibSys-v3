@@ -16,21 +16,34 @@ class CartController extends Controller
         $this->cartService = new CartService();
     }
 
-    private function ensureStudent()
+    private function ensureAuthenticated()
     {
         if (session_status() === PHP_SESSION_NONE) session_start();
-        if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'student') {
-            header('Location: ' . \BASE_URL .'/login');
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ' . \BASE_URL . '/login');
             exit;
         }
-        return $_SESSION['user_id'];
+        return [
+            'user_id' => $_SESSION['user_id'],
+            'role' => $_SESSION['role'] ?? 'guest'
+        ];
     }
 
     public function index()
     {
-        $userId = $this->ensureStudent();
-        $cartItems = $this->cartService->getUserCart($userId);
-        $this->view("student/cart", [
+        $auth = $this->ensureAuthenticated();
+        $cartItems = $this->cartService->getUserCart($auth['user_id']);
+        
+        $role = $auth['role'];
+        $viewFolder = ucfirst($role);
+        if ($role === 'staff') $viewFolder = 'staff';
+        
+        if (!($role === 'student' || $role === 'faculty' || $role === 'staff')) {
+            header('Location: ' . \BASE_URL . '/dashboard');
+            exit;
+        }
+
+        $this->view("$viewFolder/myCart", [
             "cartItems" => $cartItems,
             "title" => "My Cart"
         ]);
@@ -40,8 +53,8 @@ class CartController extends Controller
     {
         header('Content-Type: application/json');
         try {
-            $userId = $this->ensureStudent();
-            $result = $this->cartService->addToCart($userId, (int)$bookId);
+            $auth = $this->ensureAuthenticated();
+            $result = $this->cartService->addToCart($auth['user_id'], (int)$bookId);
             echo json_encode($result);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
@@ -52,8 +65,8 @@ class CartController extends Controller
     {
         header('Content-Type: application/json');
         try {
-            $userId = $this->ensureStudent();
-            $this->cartService->removeFromCart((int)$cartId, $userId);
+            $auth = $this->ensureAuthenticated();
+            $this->cartService->removeFromCart((int)$cartId, $auth['user_id']);
             echo json_encode(["success" => true]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
@@ -64,8 +77,8 @@ class CartController extends Controller
     {
         header('Content-Type: application/json');
         try {
-            $userId = $this->ensureStudent();
-            $this->cartService->clearCart($userId);
+            $auth = $this->ensureAuthenticated();
+            $this->cartService->clearCart($auth['user_id']);
             echo json_encode(["success" => true]);
         } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
@@ -76,8 +89,8 @@ class CartController extends Controller
     {
         header('Content-Type: application/json');
         try {
-            $userId = $this->ensureStudent();
-            $cartItems = $this->cartService->getUserCart($userId);
+            $auth = $this->ensureAuthenticated();
+            $cartItems = $this->cartService->getUserCart($auth['user_id']);
             echo json_encode($cartItems);
         } catch (Exception $e) {
             echo json_encode(['error' => $e->getMessage()]);
@@ -88,10 +101,10 @@ class CartController extends Controller
     {
         header('Content-Type: application/json');
         try {
-            $userId = $this->ensureStudent();
+            $auth = $this->ensureAuthenticated();
             $data = json_decode(file_get_contents("php://input"), true);
             
-            $ticketId = $this->cartService->checkout($userId, $data['cart_ids'] ?? []);
+            $ticketId = $this->cartService->checkout($auth['user_id'], $data['cart_ids'] ?? [], $auth['role']);
             
             echo json_encode([
                 "success" => true,

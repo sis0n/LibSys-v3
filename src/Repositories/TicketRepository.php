@@ -472,15 +472,15 @@ class TicketRepository
     $stmt->execute([$minutes, $transactionId]);
   }
 
-  public function createPendingTransaction(int $studentId, string $transactionCode, string $dueDate, string $qrPath, int $expiryMinutes = 15): int
+  public function createPendingTransaction(int $id, string $transactionCode, string $dueDate, string $qrPath, string $roleColumn = 'student_id', int $expiryMinutes = 15): int
   {
     $stmt = $this->db->prepare("
         INSERT INTO borrow_transactions 
-        (student_id, transaction_code, qrcode, due_date, status, generated_at, expires_at)
-        VALUES (:sid, :tcode, :qr, :due_date, 'pending', NOW(), DATE_ADD(NOW(), INTERVAL :minutes MINUTE))
+        ($roleColumn, transaction_code, qrcode, due_date, status, generated_at, expires_at)
+        VALUES (:id, :tcode, :qr, :due_date, 'pending', NOW(), DATE_ADD(NOW(), INTERVAL :minutes MINUTE))
     ");
     $stmt->execute([
-      'sid' => $studentId,
+      'id' => $id,
       'tcode' => $transactionCode,
       'qr' => $qrPath,
       'due_date' => $dueDate,

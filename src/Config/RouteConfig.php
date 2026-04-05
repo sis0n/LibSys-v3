@@ -43,12 +43,12 @@ class RouteConfig
     // Consolidated Book Catalog Route
     $router->get('bookCatalog', 'BookCatalogController@index', ['faculty', 'staff', 'student']);
 
-    $router->get('api/faculty/cart', 'FacultyCartController@index', ['faculty']);
-    $router->get('api/faculty/cart/add/{id}', 'FacultyCartController@add', ['faculty']);
-    $router->post('api/faculty/cart/remove/{id}', 'FacultyCartController@remove', ['faculty']);
-    $router->post('api/faculty/cart/clear', 'FacultyCartController@clearCart', ['faculty']);
-    $router->get('api/faculty/cart/json', 'FacultyCartController@getCartJson', ['faculty']);
-    $router->post('api/faculty/cart/checkout', 'FacultyCartController@checkout', ['faculty']);
+    $router->get('api/faculty/cart', 'CartController@index', ['faculty']);
+    $router->get('api/faculty/cart/add/{id}', 'CartController@add', ['faculty']);
+    $router->post('api/faculty/cart/remove/{id}', 'CartController@remove', ['faculty']);
+    $router->post('api/faculty/cart/clear', 'CartController@clearCart', ['faculty']);
+    $router->get('api/faculty/cart/json', 'CartController@getCartJson', ['faculty']);
+    $router->post('api/faculty/cart/checkout', 'CartController@checkout', ['faculty']);
     $router->get('api/faculty/qrBorrowingTicket', 'TicketController@index', ['faculty']);
     $router->get('api/faculty/myprofile/get', 'UserProfileController@getProfile', ['faculty']);
     $router->post('api/faculty/myprofile/update', 'UserProfileController@updateProfile', ['faculty']);
@@ -60,12 +60,12 @@ class RouteConfig
     $router->get('api/staff/qrBorrowingTicket/checkStatus', 'TicketController@checkStatus', ['staff']);
     $router->get('api/staff/bookCatalog/availableCount', 'StaffBookCatalogController@getAvailableCount', ['staff']);
     $router->get('api/staff/bookCatalog/fetch', 'StaffBookCatalogController@fetch', ['staff']);
-    $router->get('api/staff/cart', 'StaffCartController@index', ['staff']);
-    $router->get('api/staff/cart/add/{id}', 'StaffCartController@add', ['staff']);
-    $router->post('api/staff/cart/remove/{id}', 'StaffCartController@remove', ['staff']);
-    $router->post('api/staff/cart/clear', 'StaffCartController@clearCart', ['staff']);
-    $router->get('api/staff/cart/json', 'StaffCartController@getCartJson', ['staff']);
-    $router->post('api/staff/cart/checkout', 'StaffCartController@checkout', ['staff']);
+    $router->get('api/staff/cart', 'CartController@index', ['staff']);
+    $router->get('api/staff/cart/add/{id}', 'CartController@add', ['staff']);
+    $router->post('api/staff/cart/remove/{id}', 'CartController@remove', ['staff']);
+    $router->post('api/staff/cart/clear', 'CartController@clearCart', ['staff']);
+    $router->get('api/staff/cart/json', 'CartController@getCartJson', ['staff']);
+    $router->post('api/staff/cart/checkout', 'CartController@checkout', ['staff']);
     $router->get('api/staff/qrBorrowingTicket', 'TicketController@index', ['staff']);
     $router->get('api/staff/myprofile/get', 'UserProfileController@getProfile', ['staff']);
     $router->post('api/staff/myprofile/update', 'UserProfileController@updateProfile', ['staff']);

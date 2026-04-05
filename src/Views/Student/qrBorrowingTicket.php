@@ -206,11 +206,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateDetails(data) {
-        if (data.student) {
-            detailsElems.number.textContent = data.student.student_number || 'N/A';
-            detailsElems.name.textContent = data.student.name || 'N/A';
-            detailsElems.yrsec.textContent = `${data.student.year_level ?? 'N/A'}${data.student.section ?? ''}`;
-            detailsElems.course.textContent = data.student.course || 'N/A';
+        if (data.borrower) {
+            detailsElems.number.textContent = data.borrower.student_number || 'N/A';
+            detailsElems.name.textContent = data.borrower.name || 'N/A';
+            detailsElems.yrsec.textContent = `${data.borrower.year_level ?? 'N/A'}${data.borrower.section ?? ''}`;
+            detailsElems.course.textContent = data.borrower.course || 'N/A';
         }
         detailsElems.count.textContent = data.books ? `${data.books.length} Book(s)` : '0 Book(s)';
 
