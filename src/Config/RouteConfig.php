@@ -44,13 +44,12 @@ class RouteConfig
     $router->get('bookCatalog', 'BookCatalogController@index', ['faculty', 'staff', 'student']);
 
     $router->get('api/faculty/cart', 'FacultyCartController@index', ['faculty']);
-    $router->get('api/faculty/cart', 'FacultyCartController@index', ['faculty']);
     $router->get('api/faculty/cart/add/{id}', 'FacultyCartController@add', ['faculty']);
     $router->post('api/faculty/cart/remove/{id}', 'FacultyCartController@remove', ['faculty']);
     $router->post('api/faculty/cart/clear', 'FacultyCartController@clearCart', ['faculty']);
     $router->get('api/faculty/cart/json', 'FacultyCartController@getCartJson', ['faculty']);
-    $router->post('api/faculty/cart/checkout', 'FacultyTicketController@checkout', ['faculty']);
-    $router->get('api/faculty/qrBorrowingTicket', 'FacultyTicketController@show', ['faculty']);
+    $router->post('api/faculty/cart/checkout', 'FacultyCartController@checkout', ['faculty']);
+    $router->get('api/faculty/qrBorrowingTicket', 'FacultyTicketController@index', ['faculty']);
     $router->get('api/faculty/myprofile/get', 'UserProfileController@getProfile', ['faculty']);
     $router->post('api/faculty/myprofile/update', 'UserProfileController@updateProfile', ['faculty']);
     $router->get('api/faculty/borrowing-history/pagination', 'FacultyBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['faculty']);
@@ -66,7 +65,7 @@ class RouteConfig
     $router->post('api/staff/cart/remove/{id}', 'StaffCartController@remove', ['staff']);
     $router->post('api/staff/cart/clear', 'StaffCartController@clearCart', ['staff']);
     $router->get('api/staff/cart/json', 'StaffCartController@getCartJson', ['staff']);
-    $router->post('api/staff/cart/checkout', 'StaffTicketController@checkout', ['staff']);
+    $router->post('api/staff/cart/checkout', 'StaffCartController@checkout', ['staff']);
     $router->get('api/staff/qrBorrowingTicket', 'StaffTicketController@show', ['staff']);
     $router->get('api/staff/myprofile/get', 'UserProfileController@getProfile', ['staff']);
     $router->post('api/staff/myprofile/update', 'UserProfileController@updateProfile', ['staff']);
@@ -84,7 +83,7 @@ class RouteConfig
     $router->post('api/librarian/booksmanagement/reactivate/{id}', 'BookManagementController@reactivate', ['book management', 'librarian']);
     $router->post('api/librarian/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['book management', 'librarian']);
     $router->post('api/librarian/booksmanagement/bulkImport', 'BookManagementController@bulkImport', ['book management', 'librarian']);
-    $router->get('api/librarian/booksmanagement/history/{id}', 'BookManagementController@getBorrowingHistory', ['book management', 'librarian']);
+    $router->get('api/librarian/booksmanagement/history/{id}', 'BookManagementController@getBookBorrowingHistory', ['book management', 'librarian']);
     $router->get('api/librarian/equipmentManagement/fetch', 'EquipmentManagementController@getAll', ['equipment management', 'librarian']);
     $router->get('api/librarian/equipmentManagement/get/{id}', 'EquipmentManagementController@get', ['equipment management', 'librarian']);
     $router->post('api/librarian/equipmentManagement/store', 'EquipmentManagementController@store', ['equipment management', 'librarian']);
@@ -108,7 +107,6 @@ class RouteConfig
     $router->get('api/librarian/reports/deleted-books', 'ReportController@getDeletedBooks', ['reports', 'librarian', 'admin']);
     $router->get('api/librarian/reports/lost-damaged-books', 'ReportController@getLostDamagedBooksReport', ['reports', 'librarian', 'admin']);
     $router->get('api/librarian/reports/library-visits-department', 'ReportController@getLibraryVisitsByDepartment', ['reports', 'librarian', 'admin']);
-    $router->get('api/librarian/reports/getGraphData', 'ReportController@getReportGraphData', ['reports', 'librarian', 'admin']);
     $router->get('api/librarian/reports/getActivityReport', 'ReportController@getActivityReport', ['reports', 'librarian', 'admin']);
     $router->get('api/librarian/reports/getGraphData', 'ReportController@getReportGraphData', ['reports', 'librarian', 'admin']);
     $router->get('api/librarian/borrowingForm/manualBorrow', 'ManualBorrowingController@manualBorrow', ['borrowing form']);
@@ -131,7 +129,7 @@ class RouteConfig
     $router->post('api/admin/booksmanagement/reactivate/{id}', 'BookManagementController@reactivate', ['book management', 'librarian']);
     $router->post('api/admin/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['book management', 'librarian']);
     $router->post('api/admin/booksmanagement/bulkImport', 'BookManagementController@bulkImport', ['book management', 'librarian']);
-    $router->get('api/admin/booksmanagement/history/{id}', 'BookManagementController@getBorrowingHistory', ['book management', 'librarian']);
+    $router->get('api/admin/booksmanagement/history/{id}', 'BookManagementController@getBookBorrowingHistory', ['book management', 'librarian']);
     $router->get('api/admin/equipmentManagement/fetch', 'EquipmentManagementController@getAll', ['equipment management', 'librarian']);
     $router->get('api/admin/equipmentManagement/get/{id}', 'EquipmentManagementController@get', ['equipment management', 'librarian']);
     $router->post('api/admin/equipmentManagement/store', 'EquipmentManagementController@store', ['equipment management', 'librarian']);
@@ -146,9 +144,6 @@ class RouteConfig
     $router->post('api/admin/borrowingForm/create', 'ManualBorrowingController@create', ['borrowing form']);
     $router->get('api/admin/borrowingForm/getEquipments', 'ManualBorrowingController@getEquipments', ['borrowing form']);
     $router->get('api/admin/borrowingForm/getCollaterals', 'ManualBorrowingController@getCollaterals', ['borrowing form']);
-    $router->get('api/librarian/returning/getTableData', 'ReturningController@getOverdue', ['returning', 'librarian', 'admin']);
-    $router->get('api/librarian/returning/getRecent', 'ReturningController@getRecentReturnsJson', ['returning', 'librarian', 'admin']);
-    $router->post('api/librarian/returning/checkBook', 'ReturningController@checkBookStatus', ['returning', 'librarian', 'admin']);
     $router->get('api/admin/returning/getTableData', 'ReturningController@getOverdue', ['returning', 'librarian', 'admin']);
     $router->get('api/admin/returning/getRecent', 'ReturningController@getRecentReturnsJson', ['returning', 'librarian', 'admin']);
     $router->post('api/admin/returning/checkBook', 'ReturningController@checkBookStatus', ['returning', 'librarian', 'admin']);
@@ -165,7 +160,6 @@ class RouteConfig
     $router->get('api/admin/reports/library-visits-department', 'ReportController@getLibraryVisitsByDepartment', ['reports', 'librarian', 'admin']);
     $router->get('api/admin/reports/getGraphData', 'ReportController@getReportGraphData', ['reports', 'librarian', 'admin']);
     $router->get('api/admin/reports/getActivityReport', 'ReportController@getActivityReport', ['reports', 'librarian', 'admin']);
-    $router->get('api/admin/reports/getGraphData', 'ReportController@getReportGraphData', ['reports', 'librarian', 'admin']);
     $router->get('api/admin/myProfile/get', 'UserProfileController@getProfile', ['admin']);
     $router->post('api/admin/myProfile/update', 'UserProfileController@updateProfile', ['admin']);
     $router->get('api/librarian/myProfile/get', 'UserProfileController@getProfile', ['librarian']);
@@ -220,7 +214,7 @@ class RouteConfig
     $router->post('api/superadmin/booksmanagement/delete/{id}', 'BookManagementController@destroy', ['superadmin']);
     $router->post('api/superadmin/booksmanagement/reactivate/{id}', 'BookManagementController@reactivate', ['superadmin']);
     $router->post('api/superadmin/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['superadmin']);
-    $router->get('api/superadmin/booksmanagement/history/{id}', 'BookManagementController@getBorrowingHistory', ['superadmin']);
+    $router->get('api/superadmin/booksmanagement/history/{id}', 'BookManagementController@getBookBorrowingHistory', ['superadmin']);
     $router->get('api/superadmin/equipmentManagement/fetch', 'EquipmentManagementController@getAll', ['superadmin']);
     $router->get('api/superadmin/equipmentManagement/get/{id}', 'EquipmentManagementController@get', ['superadmin']);
     $router->post('api/superadmin/equipmentManagement/store', 'EquipmentManagementController@store', ['superadmin']);
@@ -247,9 +241,6 @@ class RouteConfig
     $router->post('api/superadmin/backup/restore/{filename}', 'BackupController@restoreBackup', ['superadmin']);
     $router->post('api/superadmin/backup/delete/{filename}', 'BackupController@deleteBackup', ['superadmin']);
     $router->post('api/superadmin/backup/upload_restore', 'BackupController@uploadAndRestore', ['superadmin']);
-    $router->get('api/superadmin/dashboard/stats', 'DashboardController@getStats', ['superadmin']);
-    $router->get('api/superadmin/dashboard/top-visitors', 'DashboardController@getTopVisitors', ['superadmin']);
-    $router->get('api/superadmin/dashboard/weekly-activity', 'DashboardController@getWeeklyActivity', ['superadmin']);
     $router->get('api/superadmin/dashboard/getData', 'DashboardController@getData', ['superadmin']);
     $router->get('api/superadmin/transactionHistory/json', 'TransactionHistoryController@getTransactionsJson', ['superadmin']);
     $router->get('api/superadmin/borrowingForm/manualBorrow', 'ManualBorrowingController@manualBorrow', ['superadmin']);
@@ -312,7 +303,7 @@ class RouteConfig
     $router->post('api/campus_admin/booksmanagement/delete/{id}', 'BookManagementController@destroy', ['campus_admin']);
     $router->post('api/campus_admin/booksmanagement/reactivate/{id}', 'BookManagementController@reactivate', ['campus_admin']);
     $router->post('api/campus_admin/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['campus_admin']);
-    $router->get('api/campus_admin/booksmanagement/history/{id}', 'BookManagementController@getBorrowingHistory', ['campus_admin']);
+    $router->get('api/campus_admin/booksmanagement/history/{id}', 'BookManagementController@getBookBorrowingHistory', ['campus_admin']);
     $router->get('api/campus_admin/equipmentManagement/fetch', 'EquipmentManagementController@getAll', ['campus_admin']);
     $router->get('api/campus_admin/equipmentManagement/get/{id}', 'EquipmentManagementController@get', ['campus_admin']);
     $router->post('api/campus_admin/equipmentManagement/store', 'EquipmentManagementController@store', ['campus_admin']);
@@ -329,9 +320,6 @@ class RouteConfig
     $router->post('api/campus_admin/returning/markReturned', 'ReturningController@returnBook', ['campus_admin']);
     $router->post('api/campus_admin/returning/extend', 'ReturningController@extendDueDate', ['campus_admin']);
 
-    $router->get('api/campus_admin/dashboard/stats', 'DashboardController@getStats', ['campus_admin']);
-    $router->get('api/campus_admin/dashboard/top-visitors', 'DashboardController@getTopVisitors', ['campus_admin']);
-    $router->get('api/campus_admin/dashboard/weekly-activity', 'DashboardController@getWeeklyActivity', ['campus_admin']);
     $router->get('api/campus_admin/dashboard/getData', 'DashboardController@getData', ['campus_admin']);
     $router->get('api/campus_admin/transactionHistory/json', 'TransactionHistoryController@getTransactionsJson', ['campus_admin']);
     $router->get('api/campus_admin/borrowingForm/manualBorrow', 'ManualBorrowingController@manualBorrow', ['campus_admin']);
@@ -366,7 +354,7 @@ class RouteConfig
     $router->post('api/student/cart/remove/{id}', 'CartController@remove', ['student']);
     $router->post('api/student/cart/clear', 'CartController@clearCart', ['student']);
     $router->get('api/student/cart/json', 'CartController@getCartJson', ['student']);
-    $router->post('api/student/cart/checkout', 'TicketController@checkout', ['student']);
+    $router->post('api/student/cart/checkout', 'CartController@checkout', ['student']);
     $router->get('api/student/qrBorrowingTicket/checkStatus', 'TicketController@checkStatus');
     $router->get('api/student/bookCatalog/availableCount', 'BookCatalogController@getAvailableCount', ['student']);
     $router->get('api/student/bookCatalog/fetch', 'BookCatalogController@fetch', ['student']);
