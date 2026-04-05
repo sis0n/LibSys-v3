@@ -49,7 +49,7 @@ switch ($role) {
                 <div id="headerAvatarContainer" class="w-full h-full bg-orange-100 flex items-center justify-center text-orange-600 text-lg font-semibold">
                     <?php if (!empty($profilePic)): 
                         $cleanPath = ltrim($profilePic, '/');
-                        $finalSrc = BASE_URL . '/' . $cleanPath;
+                        $finalSrc = \BASE_URL . '/' . $cleanPath;
                     ?>
                         <img id="headerProfilePic"
                             src="<?= $finalSrc ?>"
@@ -67,7 +67,7 @@ switch ($role) {
             </div>
         </div>
 
-        <form method="POST" action="<?= BASE_URL ?>/logout" id="logoutForm">
+        <form method="POST" action="<?= \BASE_URL ?>/logout" id="logoutForm">
             <button type="submit" class="p-2 rounded hover:bg-gray-100">
                 <i class="ph ph-sign-out"></i>
             </button>

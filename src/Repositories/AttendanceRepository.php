@@ -101,12 +101,14 @@ class AttendanceRepository
             $this->db->beginTransaction();
 
             $this->db->query("UPDATE borrow_transactions bt 
-                              JOIN campuses cp ON bt.campus_id = cp.campus_id 
+                              INNER JOIN users u ON bt.student_id = u.user_id OR bt.faculty_id = u.user_id OR bt.staff_id = u.user_id
+                              INNER JOIN campuses cp ON u.campus_id = cp.campus_id 
                               SET bt.status = 'overdue' 
                               WHERE bt.status = 'borrowed' AND bt.due_date < NOW() AND cp.is_active = 1");
             $this->db->query("UPDATE borrow_transaction_items bti 
                               INNER JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
-                              INNER JOIN campuses cp ON bt.campus_id = cp.campus_id
+                              INNER JOIN users u ON bt.student_id = u.user_id OR bt.faculty_id = u.user_id OR bt.staff_id = u.user_id
+                              INNER JOIN campuses cp ON u.campus_id = cp.campus_id
                               SET bti.status = 'overdue' 
                               WHERE bt.status = 'overdue' AND bti.status = 'borrowed' AND cp.is_active = 1");
 

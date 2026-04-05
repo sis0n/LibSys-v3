@@ -2,26 +2,18 @@
 
 namespace App\Controllers;
 
-use App\Repositories\AuthRepository;
-use App\Repositories\UserRepository;
-use App\Repositories\UserPermissionModuleRepository;
+use App\Services\AuthService;
 use App\Core\Controller;
 use App\Models\User;
 
 class AuthController extends Controller
 {
-    private $AuthRepository;
-    private $UserRepository;
-    private $UserPermissionRepo;
-    private $auditRepo;
+    private AuthService $authService;
 
     public function __construct()
     {
-    parent::__construct();
-        $this->AuthRepository = new \App\Repositories\AuthRepository();
-        $this->UserRepository = new \App\Repositories\UserRepository();
-        $this->UserPermissionRepo = new \App\Repositories\UserPermissionModuleRepository();
-        $this->auditRepo = new \App\Repositories\AuditLogRepository();
+        parent::__construct();
+        $this->authService = new AuthService();
     }
 
     public function showLogin()
@@ -31,7 +23,7 @@ class AuthController extends Controller
         header('Pragma: no-cache');
 
         if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
-            header("Location: " . BASE_URL . "/dashboard");
+            header("Location: " . \BASE_URL . "/dashboard");
             exit;
         }
 
@@ -46,21 +38,15 @@ class AuthController extends Controller
 
     public function login()
     {
+        header('Content-Type: application/json');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'Invalid request method.'
-            ]);
+            echo json_encode(['status' => 'error', 'message' => 'Invalid request method.']);
             return;
         }
 
-        header('Content-Type: application/json');
-
         if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'Invalid CSRF token.'
-            ]);
+            echo json_encode(['status' => 'error', 'message' => 'Invalid CSRF token.']);
             return;
         }
 
@@ -68,77 +54,48 @@ class AuthController extends Controller
         $password = $_POST['password'] ?? '';
 
         if (empty($username) || empty($password)) {
+            echo json_encode(['status' => 'error', 'message' => 'Username and password are required.']);
+            return;
+        }
+
+        try {
+            $result = $this->authService->login($username, $password);
+
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            session_regenerate_id(true);
+
+            foreach ($result['session_payload'] as $key => $value) {
+                $_SESSION[$key] = $value;
+            }
+
+            // Log the success via AuditLog directly or via Service if preferred
+            (new \App\Services\AuditLogService())->log($_SESSION['user_id'], 'LOGIN', 'AUTH', null, 'User logged in successfully.');
+
+            echo json_encode([
+                'status' => 'success',
+                'redirect' => $result['redirect']
+            ]);
+        } catch (\Exception $e) {
+            $statusCode = $e->getCode() === 403 ? 403 : 200; // Keep 200 for normal error messages in AJAX
             echo json_encode([
                 'status' => 'error',
-                'message' => 'Username and password are required.'
+                'error_type' => ($e->getCode() === 403) ? 'deactivated' : 'auth_failed',
+                'message' => $e->getMessage()
             ]);
-            return;
         }
-
-        $loginResult = $this->AuthRepository->attemptLogin($username, $password);
-
-        if (!$loginResult) {
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'Invalid username or password.'
-            ]);
-            return;
-        }
-
-        $user = $loginResult['raw_user'];
-
-        if (isset($user['is_active']) && !$user['is_active']) {
-            echo json_encode([
-                'status' => 'error',
-                'error_type' => 'deactivated', // Idagdag ito para makilala
-                'message' => 'Your account has been deactivated by the administrator.' // Palitan sa mas pormal na mensahe
-            ]);
-            return;
-        }
-
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-        session_regenerate_id(true);
-
-        foreach ($loginResult['session_payload'] as $key => $value) {
-            $_SESSION[$key] = $value;
-        }
-
-        $this->auditRepo->log($_SESSION['user_id'], 'LOGIN', 'AUTH', null, 'User logged in successfully.');
-
-        $redirect = '';
-        $userRole = $_SESSION['role'] ?? '';
-        $finalPath = '';
-
-        if (User::isAdmin($user) || User::isLibrarian($user)) {
-            $permissions = $_SESSION['user_permissions'] ?? [];
-            $finalPath = User::getFirstAccessibleModuleUrl($userRole, $permissions);
-        } elseif (User::isScanner($user)) {
-            $finalPath = BASE_URL . '/attendance';
-        } elseif (User::isSuperadmin($user) || User::isCampusAdmin($user) || User::isStudent($user) || User::isFaculty($user) || User::isStaff($user)) {
-            $finalPath = BASE_URL . '/dashboard';
-        }
-
-        if (empty($finalPath)) {
-            echo json_encode(['status' => 'error', 'message' => 'Role not recognized or no accessible module.']);
-            return;
-        }
-
-        echo json_encode([
-            'status' => 'success',
-            'redirect' => $finalPath
-        ]);
     }
 
     public function logout()
     {
-        session_start();
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        
         if (isset($_SESSION['user_id'])) {
-            $this->auditRepo->log($_SESSION['user_id'], 'LOGOUT', 'AUTH', null, 'User logged out.');
+            $this->authService->logout($_SESSION['user_id']);
         }
-        $this->AuthRepository->logout();
-        header("Location: " . BASE_URL . "/login");
+        
+        header("Location: " . \BASE_URL . "/login");
     }
 
     public function forgotPassword()
@@ -157,75 +114,31 @@ class AuthController extends Controller
         header('Content-Type: application/json');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'Invalid request method.'
-            ]);
+            echo json_encode(['status' => 'error', 'message' => 'Invalid request method.']);
             exit;
         }
 
         if (empty($_SESSION['user_id'])) {
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'You must be logged in to change your password.'
-            ]);
+            echo json_encode(['status' => 'error', 'message' => 'You must be logged in to change your password.']);
             exit;
         }
 
-        $userId = $_SESSION['user_id'];
-        $currentPassword = $_POST['current_password'] ?? '';
-        $newPassword = $_POST['new_password'] ?? '';
-        $confirmPassword = $_POST['confirm_password'] ?? '';
+        try {
+            $this->authService->changePassword(
+                $_SESSION['user_id'],
+                $_POST['current_password'] ?? '',
+                $_POST['new_password'] ?? '',
+                $_POST['confirm_password'] ?? ''
+            );
 
-        if (empty($currentPassword) || empty($newPassword) || empty($confirmPassword)) {
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'All password fields are required.'
-            ]);
-            exit;
-        }
-
-        if ($newPassword !== $confirmPassword) {
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'New passwords do not match.'
-            ]);
-            exit;
-        }
-
-        $user = $this->UserRepository->getUserById($userId);
-
-        if (!$user) {
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'User not found.'
-            ]);
-            exit;
-        }
-
-        $userRepo = new UserRepository();
-        $userData = $userRepo->findByIdentifier($user['username']);
-
-        if (!$userData || !password_verify($currentPassword, $userData['password'])) {
-            echo json_encode([
-                'status' => 'error',
-                'message' => 'Current password is incorrect.'
-            ]);
-            exit;
-        }
-
-        $changed = $this->AuthRepository->changePassword($userId, $newPassword);
-
-        if ($changed) {
-            $this->auditRepo->log($userId, 'CHANGE_PASSWORD', 'AUTH', null, 'User successfully changed their own password.');
             echo json_encode([
                 'status' => 'success',
                 'message' => 'Your password has been successfully updated.'
             ]);
-        } else {
+        } catch (\Exception $e) {
             echo json_encode([
                 'status' => 'error',
-                'message' => 'Something went wrong while changing your password.'
+                'message' => $e->getMessage()
             ]);
         }
     }

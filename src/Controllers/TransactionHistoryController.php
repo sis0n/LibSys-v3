@@ -3,38 +3,36 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
-use App\Repositories\TransactionHistoryRepository;
+use App\Services\BorrowingHistoryService;
+use Exception;
 
 class TransactionHistoryController extends Controller
 {
-  private TransactionHistoryRepository $repo;
+    private BorrowingHistoryService $historyService;
 
-  public function __construct()
-  {
-    parent::__construct();
-    $this->repo = new TransactionHistoryRepository();
-  }
-
-  public function getTransactionsJson()
-  {
-
-    header('Content-Type: application/json');
-
-    $status = strtolower($_GET['status'] ?? 'all');
-    $date   = $_GET['date'] ?? null;
-    $campusId = $this->getCampusFilter();
-
-    if ($status === 'pending') {
-      echo json_encode([]);
-      return;
+    public function __construct()
+    {
+        parent::__construct();
+        $this->historyService = new BorrowingHistoryService();
     }
 
-    if ($status === 'all') {
-      $transactions = $this->repo->getAllTransactions($date, $campusId);
-    } else {
-      $transactions = $this->repo->getTransactionsByStatus($status, $date, $campusId);
-    }
+    public function getTransactionsJson()
+    {
+        header('Content-Type: application/json');
+        try {
+            $status = strtolower($_GET['status'] ?? 'all');
+            $date   = $_GET['date'] ?? null;
+            $campusId = $this->getCampusFilter();
 
-    echo json_encode($transactions);
-  }
+            if ($status === 'pending') {
+                echo json_encode([]);
+                return;
+            }
+
+            $transactions = $this->historyService->getAdminTransactions($status, $date, $campusId);
+            echo json_encode($transactions);
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
 }

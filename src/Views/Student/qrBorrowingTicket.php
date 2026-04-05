@@ -273,6 +273,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     dueDateP.textContent = `Expiration: Expires at ${new Date(data.expires_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}`;
                     dueDateP.classList.remove('hidden');
                 }
+            } else if (data.status === 'expired') {
+                displayMessage('QR Code Ticket Expired', 'expired');
+                if (generatedDateP) generatedDateP.classList.add('hidden');
+                if (dueDateP) dueDateP.classList.add('hidden');
+                if (ticketCodeSpan) ticketCodeSpan.textContent = data.transaction_code || 'N/A';
+                checkedOutSection.classList.add('hidden');
+                clearInterval(statusInterval); // Stop polling if expired
             } else if (data.status === 'none') {
                 if (hadActiveTicket) {
                     displayMessage('Borrowed Successfully!', 'success');

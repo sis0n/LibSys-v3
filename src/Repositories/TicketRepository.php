@@ -23,6 +23,20 @@ class TicketRepository
     return $student['student_id'] ?? null;
   }
 
+  public function getFacultyIdByUserId(int $userId): ?int
+  {
+    $stmt = $this->db->prepare("SELECT faculty_id FROM faculty WHERE user_id = :uid");
+    $stmt->execute(['uid' => $userId]);
+    return $stmt->fetchColumn() ?: null;
+  }
+
+  public function getStaffIdByUserId(int $userId): ?int
+  {
+    $stmt = $this->db->prepare("SELECT staff_id FROM staff WHERE user_id = :uid");
+    $stmt->execute(['uid' => $userId]);
+    return $stmt->fetchColumn() ?: null;
+  }
+
   /**
    * Universal method to count active borrowings (Pending or Borrowed) for any role
    */
@@ -173,6 +187,43 @@ class TicketRepository
 
         ");
     $stmt->execute(['sid' => $studentId]);
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+  }
+
+  public function getStaffInfo(int $staffId): array
+  {
+    $stmt = $this->db->prepare("
+            SELECT
+                s.employee_id as student_number,
+                s.position as course,
+                'Staff' as year_level,
+                '' as section,
+                u.email,
+                s.contact
+            FROM staff s
+            JOIN users u ON s.user_id = u.user_id
+            WHERE s.staff_id = :sid
+        ");
+    $stmt->execute(['sid' => $staffId]);
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+  }
+
+  public function getFacultyInfo(int $facultyId): array
+  {
+    $stmt = $this->db->prepare("
+            SELECT
+                f.unique_faculty_id as student_number,
+                c.college_name as course,
+                'Faculty' as year_level,
+                '' as section,
+                u.email,
+                f.contact
+            FROM faculty f
+            JOIN users u ON f.user_id = u.user_id
+            LEFT JOIN colleges c ON f.college_id = c.college_id
+            WHERE f.faculty_id = :fid
+        ");
+    $stmt->execute(['fid' => $facultyId]);
     return $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
   }
 
@@ -439,6 +490,44 @@ class TicketRepository
     return (int) $this->db->lastInsertId();
   }
 
+  public function getActiveTicket(int $userId, string $role): ?array
+  {
+    $idColumn = '';
+    $idValue = null;
+
+    if ($role === 'student') {
+      $idColumn = 'student_id';
+      $idValue = $this->getStudentIdByUserId($userId);
+    } elseif ($role === 'faculty') {
+      $idColumn = 'faculty_id';
+      $stmt = $this->db->prepare("SELECT faculty_id FROM faculty WHERE user_id = :uid");
+      $stmt->execute(['uid' => $userId]);
+      $idValue = $stmt->fetchColumn();
+    } elseif ($role === 'staff') {
+      $idColumn = 'staff_id';
+      $stmt = $this->db->prepare("SELECT staff_id FROM staff WHERE user_id = :uid");
+      $stmt->execute(['uid' => $userId]);
+      $idValue = $stmt->fetchColumn();
+    }
+
+    if (!$idValue) return null;
+
+    $stmt = $this->db->prepare("
+        SELECT transaction_id, transaction_code, qrcode, due_date, status, generated_at, expires_at
+        FROM borrow_transactions
+        WHERE {$idColumn} = :id AND status = 'pending'
+        ORDER BY generated_at DESC
+        LIMIT 1
+    ");
+    $stmt->execute(['id' => $idValue]);
+    return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+  }
+
+  public function updateStatus(int $transactionId, string $status): bool
+  {
+    $stmt = $this->db->prepare("UPDATE borrow_transactions SET status = :status WHERE transaction_id = :tid");
+    return $stmt->execute(['status' => $status, 'tid' => $transactionId]);
+  }
 
   public function beginTransaction(): void
   {

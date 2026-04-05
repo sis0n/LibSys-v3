@@ -102,7 +102,7 @@ class CartService
         }
 
         try {
-            $qrCode = \Endroid\QrCode\QrCode::create($transactionCode);
+            $qrCode = new \Endroid\QrCode\QrCode($transactionCode);
             $writer = new \Endroid\QrCode\Writer\SvgWriter();
             $result = $writer->write($qrCode);
             $result->saveToFile($qrPath);

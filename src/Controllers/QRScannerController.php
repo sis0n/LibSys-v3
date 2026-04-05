@@ -2,272 +2,176 @@
 
 namespace App\Controllers;
 
-use App\Repositories\QRScannerRepository;
-use App\Repositories\LibraryPolicyRepository;
 use App\Core\Controller;
+use App\Services\QRScannerService;
+use Exception;
 
 class QRScannerController extends Controller
 {
-  protected $qrScannerRepository;
-  protected $policyRepo;
-  protected $auditRepo;
+    private QRScannerService $qrService;
 
-  public function __construct()
-  {
-    parent::__construct();
-    $this->qrScannerRepository = new QRScannerRepository();
-    $this->policyRepo = new LibraryPolicyRepository();
-    $this->auditRepo = new \App\Repositories\AuditLogRepository();
-  }
-
-  private function processTicketLookup(string $transactionCode)
-  {
-    if (empty($transactionCode)) {
-      return ['success' => false, 'message' => 'Please enter a ticket code.'];
+    public function __construct()
+    {
+        parent::__construct();
+        $this->qrService = new QRScannerService();
     }
 
-    $this->qrScannerRepository->expireOldPendingTransactions();
-
-    $transaction = $this->qrScannerRepository->getTransactionDetailsByCode($transactionCode);
-
-    if (!$transaction) {
-      return ['success' => false, 'message' => 'Invalid ticket code or transaction not found.'];
+    public function index()
+    {
+        $role = $_SESSION['role'] ?? 'guest';
+        $viewFolder = $role === 'staff' ? 'staff' : ucfirst($role);
+        $this->view("$viewFolder/qrScanner", ["title" => "QR Scanner"]);
     }
 
-    if (in_array(strtolower($transaction['status']), ['expired', 'borrowed', 'returned'])) {
-      return ['success' => false, 'message' => 'This ticket is already processed or expired.'];
-    }
+    public function scan()
+    {
+        // Start buffering to catch any accidental output/warnings
+        if (ob_get_level()) ob_end_clean();
+        ob_start();
+        
+        header('Content-Type: application/json');
+        
+        try {
+            $data = $this->getPostData();
+            $transactionCode = $data['transaction_code'] ?? null;
+            $currentLibrarianCampusId = $_SESSION['user_data']['campus_id'] ?? $_SESSION['campus_id'] ?? 0;
 
-    if (!empty($transaction['faculty_id'])) {
-      $userType = 'faculty';
-      $idColumn = 'faculty_id';
-      $idValue = (int) $transaction['faculty_id'];
-    } elseif (!empty($transaction['staff_id'])) {
-      $userType = 'staff';
-      $idColumn = 'staff_id';
-      $idValue = (int) $transaction['staff_id'];
-    } else {
-      $userType = 'student';
-      $idColumn = 'student_id';
-      $idValue = (int) $transaction['student_id'];
-    }
+            if (!$transactionCode) throw new Exception('Transaction code is required.');
 
-    $policy = $this->policyRepo->getPolicyByRole($userType, (int)($transaction['campus_id'] ?? 1));
-    $MAX_LIMIT = $policy ? (int)$policy['max_books'] : 5;
+            // Fetch data from service
+            $result = $this->qrService->scanTicket($transactionCode, (int)$currentLibrarianCampusId);
+            
+            $ticketData = $result['ticket'];
+            $itemsData = $result['items'];
 
-    $currentBorrowed = $this->qrScannerRepository->getBorrowedCount($idColumn, $idValue, $transactionCode);
-    $itemsInTicket = count($this->qrScannerRepository->getTransactionItems($transactionCode));
-    $projectedTotal = $currentBorrowed + $itemsInTicket;
+            // Smart URL Builder to prevent double paths
+            $baseUrl = rtrim($_ENV['APP_URL'] ?? 'http://localhost/LibSys/public', '/');
+            $formatUrl = function($path) use ($baseUrl) {
+                if (empty($path)) return null;
+                if (str_starts_with($path, 'http')) return $path;
+                
+                $cleanPath = ltrim($path, '/');
+                // If path already contains storage/uploads, just append to baseUrl
+                if (str_contains($cleanPath, 'storage/uploads')) {
+                    return $baseUrl . '/' . $cleanPath;
+                }
+                // Otherwise, add the storage/uploads prefix
+                return $baseUrl . '/storage/uploads/' . $cleanPath;
+            };
 
-    if ($projectedTotal > $MAX_LIMIT) {
-      return [
-        'success' => false,
-        'message' => ucfirst($userType) . " borrowing limit exceeded. Has {$currentBorrowed} items. Cannot borrow {$itemsInTicket} more (Limit: {$MAX_LIMIT})."
-      ];
-    }
+            // Map data for Frontend JS
+            $formattedUser = [
+                'id' => $ticketData['student_number'] ?? $ticketData['unique_faculty_id'] ?? $ticketData['employee_id'] ?? 'N/A',
+                'name' => ($ticketData['first_name'] ?? '') . ' ' . ($ticketData['last_name'] ?? ''),
+                'type' => !empty($ticketData['student_id']) ? 'student' : (!empty($ticketData['faculty_id']) ? 'faculty' : 'staff'),
+                'profilePicture' => $formatUrl($ticketData['profile_picture'] ?? null),
+                'course' => $ticketData['course_title'] ?? $ticketData['course_code'] ?? 'N/A',
+                'yearsection' => ($ticketData['year_level'] ?? '') . ' ' . ($ticketData['section'] ?? ''),
+                'department' => $ticketData['college_name'] ?? $ticketData['college_code'] ?? 'N/A',
+                'position' => $ticketData['position'] ?? 'N/A',
+                'contact' => $ticketData['contact'] ?? 'N/A',
+                'registrationFormUrl' => $formatUrl($ticketData['registration_form'] ?? null)
+            ];
 
-    $items = $this->qrScannerRepository->getTransactionItems($transactionCode);
+            $formattedItems = array_map(function($item) {
+                return [
+                    'title' => $item['title'] ?? 'Unknown Title',
+                    'author' => $item['author'] ?? 'Unknown Author',
+                    'accessionNumber' => $item['accession_number'] ?? 'N/A',
+                    'callNumber' => $item['call_number'] ?? 'N/A',
+                    'isbn' => $item['book_isbn'] ?? 'N/A'
+                ];
+            }, $itemsData);
 
-    $middleInitial = !empty($transaction['middle_name']) ? strtoupper(substr($transaction['middle_name'], 0, 1)) . '. ' : '';
-    $suffix = !empty($transaction['suffix']) ? ' ' . $transaction['suffix'] : '';
-    $fullName = trim("{$transaction['first_name']} {$middleInitial}{$transaction['last_name']}{$suffix}");
+            $response = [
+                'isValid' => true,
+                'user' => $formattedUser,
+                'ticket' => [
+                    'id' => $ticketData['transaction_code'],
+                    'status' => $ticketData['status'],
+                    'generated' => date('M d, Y h:i A', strtotime($ticketData['generated_at'] ?? $ticketData['borrowed_at'] ?? 'now')),
+                    'dueDate' => !empty($ticketData['due_date']) ? date('M d, Y', strtotime($ticketData['due_date'])) : 'N/A'
+                ],
+                'items' => $formattedItems
+            ];
 
-    $profilePicPath = $transaction['profile_picture'];
-    $profilePicUrl = null;
+            // Clear any buffered output/warnings before sending JSON
+            ob_end_clean();
+            echo json_encode(['success' => true, 'data' => $response]);
+            exit;
 
-    if ($profilePicPath) {
-      $uploadsPosition = strpos($profilePicPath, 'storage/uploads/');
-
-      if ($uploadsPosition !== false) {
-        $finalRelativePath = substr($profilePicPath, $uploadsPosition);
-        $profilePicUrl = STORAGE_URL . '/' . $finalRelativePath;
-      }
-    }
-
-    $userInfo = [
-      'type' => $userType,
-      'name' => $fullName,
-      'profilePicture' => $profilePicUrl
-    ];
-
-    if ($userType === 'student') {
-      $userInfo['id'] = $transaction['student_number'] ?? 'N/A';
-      $userInfo['course'] = $transaction['course_code'] ?? 'N/A';
-      $userInfo['yearsection'] = ($transaction['year_level'] ?? '') . '-' . ($transaction['section'] ?? '');
-
-      $regFormPath = $transaction['registration_form'] ?? null;
-      $regFormUrl = null;
-      if ($regFormPath) {
-        $uploadsPosition = strpos($regFormPath, 'storage/uploads/');
-        if ($uploadsPosition !== false) {
-          $finalRelativePath = substr($regFormPath, $uploadsPosition);
-          $regFormUrl = STORAGE_URL . '/' . $finalRelativePath;
+        } catch (Exception $e) {
+            if (ob_get_level()) ob_end_clean();
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            exit;
         }
-      }
-      $userInfo['registrationFormUrl'] = $regFormUrl;
-    } elseif ($userType === 'faculty') {
-      $userInfo['id'] = $transaction['unique_faculty_id'] ?? 'N/A';
-      $userInfo['department'] = $transaction['college_code'] ?? 'N/A';
-    } else {
-      $userInfo['id'] = $transaction['employee_id'] ?? 'N/A';
-      $userInfo['position'] = $transaction['position'] ?? 'N/A';
-      $userInfo['contact'] = $transaction['contact'] ?? 'N/A';
     }
 
-    $responseData = [
-      'user' => $userInfo,
-      'ticket' => [
-        'id' => $transaction['transaction_code'],
-        'generated' => $transaction['borrowed_at'],
-        'status' => ucfirst($transaction['status']),
-        'dueDate' => $transaction['due_date']
-      ],
-      'items' => array_map(function ($item) {
-        return [
-          'title' => $item['title'],
-          'author' => $item['author'],
-          'accessionNumber' => $item['accession_number'],
-          'callNumber' => $item['call_number'],
-          'isbn' => $item['book_isbn'],
-          'bookId' => $item['book_id']
-        ];
-      }, $items)
-    ];
+    public function borrowTransaction()
+    {
+        if (ob_get_level()) ob_end_clean();
+        ob_start();
+        header('Content-Type: application/json');
 
-    return ['success' => true, 'data' => $responseData];
-  }
+        try {
+            $data = $this->getPostData();
+            $transactionCode = $data['transaction_code'] ?? null;
+            $librarianId = $_SESSION['user_id'] ?? null;
 
-  public function scan()
-  {
-    header('Content-Type: application/json');
-    $transactionCode = trim($_POST['transaction_code'] ?? '');
-    $result = $this->processTicketLookup($transactionCode);
+            if (!$transactionCode || !$librarianId) {
+                throw new Exception('Missing required information.');
+            }
 
-    if ($result['success']) {
-      $_SESSION['last_scanned_ticket'] = $transactionCode;
-    } else {
-      unset($_SESSION['last_scanned_ticket']);
+            $success = $this->qrService->borrowTransaction($transactionCode, (int)$librarianId);
+            
+            ob_end_clean();
+            if ($success) {
+                echo json_encode(['success' => true, 'message' => 'Transaction completed successfully!']);
+            } else {
+                throw new Exception('Failed to process transaction.');
+            }
+            exit;
+
+        } catch (Exception $e) {
+            if (ob_get_level()) ob_end_clean();
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            exit;
+        }
     }
 
-    echo json_encode($result);
-  }
+    public function history()
+    {
+        if (ob_get_level()) ob_end_clean();
+        ob_start();
+        header('Content-Type: application/json');
 
-  public function lookup()
-  {
-    header('Content-Type: application/json');
+        try {
+            $search = $_GET['search'] ?? null;
+            $status = $_GET['status'] ?? null;
+            $date = $_GET['date'] ?? null;
 
-    $transactionCode = trim($_SESSION['last_scanned_ticket'] ?? '');
+            $transactions = $this->qrService->getTransactionHistory($search, $status, $date);
+            
+            $formatted = array_map(function($t) {
+                return [
+                    'studentName' => ($t['first_name'] ?? '') . ' ' . ($t['last_name'] ?? ''),
+                    'studentNumber' => $t['user_identifier'] ?? 'N/A',
+                    'itemsBorrowed' => $t['items_borrowed'] ?? 0,
+                    'borrowedDateTime' => !empty($t['borrowed_at']) ? date('M d, Y h:i A', strtotime($t['borrowed_at'])) : '---',
+                    'returnedDateTime' => !empty($t['returned_at']) ? date('M d, Y h:i A', strtotime($t['returned_at'])) : '---',
+                    'status' => ucfirst($t['status'] ?? 'unknown')
+                ];
+            }, $transactions);
 
-    $result = $this->processTicketLookup($transactionCode);
+            ob_end_clean();
+            echo json_encode($formatted);
+            exit;
 
-    echo json_encode($result);
-  }
-
-  public function borrowTransaction()
-  {
-    header('Content-Type: application/json');
-    $transactionCode = trim($_POST['transaction_code'] ?? '');
-    $staffId = $_SESSION['user_id'] ?? null;
-
-    if (!$staffId) {
-      echo json_encode(['success' => false, 'message' => 'Unauthorized. Staff not logged in.']);
-      return;
+        } catch (Exception $e) {
+            if (ob_get_level()) ob_end_clean();
+            http_response_code(500);
+            echo json_encode(['error' => $e->getMessage()]);
+            exit;
+        }
     }
-
-    $transaction = $this->qrScannerRepository->getTransactionDetailsByCode($transactionCode);
-
-    if (!$transaction || strtolower($transaction['status']) !== 'pending') {
-      echo json_encode(['success' => false, 'message' => 'Transaction is not in PENDING state.']);
-      return;
-    }
-
-    if (!empty($transaction['faculty_id'])) {
-      $idColumn = 'faculty_id';
-      $idValue = $transaction['faculty_id'];
-      $userType = 'faculty';
-    } elseif (!empty($transaction['staff_id'])) {
-      $idColumn = 'staff_id';
-      $idValue = $transaction['staff_id'];
-      $userType = 'staff';
-    } else {
-      $idColumn = 'student_id';
-      $idValue = $transaction['student_id'];
-      $userType = 'student';
-    }
-
-    $policy = $this->policyRepo->getPolicyByRole($userType, (int)($transaction['campus_id'] ?? 1));
-    $MAX_LIMIT = $policy ? (int)$policy['max_books'] : 5;
-
-    $currentBorrowed = $this->qrScannerRepository->getBorrowedCount($idColumn, $idValue, $transactionCode);
-
-    if ($currentBorrowed >= $MAX_LIMIT) {
-      echo json_encode(['success' => false, 'message' => "Borrowing limit reached for {$userType}."]);
-      return;
-    }
-
-    $success = $this->qrScannerRepository->processBorrowing($transactionCode, $staffId);
-
-    if ($success) {
-      unset($_SESSION['last_scanned_ticket']);
-      $this->auditRepo->log($staffId, 'BORROW', 'TRANSACTIONS', $transactionCode, "QR-based borrow processed for {$transaction['first_name']} {$transaction['last_name']} ({$userType})");
-      echo json_encode(['success' => true, 'message' => 'Borrow transaction successfully processed.']);
-    } else {
-      echo json_encode(['success' => false, 'message' => 'Failed to finalize borrow transaction.']);
-    }
-  }
-
-
-  public function history()
-  {
-    header('Content-Type: application/json');
-
-    $search = $_GET['search'] ?? null;
-    $status = $_GET['status'] ?? 'All Status';
-    $date = $_GET['date'] ?? null;
-
-    $history = $this->qrScannerRepository->getTransactionHistory($search, $status, $date);
-
-    $formattedHistory = array_map(function ($h) {
-
-      $isFaculty = !empty($h['faculty_id']);
-      $isStudent = !empty($h['student_id']);
-
-      $middleInitial = !empty($h['middle_name']) ? strtoupper(substr($h['middle_name'], 0, 1)) . '. ' : '';
-      $suffix = !empty($h['suffix']) ? ' ' . $h['suffix'] : '';
-
-      $fullName = trim("{$h['first_name']} {$middleInitial}{$h['last_name']}{$suffix}");
-
-      $borrowedDateTime = $h['borrowed_at']
-        ? date('M d, Y h:i A', strtotime($h['borrowed_at']))
-        : 'N/A';
-
-      $returnedDateTime = $h['returned_at']
-        ? date('M d, Y h:i A', strtotime($h['returned_at']))
-        : 'Not yet returned';
-
-      $userIdValue = '';
-      if ($isStudent) {
-        $userIdValue = $h['student_number'] ?? $h['user_identifier'];
-      } elseif ($isFaculty) {
-        $userIdValue = $h['unique_faculty_id'] ?? $h['user_identifier'];
-      } else {
-        $userIdValue = $h['user_identifier'];
-      }
-
-      return [
-        'userName' => $fullName,
-        'userId' => $userIdValue,
-        'userType' => $isFaculty ? 'Faculty' : ($isStudent ? 'Student' : 'Staff/Guest'),
-        'itemsBorrowed' => (int) $h['items_borrowed'],
-        'status' => ucfirst($h['status']),
-        'borrowedDateTime' => $borrowedDateTime,
-        'returnedDateTime' => $returnedDateTime
-      ];
-    }, $history);
-
-    echo json_encode([
-      'success' => true,
-      'transactions' => $formattedHistory
-    ]);
-  }
 }

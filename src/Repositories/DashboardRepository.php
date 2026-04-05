@@ -15,6 +15,134 @@ class DashboardRepository
     $this->db = Database::getInstance()->getConnection();
   }
 
+  public function countUsers(?int $campusId = null): int
+  {
+    $where = $campusId !== null ? " AND campus_id = " . (int)$campusId : "";
+    $stmt = $this->db->query("SELECT COUNT(*) FROM users WHERE deleted_at IS NULL $where");
+    return (int)$stmt->fetchColumn();
+  }
+
+  public function countStudents(?int $campusId = null): int
+  {
+    $where = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+    $stmt = $this->db->query("SELECT COUNT(*) FROM students s JOIN users u ON s.user_id = u.user_id WHERE s.status='enrolled' AND u.deleted_at IS NULL $where");
+    return (int)$stmt->fetchColumn();
+  }
+
+  public function countFaculty(?int $campusId = null): int
+  {
+    $where = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+    $stmt = $this->db->query("SELECT COUNT(*) FROM faculty f JOIN users u ON f.user_id = u.user_id WHERE u.deleted_at IS NULL $where");
+    return (int)$stmt->fetchColumn();
+  }
+
+  public function countStaff(?int $campusId = null): int
+  {
+    $where = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+    $stmt = $this->db->query("SELECT COUNT(*) FROM staff s JOIN users u ON s.user_id = u.user_id WHERE u.deleted_at IS NULL $where");
+    return (int)$stmt->fetchColumn();
+  }
+
+  public function countUsersAddedThisMonth(?int $campusId = null): int
+  {
+    $where = $campusId !== null ? " AND campus_id = " . (int)$campusId : "";
+    $stmt = $this->db->query("SELECT COUNT(*) FROM users WHERE MONTH(created_at)=MONTH(CURDATE()) AND YEAR(created_at)=YEAR(CURDATE()) AND deleted_at IS NULL $where");
+    return (int)$stmt->fetchColumn();
+  }
+
+  public function countTodayAttendance(?int $campusId = null): int
+  {
+    $where = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+    $stmt = $this->db->query("SELECT COUNT(DISTINCT a.user_id) FROM attendance a JOIN users u ON a.user_id = u.user_id WHERE DATE(a.first_scan_at) = CURDATE() $where");
+    return (int)$stmt->fetchColumn();
+  }
+
+  public function countBooks(?int $campusId = null): int
+  {
+    $where = $campusId !== null ? " AND campus_id = " . (int)$campusId : "";
+    $stmt = $this->db->query("SELECT COUNT(*) FROM books WHERE is_active = 1 $where");
+    return (int)$stmt->fetchColumn();
+  }
+
+  public function countAvailableBooks(?int $campusId = null): int
+  {
+    $where = $campusId !== null ? " AND campus_id = " . (int)$campusId : "";
+    $stmt = $this->db->query("SELECT COUNT(*) FROM books WHERE is_active = 1 AND availability = 'available' $where");
+    return (int)$stmt->fetchColumn();
+  }
+
+  public function countBorrowedItems(?int $campusId = null): int
+  {
+    $where = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+    $stmt = $this->db->query("
+        SELECT COUNT(*) 
+        FROM borrow_transaction_items bti
+        JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+        LEFT JOIN users u ON u.user_id = COALESCE(
+            (SELECT user_id FROM students WHERE student_id = bt.student_id),
+            (SELECT user_id FROM faculty WHERE faculty_id = bt.faculty_id),
+            (SELECT user_id FROM staff WHERE staff_id = bt.staff_id)
+        )
+        WHERE bti.status = 'borrowed' $where
+    ");
+    return (int)$stmt->fetchColumn();
+  }
+
+  public function countOverdue(?int $campusId = null): int
+  {
+    $where = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+    $stmt = $this->db->query("
+        SELECT COUNT(*) 
+        FROM borrow_transaction_items bti
+        JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+        LEFT JOIN users u ON u.user_id = COALESCE(
+            (SELECT user_id FROM students WHERE student_id = bt.student_id),
+            (SELECT user_id FROM faculty WHERE faculty_id = bt.faculty_id),
+            (SELECT user_id FROM staff WHERE staff_id = bt.staff_id)
+        )
+        WHERE bti.status = 'overdue' $where
+    ");
+    return (int)$stmt->fetchColumn();
+  }
+
+  public function getRecentBorrowings(int $limit = 5, ?int $campusId = null): array
+  {
+    $where = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+    $sql = "
+        SELECT bt.transaction_id, bt.transaction_code, bt.borrowed_at, u.first_name, u.last_name, b.title
+        FROM borrow_transactions bt
+        JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
+        JOIN books b ON bti.book_id = b.book_id
+        LEFT JOIN users u ON u.user_id = COALESCE(
+            (SELECT user_id FROM students WHERE student_id = bt.student_id),
+            (SELECT user_id FROM faculty WHERE faculty_id = bt.faculty_id),
+            (SELECT user_id FROM staff WHERE staff_id = bt.staff_id)
+        )
+        WHERE 1=1 $where
+        ORDER BY bt.borrowed_at DESC
+        LIMIT :limit
+    ";
+    $stmt = $this->db->prepare($sql);
+    $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+  }
+
+  public function getTrends(string $period, ?int $campusId = null): array
+  {
+      $data = [];
+      if ($period === 'monthly') {
+          for ($i = 5; $i >= 0; $i--) {
+              $month = date('M', strtotime("-$i months"));
+              $date = date('Y-m', strtotime("-$i months"));
+              $stmt = $this->db->prepare("SELECT COUNT(*) FROM borrow_transactions WHERE DATE_FORMAT(borrowed_at, '%Y-%m') = :date");
+              $stmt->execute(['date' => $date]);
+              $data[] = ['label' => $month, 'value' => (int)$stmt->fetchColumn()];
+          }
+      }
+      return $data;
+  }
+
   public function getDashboardStats(?int $campusId = null): array
   {
     try {

@@ -6,6 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // [1] I-define ang ROOT_PATH
 define('ROOT_PATH', dirname(__DIR__)); 
+define('PUBLIC_PATH', __DIR__); 
 
 // [2] I-load ang Autoloader
 require ROOT_PATH . '/vendor/autoload.php';

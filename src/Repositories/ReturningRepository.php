@@ -26,7 +26,7 @@ class ReturningRepository
 
       $whereClause = "(bti.status = 'borrowed' OR bti.status = 'overdue') AND bt.due_date < NOW()";
       if ($campusId !== null) {
-          $whereClause .= " AND bt.campus_id = " . (int)$campusId;
+          $whereClause .= " AND u.campus_id = " . (int)$campusId;
       }
 
       $queryOverdue = "
@@ -78,7 +78,7 @@ class ReturningRepository
   {
     $whereClause = "bti.status = 'returned'";
     if ($campusId !== null) {
-        $whereClause .= " AND bt.campus_id = " . (int)$campusId;
+        $whereClause .= " AND u.campus_id = " . (int)$campusId;
     }
 
     $sql = "

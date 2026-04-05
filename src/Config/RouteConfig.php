@@ -36,7 +36,7 @@ class RouteConfig
     $router->get('api/guest/fetchBooks', 'GuestController@fetchGuestBooks');
 
     $router->get('api/faculty/attendance/get', 'AttendanceController@getMyAttendance', ['faculty']);
-    $router->get('api/faculty/qrBorrowingTicket/checkStatus', 'FacultyTicketController@checkStatus');
+    $router->get('api/faculty/qrBorrowingTicket/checkStatus', 'TicketController@checkStatus');
     $router->get('api/faculty/bookCatalog/availableCount', 'FacultyBookCatalogController@getAvailableCount', ['faculty']);
     $router->get('api/faculty/bookCatalog/fetch', 'FacultyBookCatalogController@fetch', ['faculty']);
     
@@ -49,7 +49,7 @@ class RouteConfig
     $router->post('api/faculty/cart/clear', 'FacultyCartController@clearCart', ['faculty']);
     $router->get('api/faculty/cart/json', 'FacultyCartController@getCartJson', ['faculty']);
     $router->post('api/faculty/cart/checkout', 'FacultyCartController@checkout', ['faculty']);
-    $router->get('api/faculty/qrBorrowingTicket', 'FacultyTicketController@index', ['faculty']);
+    $router->get('api/faculty/qrBorrowingTicket', 'TicketController@index', ['faculty']);
     $router->get('api/faculty/myprofile/get', 'UserProfileController@getProfile', ['faculty']);
     $router->post('api/faculty/myprofile/update', 'UserProfileController@updateProfile', ['faculty']);
     $router->get('api/faculty/borrowing-history/pagination', 'FacultyBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['faculty']);
@@ -57,7 +57,7 @@ class RouteConfig
     $router->get('api/data/getColleges', 'DataController@getColleges', ['faculty']);
 
     $router->get('api/staff/attendance/get', 'AttendanceController@getMyAttendance', ['staff']);
-    $router->get('api/staff/qrBorrowingTicket/checkStatus', 'StaffTicketController@checkStatus', ['staff']);
+    $router->get('api/staff/qrBorrowingTicket/checkStatus', 'TicketController@checkStatus', ['staff']);
     $router->get('api/staff/bookCatalog/availableCount', 'StaffBookCatalogController@getAvailableCount', ['staff']);
     $router->get('api/staff/bookCatalog/fetch', 'StaffBookCatalogController@fetch', ['staff']);
     $router->get('api/staff/cart', 'StaffCartController@index', ['staff']);
@@ -66,7 +66,7 @@ class RouteConfig
     $router->post('api/staff/cart/clear', 'StaffCartController@clearCart', ['staff']);
     $router->get('api/staff/cart/json', 'StaffCartController@getCartJson', ['staff']);
     $router->post('api/staff/cart/checkout', 'StaffCartController@checkout', ['staff']);
-    $router->get('api/staff/qrBorrowingTicket', 'StaffTicketController@show', ['staff']);
+    $router->get('api/staff/qrBorrowingTicket', 'TicketController@index', ['staff']);
     $router->get('api/staff/myprofile/get', 'UserProfileController@getProfile', ['staff']);
     $router->post('api/staff/myprofile/update', 'UserProfileController@updateProfile', ['staff']);
     $router->get('api/staff/borrowing-history/pagination', 'StaffBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['staff']);

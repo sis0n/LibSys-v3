@@ -34,7 +34,15 @@ class Controller
             if (!$currentUser || !$currentUser['is_active']) {
                 session_unset();
                 session_destroy();
-                header("Location: " . BASE_URL . "/login?error=deactivated");
+                
+                if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                    header('Content-Type: application/json');
+                    http_response_code(401);
+                    echo json_encode(['success' => false, 'message' => 'Session expired or account deactivated.']);
+                    exit;
+                }
+
+                header("Location: " . \BASE_URL . "/login?error=deactivated");
                 exit;
             }
         }
@@ -42,7 +50,7 @@ class Controller
 
     protected function getCampusFilter(): ?int
     {
-        $role = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
+        $role = strtolower(trim(str_replace([' ', '-', '_'], '', $_SESSION['role'] ?? '')));
         
         // Superadmin and Admin have global access (Global/All Campuses)
         if (in_array($role, ['superadmin', 'admin'])) {
@@ -50,7 +58,7 @@ class Controller
         }
 
         // Campus Admin and Librarian are restricted to their own campus
-        if (in_array($role, ['campus_admin', 'librarian'])) {
+        if (in_array($role, ['campusadmin', 'librarian'])) {
             return $_SESSION['user_data']['campus_id'] ?? null;
         }
 
