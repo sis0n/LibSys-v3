@@ -206,11 +206,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td class="px-6 py-4 text-gray-500 text-xs">${new Date(eq.updated_at).toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'})}</td>
                 <td class="px-6 py-4 text-right">
                     <div class="flex justify-end gap-2">
-                        <button onclick="editEq(${eq.equipment_id})" class="inline-flex items-center gap-1.5 border border-orange-200 text-orange-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-100 transition shadow-sm">
-                            <i class="ph ph-note-pencil text-base"></i> Edit
+                        <button onclick="editEq(${eq.equipment_id})" class="p-2 rounded-full text-orange-600 hover:bg-orange-50 transition" title="Edit">
+                            <i class="ph ph-note-pencil text-lg"></i>
                         </button>
-                        <button onclick="deleteEq(${eq.equipment_id}, '${eq.equipment_name}')" class="inline-flex items-center gap-1.5 border border-red-200 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-50 transition shadow-sm">
-                            <i class="ph ph-trash text-base"></i> Delete
+                        <button onclick="deleteEq(${eq.equipment_id}, '${eq.equipment_name}')" class="p-2 rounded-full text-red-600 hover:bg-red-50 transition" title="Delete">
+                            <i class="ph ph-trash text-lg"></i>
                         </button>
                     </div>
                 </td>

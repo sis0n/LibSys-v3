@@ -18,15 +18,15 @@
     </div>
 </div>
 
-<div class="flex flex-wrap items-center gap-3 text-sm mb-6">
-    <div class="relative w-full sm:w-[220px] md:w-[260px]">
+<div class="flex flex-wrap items-center gap-3 text-sm mb-4">
+    <div class="relative w-[300px]">
         <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-orange-500"></i>
         <input type="text" id="userSearchInput" placeholder="Search by name, email, or ID..."
             class="w-full bg-white border border-gray-200 rounded-full pl-10 pr-4 py-2.5 outline-none transition text-sm shadow-sm focus:ring-2 focus:ring-orange-200">
     </div>
     <div class="relative inline-block text-left">
         <button id="roleDropdownBtn"
-            class="border border-gray-200 bg-white rounded-full px-4 py-2.5 text-sm text-gray-700 flex items-center justify-between gap-2 w-40 hover:bg-orange-50 transition">
+            class="border border-gray-200 bg-white rounded-full px-4 py-2.5 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition">
             <span id="roleDropdownValue">All Roles</span>
             <i class="ph ph-caret-down text-xs"></i>
         </button>
@@ -49,7 +49,7 @@
 
     <div class="relative inline-block text-left">
         <button id="statusDropdownBtn"
-            class="border border-gray-200 bg-white rounded-full px-4 py-2.5 text-sm text-gray-700 flex items-center justify-between gap-2 w-40 hover:bg-orange-50 transition">
+            class="border border-gray-200 bg-white rounded-full px-4 py-2.5 text-sm text-gray-700 flex items-center justify-between gap-2 w-36 hover:bg-orange-50 transition">
             <span id="statusDropdownValue">All Status</span>
             <i class="ph ph-caret-down text-xs"></i>
         </button>
