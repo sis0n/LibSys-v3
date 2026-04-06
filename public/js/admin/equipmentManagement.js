@@ -74,6 +74,10 @@ document.addEventListener("DOMContentLoaded", () => {
     let currentPage = 1;
     let currentSearch = "";
     let currentStatus = "All Status";
+    let currentCampus = "";
+    let debounceTimer;
+    let isMultiSelectMode = false;
+    let selectedEqIds = new Set();
     const limit = 10;
 
     // --- Elements ---
@@ -85,22 +89,30 @@ document.addEventListener("DOMContentLoaded", () => {
     const addForm = document.getElementById("addEqForm");
     const editForm = document.getElementById("editEqForm");
 
+    const multiSelectBtn = document.getElementById("multiSelectBtn");
+    const multiSelectActions = document.getElementById("multiSelectActions");
+    const selectAllBtn = document.getElementById("selectAllBtn");
+    const cancelSelectionBtn = document.getElementById("cancelSelectionBtn");
+    const multiDeleteBtn = document.getElementById("multiDeleteBtn");
+    const selectionCount = document.getElementById("selectionCount");
+
     // --- Core Functions ---
 
     function getStatusBadge(isActive) {
-        const base = "px-2 py-1 text-[10px] rounded-md font-bold uppercase tracking-wider transition-all";
-        return isActive 
-            ? `<span class="bg-green-500 text-white hover:bg-green-600 ${base}">Active</span>` 
-            : `<span class="bg-gray-300 text-gray-700 hover:bg-gray-400 ${base}">Inactive</span>`;
+        const base = "px-3 py-1 text-xs rounded-full font-semibold transition-all";
+        return isActive
+            ? `<span class="bg-emerald-100 text-emerald-700 ${base}">Active</span>`
+            : `<span class="bg-rose-100 text-rose-700 ${base}">Inactive</span>`;
     }
 
     function getConditionClass(status) {
         switch(status.toLowerCase()) {
-            case 'available': return 'bg-green-100 text-green-700 border-green-200';
-            case 'borrowed':  return 'bg-orange-100 text-orange-700 border-orange-200';
-            case 'damaged':   return 'bg-red-100 text-red-700 border-red-200';
-            case 'maintenance': return 'bg-blue-100 text-blue-700 border-blue-200';
-            default: return 'bg-gray-100 text-gray-700 border-gray-200';
+            case 'available': return 'bg-emerald-100 text-emerald-700';
+            case 'borrowed':  return 'bg-blue-100 text-blue-700';
+            case 'damaged':   return 'bg-rose-100 text-rose-700';
+            case 'lost':      return 'bg-rose-100 text-rose-700';
+            case 'maintenance': return 'bg-amber-100 text-amber-700';
+            default: return 'bg-gray-100 text-gray-700';
         }
     }
 
@@ -113,6 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const params = new URLSearchParams({
             search: currentSearch,
             status: currentStatus === "All Status" ? "" : currentStatus,
+            campus_id: currentCampus,
             limit: limit,
             offset: offset
         });
@@ -142,19 +155,46 @@ document.addEventListener("DOMContentLoaded", () => {
     function renderTable() {
         tableBody.innerHTML = "";
         if (equipments.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-gray-500">No equipment found matching filters.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="${isMultiSelectMode ? '8' : '7'}" class="py-12 text-center text-gray-500">No equipment found matching filters.</td></tr>`;
             return;
         }
 
+        // Update header for multi-select
+        const headerRow = document.querySelector("thead tr");
+        if (isMultiSelectMode && !headerRow.querySelector(".selection-header")) {
+            const th = document.createElement("th");
+            th.className = "py-3 px-4 font-semibold text-left selection-header";
+            th.innerHTML = '<i class="ph ph-check-square"></i>';
+            headerRow.prepend(th);
+        } else if (!isMultiSelectMode && headerRow.querySelector(".selection-header")) {
+            headerRow.querySelector(".selection-header").remove();
+        }
+
         equipments.forEach(eq => {
+            const isSelected = selectedEqIds.has(eq.equipment_id);
             const row = document.createElement("tr");
-            row.className = `hover:bg-orange-50/50 transition-colors ${!eq.is_active ? 'bg-gray-50/50 opacity-70' : ''}`;
+            row.className = `hover:bg-orange-50/40 transition-colors ${isSelected ? 'bg-orange-100' : ''} ${!eq.is_active ? 'bg-gray-50/50 opacity-70' : ''}`;
             
-            row.innerHTML = `
+            let rowHtml = "";
+            if (isMultiSelectMode) {
+                rowHtml += `
+                    <td class="px-6 py-4">
+                        <input type="checkbox" class="accent-orange-500" ${isSelected ? "checked" : ""} onchange="toggleEqSelection(${eq.equipment_id})">
+                    </td>
+                `;
+            }
+
+            rowHtml += `
                 <td class="px-6 py-4 font-medium text-gray-800">${eq.equipment_name}</td>
+                <td class="px-6 py-4">
+                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-orange-700 bg-orange-50 border border-orange-200 px-3 py-1 rounded-full">
+                        <i class="ph ph-map-pin"></i>
+                        ${eq.campus_name || 'N/A'}
+                    </span>
+                </td>
                 <td class="px-6 py-4 text-gray-600 font-mono text-xs">${eq.asset_tag || 'N/A'}</td>
                 <td class="px-6 py-4">
-                    <span class="w-fit px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getConditionClass(eq.status)}">
+                    <span class="w-fit px-3 py-1 rounded-full text-xs font-semibold ${getConditionClass(eq.status)}">
                         ${eq.status.toUpperCase()}
                     </span>
                 </td>
@@ -166,18 +206,88 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td class="px-6 py-4 text-gray-500 text-xs">${new Date(eq.updated_at).toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'})}</td>
                 <td class="px-6 py-4 text-right">
                     <div class="flex justify-end gap-2">
-                        <button onclick="editEq(${eq.equipment_id})" class="inline-flex items-center gap-1.5 border border-orange-200 text-orange-700 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-orange-100 transition shadow-sm">
-                            <i class="ph ph-note-pencil text-base"></i> Edit
+                        <button onclick="editEq(${eq.equipment_id})" class="p-2 rounded-full text-orange-600 hover:bg-orange-50 transition" title="Edit">
+                            <i class="ph ph-note-pencil text-lg"></i>
                         </button>
-                        <button onclick="deleteEq(${eq.equipment_id}, '${eq.equipment_name}')" class="inline-flex items-center gap-1.5 border border-red-200 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-50 transition shadow-sm">
-                            <i class="ph ph-trash text-base"></i> Delete
+                        <button onclick="deleteEq(${eq.equipment_id}, '${eq.equipment_name}')" class="p-2 rounded-full text-red-600 hover:bg-red-50 transition" title="Delete">
+                            <i class="ph ph-trash text-lg"></i>
                         </button>
                     </div>
                 </td>
             `;
+            row.innerHTML = rowHtml;
             tableBody.appendChild(row);
         });
     }
+
+    window.toggleEqSelection = (id) => {
+        if (selectedEqIds.has(id)) selectedEqIds.delete(id);
+        else selectedEqIds.add(id);
+        selectionCount.textContent = selectedEqIds.size;
+        renderTable();
+    };
+
+    multiSelectBtn.addEventListener("click", () => {
+        isMultiSelectMode = true;
+        multiSelectBtn.classList.add("hidden");
+        multiSelectActions.classList.remove("hidden");
+        renderTable();
+    });
+
+    cancelSelectionBtn.addEventListener("click", () => {
+        isMultiSelectMode = false;
+        selectedEqIds.clear();
+        selectionCount.textContent = "0";
+        multiSelectBtn.classList.remove("hidden");
+        multiSelectActions.classList.add("hidden");
+        renderTable();
+    });
+
+    selectAllBtn.addEventListener("click", () => {
+        if (selectedEqIds.size === equipments.length) selectedEqIds.clear();
+        else equipments.forEach(eq => selectedEqIds.add(eq.equipment_id));
+        selectionCount.textContent = selectedEqIds.size;
+        renderTable();
+    });
+
+    multiDeleteBtn.addEventListener("click", async () => {
+        const count = selectedEqIds.size;
+        if (count === 0) return;
+
+        const confirmed = await showConfirmationModal(
+            "Bulk Delete Equipment",
+            `Are you sure you want to delete ${count} equipment items?`,
+            "Yes, Delete Them!",
+            true
+        );
+        if (!confirmed) return;
+
+        try {
+            showLoadingModal("Processing Request...", "Please wait.");
+            const response = await fetch("api/admin/equipmentManagement/deleteMultiple", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    equipment_ids: Array.from(selectedEqIds)
+                }),
+            });
+            const data = await response.json();
+            Swal.close();
+
+            if (data.success) {
+                showSuccessToast("Success", `Successfully deleted ${data.deleted_count} item(s)!`);
+                selectedEqIds.clear();
+                cancelSelectionBtn.click();
+                loadEquipments(currentPage, false);
+            } else {
+                showErrorToast("Error", data.message);
+            }
+        } catch (error) {
+            Swal.close();
+            console.error("Error bulk deleting equipment:", error);
+            showErrorToast("Error", "A server error occurred.");
+        }
+    });
 
     window.toggleActive = async (id, currentIsActive, name) => {
         const newStatus = currentIsActive ? 0 : 1;
@@ -214,6 +324,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (data.success) {
                 document.getElementById("edit_equipment_id").value = data.equipment.equipment_id;
                 document.getElementById("edit_equipment_name").value = data.equipment.equipment_name;
+                document.getElementById("edit_campus_id").value = data.equipment.campus_id || "";
                 document.getElementById("edit_asset_tag").value = data.equipment.asset_tag || "";
                 document.getElementById("edit_status").value = data.equipment.status;
                 editModal.classList.remove("hidden");
@@ -319,9 +430,23 @@ document.addEventListener("DOMContentLoaded", () => {
         loadEquipments(1, false);
     };
 
+    window.selectEqCampus = (el, campusId, campusName) => {
+        currentCampus = campusId;
+        document.getElementById("eqCampusDropdownValue").textContent = campusName;
+        document.getElementById("eqCampusDropdownMenu").classList.add("hidden");
+        loadEquipments(1, false);
+    };
+
     document.getElementById("eqStatusDropdownBtn").onclick = (e) => {
         e.stopPropagation();
+        document.getElementById("eqCampusDropdownMenu").classList.add("hidden");
         document.getElementById("eqStatusDropdownMenu").classList.toggle("hidden");
+    };
+
+    document.getElementById("eqCampusDropdownBtn").onclick = (e) => {
+        e.stopPropagation();
+        document.getElementById("eqStatusDropdownMenu").classList.add("hidden");
+        document.getElementById("eqCampusDropdownMenu").classList.toggle("hidden");
     };
 
     document.getElementById("openAddEqBtn").onclick = () => {
@@ -347,6 +472,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.addEventListener("click", () => {
         document.getElementById("eqStatusDropdownMenu").classList.add("hidden");
+        document.getElementById("eqCampusDropdownMenu").classList.add("hidden");
     });
 
     loadEquipments(1);

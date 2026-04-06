@@ -47,9 +47,14 @@ class Router
         $controller = $info['controller'];
         $allowedAccess = $info['roles'];
 
-        // --- HYBRID AUTHORIZATION CHECK (Hayaan natin itong gumana nang tama) ---
+        // --- HYBRID AUTHORIZATION CHECK ---
         if (!empty($allowedAccess)) {
-          $userRole = strtolower($_SESSION['role'] ?? '');
+          $normalize = function($str) {
+              return strtolower(trim(str_replace([' ', '-', '_'], '', $str)));
+          };
+
+          $userRoleRaw = $_SESSION['role'] ?? 'guest';
+          $userRole = $normalize($userRoleRaw);
           $userId = $_SESSION['user_id'] ?? null;
 
           if (!$userId) {
@@ -58,23 +63,47 @@ class Router
             return;
           }
 
-          $hasAccess = false;
-          $allowedAccessNormalized = array_map('strtolower', $allowedAccess);
+          // ... (Session Sync Check remains same)
+          try {
+            $db = \App\Core\Database::getInstance()->getConnection();
+            $stmt = $db->prepare("SELECT campus_id, is_active FROM users WHERE user_id = ?");
+            $stmt->execute([$userId]);
+            $currentData = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-          if (in_array($userRole, $allowedAccessNormalized)) {
-            $hasAccess = true;
+            if ($currentData) {
+              if (isset($_SESSION['user_data']) && $_SESSION['user_data']['campus_id'] != $currentData['campus_id']) {
+                $_SESSION['user_data']['campus_id'] = $currentData['campus_id'];
+              }
+              if ($currentData['is_active'] == 0 && $userRole !== 'superadmin') {
+                session_destroy();
+                header('Location: /login');
+                exit;
+              }
+            }
+          } catch (\Exception $e) {
+            error_log("Session Sync Error: " . $e->getMessage());
           }
 
-          if (in_array($userRole, ['admin', 'librarian'])) {
+          $allowedAccessNormalized = array_map($normalize, $allowedAccess);
+
+          $hasAccess = false;
+
+          // Superadmin has access to everything
+          if ($userRole === 'superadmin') {
+            $hasAccess = true;
+          } 
+          // Check if direct role matches
+          elseif (in_array($userRole, $allowedAccessNormalized)) {
+            $hasAccess = true;
+          } 
+          // Check module permissions for specific roles
+          elseif (in_array($userRole, ['admin', 'librarian', 'campusadmin'])) {
             $userPermissions = $_SESSION['user_permissions'] ?? [];
-            $normalizedUserPermissions = array_map('strtolower', $userPermissions);
+            $normalizedUserPermissions = array_map($normalize, $userPermissions);
 
             $matches_permission = array_intersect($normalizedUserPermissions, $allowedAccessNormalized);
-
             if (count($matches_permission) > 0) {
               $hasAccess = true;
-            } else {
-              $hasAccess = false;
             }
           }
 

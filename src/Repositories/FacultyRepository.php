@@ -14,7 +14,7 @@ class FacultyRepository
     $this->db = Database::getInstance()->getConnection();
   }
 
-  public function insertFaculty(int $userId, int $collegeId, string $contact, string $status = 'active'): int
+  public function insertFaculty(int $userId, ?int $collegeId, string $contact, string $status = 'active'): int
   {
     $uniqueId = $this->generateUniqueFacultyId();
 

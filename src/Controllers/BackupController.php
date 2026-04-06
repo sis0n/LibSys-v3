@@ -13,8 +13,14 @@ class BackupController extends Controller
 
   public function __construct()
   {
+    parent::__construct();
+    $role = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
+    if ($role !== 'superadmin') {
+        http_response_code(403);
+        die("Forbidden: Access restricted to Superadmin only.");
+    }
     $this->backupRepo = new BackupRepository();
-    $this->auditRepo = new \App\Repositories\AuditLogRepository();
+    $this->userRepo = new \App\Repositories\UserRepository();
   }
 
   private function getBackupDir(): string

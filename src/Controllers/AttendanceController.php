@@ -13,6 +13,7 @@ class AttendanceController extends Controller
 
     public function __construct()
     {
+    parent::__construct();
         $this->attendanceRepo = new AttendanceRepository();
     }
 
@@ -78,7 +79,8 @@ class AttendanceController extends Controller
                 break;
         }
 
-        $logs = $this->attendanceRepo->getLogsByPeriod($start, $end, $search, $courseName);
+        $campusId = $this->getCampusFilter();
+        $logs = $this->attendanceRepo->getLogsByPeriod($start, $end, $search, $courseName, $campusId);
 
         $formattedLogs = [];
         foreach ($logs as $log) {

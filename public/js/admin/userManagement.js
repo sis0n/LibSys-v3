@@ -121,6 +121,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
     // BAGONG DAGDAG: ID para sa Edit Modal
     const editUserUserManagementModuleWrapper = document.getElementById("editUserUserManagementModuleWrapper");
+    const editUserRestoreUserModuleWrapper = document.getElementById("editUserRestoreUserModuleWrapper");
+    const editUserBulkDeleteQueueModuleWrapper = document.getElementById("editUserBulkDeleteQueueModuleWrapper");
 
     //updated
     const multiSelectBtn = document.getElementById("multiSelectBtn");
@@ -264,25 +266,56 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
 
+    async function loadCampuses(targetSelectId, selectedValue = null) {
+        const select = document.getElementById(targetSelectId);
+        if (!select) return;
+
+        select.innerHTML = '<option value="">Loading Campuses...</option>';
+
+        try {
+            const res = await fetch('api/campuses/all');
+            const data = await res.json();
+
+            select.innerHTML = '<option value="">Select Campus</option>';
+
+            if (data.success && Array.isArray(data.campuses) && data.campuses.length > 0) {
+                data.campuses.forEach(campus => {
+                    const option = new Option(campus.campus_name, campus.campus_id); // Corrected line
+                    select.add(option);
+                });
+
+                if (selectedValue) {
+                    select.value = selectedValue;
+                }
+            } else {
+                select.innerHTML = '<option value="">No Campuses Found</option>';
+            }
+
+        } catch (err) {
+            console.error("Error loading campuses:", err);
+            select.innerHTML = '<option value="">Error loading campuses</option>';
+        }
+    }
+
     function updateProgramDepartmentDropdown(role, selectedValue = null) {
         const wrapper = document.getElementById('addUserSingleSelectWrapper');
         const label = document.getElementById('addUserSelectLabel');
+        const studentFieldsWrapper = document.getElementById('addUserStudentFieldsWrapper');
 
         if (!wrapper || !label) return;
 
         const normalizedRole = (role || "").trim().toLowerCase();
 
         wrapper.classList.add('hidden');
+        if (studentFieldsWrapper) studentFieldsWrapper.classList.add('hidden');
+
+        // Always load campuses for the general field since it replaced gender
+        loadCampuses('addCampus');
 
         if (normalizedRole === 'student') {
             label.innerHTML = 'Course/Program <span class="text-red-500">*</span>';
             wrapper.classList.remove('hidden');
             loadCoursesForStudent(selectedValue);
-
-        } else if (normalizedRole === 'faculty') {
-            label.innerHTML = 'College/Department <span class="text-red-500">*</span>';
-            wrapper.classList.remove('hidden');
-            loadDepartments(selectedValue);
 
         } else {
             wrapper.classList.add('hidden');
@@ -304,16 +337,17 @@ window.addEventListener("DOMContentLoaded", () => {
     function toggleModules(container, role, userModules = []) {
         if (!container) return;
         const normalizedRole = (role || "").trim().toLowerCase();
-        // console.log("toggleModules:", normalizedRole, userModules); // For debugging
 
         container.classList.add("hidden");
         const userMgmtWrapper = container.querySelector('#addUserUserManagementModuleWrapper') || document.getElementById('addUserUserManagementModuleWrapper');
         const restoreUserWrapper = container.querySelector('#addUserRestoreUserModuleWrapper') || document.getElementById('addUserRestoreUserModuleWrapper');
+        const bulkDeleteWrapper = container.querySelector('#addUserBulkDeleteQueueModuleWrapper') || document.getElementById('addUserBulkDeleteQueueModuleWrapper');
 
         if (userMgmtWrapper) userMgmtWrapper.classList.add('hidden');
         if (restoreUserWrapper) restoreUserWrapper.classList.add('hidden');
+        if (bulkDeleteWrapper) bulkDeleteWrapper.classList.add('hidden');
 
-        if (normalizedRole === "admin" || normalizedRole === "librarian") {
+        if (normalizedRole === "admin" || normalizedRole === "librarian" || normalizedRole === "campus admin" || normalizedRole === "campus_admin") {
             container.classList.remove("hidden");
 
             container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
@@ -323,18 +357,24 @@ window.addEventListener("DOMContentLoaded", () => {
             if (normalizedRole === 'admin') {
                 if (userMgmtWrapper) userMgmtWrapper.classList.remove('hidden');
                 if (restoreUserWrapper) restoreUserWrapper.classList.remove('hidden');
-            } else if (normalizedRole === 'librarian') {
+                if (bulkDeleteWrapper) bulkDeleteWrapper.classList.remove('hidden');
+            } else if (normalizedRole === 'campus admin' || normalizedRole === 'campus_admin') {
                 if (userMgmtWrapper) userMgmtWrapper.classList.remove('hidden');
+                if (bulkDeleteWrapper) bulkDeleteWrapper.classList.remove('hidden');
+            } else if (normalizedRole === 'librarian') {
+                // Librarian doesn't have User Management, Restore User, or Bulk Delete Queue
+                if (userMgmtWrapper) userMgmtWrapper.classList.add('hidden');
+                if (restoreUserWrapper) restoreUserWrapper.classList.add('hidden');
+                if (bulkDeleteWrapper) bulkDeleteWrapper.classList.add('hidden');
             }
         } else {
-            // Kung hindi admin/librarian, siguraduhing naka-uncheck lahat
             container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
         }
     }
 
 
-    async function loadCoursesForStudent(selectedValue = null) {
-        const select = document.getElementById('addUserSelectField');
+    async function loadCourses(targetSelectId, selectedValue = null) {
+        const select = document.getElementById(targetSelectId);
         if (!select) return;
 
         select.innerHTML = '<option value="">Loading Courses...</option>';
@@ -362,6 +402,10 @@ window.addEventListener("DOMContentLoaded", () => {
             console.error("Error loading courses:", err);
             select.innerHTML = '<option value="">Error loading courses</option>';
         }
+    }
+
+    async function loadCoursesForStudent(selectedValue = null) {
+        await loadCourses('addUserSelectField', selectedValue);
     }
 
     async function loadDepartments(selectedValue = null) {
@@ -404,14 +448,6 @@ window.addEventListener("DOMContentLoaded", () => {
         setActiveOption("userRoleDropdownMenu", el);
 
         toggleModules(modulesSection, normalizedRole);
-
-        if (addUserUserManagementModuleWrapper) {
-            if (normalizedRole === 'admin') {
-                addUserUserManagementModuleWrapper.classList.remove('hidden');
-            } else {
-                addUserUserManagementModuleWrapper.classList.add('hidden');
-            }
-        }
         updateProgramDepartmentDropdown(normalizedRole);
     };
 
@@ -419,29 +455,55 @@ window.addEventListener("DOMContentLoaded", () => {
         const valueEl = document.getElementById("editRoleDropdownValue");
         if (valueEl) valueEl.textContent = val;
         const editModulesContainer = document.getElementById("editPermissionsContainer");
-        const user = users.find(u => u.user_id === currentEditingUserId);
-        // We might need to reload user data here if user object is stale, but we rely on `users` array for simplicity
-        // For accurate module status on role change in the modal, we'd need more logic, 
-        // but sticking to the current structure, we just toggle visibility based on the *new* role selected.
         const normalizedRole = (val || "").trim().toLowerCase();
 
+        const editUserUserManagementModuleWrapper = document.getElementById("editUserUserManagementModuleWrapper");
+        const editUserRestoreUserModuleWrapper = document.getElementById("editUserRestoreUserModuleWrapper");
+        const editUserBulkDeleteQueueModuleWrapper = document.getElementById("editUserBulkDeleteQueueModuleWrapper");
+
         if (editModulesContainer) {
-            if (normalizedRole === 'admin' || normalizedRole === 'librarian') {
+            if (normalizedRole === 'admin' || normalizedRole === 'librarian' || normalizedRole === 'campus admin' || normalizedRole === 'campus_admin') {
                 editModulesContainer.classList.remove("hidden");
 
+                // User Management
                 if (editUserUserManagementModuleWrapper) {
-                    if (normalizedRole === 'admin') {
+                    if (normalizedRole === 'admin' || normalizedRole === 'librarian' || normalizedRole === 'campus admin' || normalizedRole === 'campus_admin') {
                         editUserUserManagementModuleWrapper.classList.remove('hidden');
                     } else {
                         editUserUserManagementModuleWrapper.classList.add('hidden');
                     }
                 }
+
+                // Restore User (Admin only)
+                if (editUserRestoreUserModuleWrapper) {
+                    if (normalizedRole === 'admin') {
+                        editUserRestoreUserModuleWrapper.classList.remove('hidden');
+                    } else {
+                        editUserRestoreUserModuleWrapper.classList.add('hidden');
+                    }
+                }
+
+                // Bulk Delete Queue (Admin and Campus Admin only)
+                if (editUserBulkDeleteQueueModuleWrapper) {
+                    if (normalizedRole === 'admin' || normalizedRole === 'campus admin' || normalizedRole === 'campus_admin') {
+                        editUserBulkDeleteQueueModuleWrapper.classList.remove('hidden');
+                    } else {
+                        editUserBulkDeleteQueueModuleWrapper.classList.add('hidden');
+                    }
+                }
+                
+                // Extra safety for Librarian: hide specific wrappers
+                if (normalizedRole === 'librarian') {
+                    if (editUserUserManagementModuleWrapper) editUserUserManagementModuleWrapper.classList.add('hidden');
+                    if (editUserRestoreUserModuleWrapper) editUserRestoreUserModuleWrapper.classList.add('hidden');
+                    if (editUserBulkDeleteQueueModuleWrapper) editUserBulkDeleteQueueModuleWrapper.classList.add('hidden');
+                }
+
             } else {
                 editModulesContainer.classList.add("hidden");
             }
         }
 
-        // This is necessary to visually mark the selected option
         setActiveOption("editRoleDropdownMenu", el);
     };
 
@@ -759,8 +821,8 @@ window.addEventListener("DOMContentLoaded", () => {
             const firstHeader = headerRow.querySelector('th');
             if (isMultiSelectMode) {
                 if (!firstHeader.classList.contains('multi-select-header')) {
-                    const th = document.createElement('th');
-                    th.className = 'px-4 py-3 font-medium multi-select-header';
+                const th = document.createElement('th');
+                th.className = 'px-4 py-4 font-semibold multi-select-header';
                     headerRow.insertBefore(th, firstHeader);
                 }
             } else {
@@ -785,7 +847,7 @@ window.addEventListener("DOMContentLoaded", () => {
             //Updated edited this code : row.className = user.status === "Inactive" ? "bg-gray-50 text-gray-500" : "bg-white";
             const isSelected = selectedUsers.has(user.user_id);
 
-            row.className = `transition-colors ${isSelected ? "bg-orange-100" : (user.status === "Inactive" ? "bg-gray-50 text-gray-500" : "bg-white")}`;
+        row.className = `transition-colors hover:bg-orange-50/40 ${isSelected ? "bg-orange-100" : (user.status === "Inactive" ? "bg-gray-50 text-gray-500" : "bg-white")}`;
             if (isMultiSelectMode) {
                 row.classList.add("cursor-pointer");
                 row.dataset.userId = user.user_id;
@@ -802,22 +864,22 @@ window.addEventListener("DOMContentLoaded", () => {
             }
             //end
 
-            let actions = `
-                <button class="editUserBtn flex items-center gap-1 border border-orange-200 text-gray-600 px-2 py-1.5 rounded-md text-xs font-medium hover:bg-orange-50 transition">
-                    <i class="ph ph-note-pencil text-base"></i><span>Edit</span>
-                </button>
-                <button class="deleteUserBtn flex items-center gap-1 bg-red-600 text-white px-2 py-1.5 rounded-md text-xs font-medium hover:bg-red-700 transition">
-                    <i class="ph ph-trash text-base"></i><span>Delete</span>
+        let actions = `
+            <button class="editUserBtn text-orange-600 hover:bg-orange-50 rounded-full p-2 transition" title="Edit">
+                <i class="ph ph-note-pencil text-lg"></i>
+            </button>
+            <button class="deleteUserBtn text-red-600 hover:bg-red-50 rounded-full p-2 transition" title="Delete">
+                <i class="ph ph-trash text-lg"></i>
+            </button>
+        `;
+
+        if (user.role.toLowerCase() === 'student') {
+            actions += `
+                <button class="allow-edit-btn text-blue-600 hover:bg-blue-50 rounded-full p-2 transition" title="Allow Edit" data-id="${user.user_id}">
+                    <i class="ph ph-check-circle text-lg"></i>
                 </button>
             `;
-
-            if (user.role.toLowerCase() === 'student') {
-                actions += `
-                    <button class="allow-edit-btn flex items-center gap-1 border border-blue-500 text-blue-600 px-2 py-1.5 rounded-md text-xs font-medium hover:bg-blue-50 transition" data-id="${user.user_id}">
-                        Allow Edit
-                    </button>
-                `;
-            }
+        }
             // Updated
             let actionsCellHTML = `<td class="px-4 py-3 actions-cell"><div class="flex items-center gap-2">${actions}</div></td>`;
             if (isMultiSelectMode) {
@@ -846,6 +908,7 @@ window.addEventListener("DOMContentLoaded", () => {
             const first_name = document.getElementById("addFirstName").value.trim();
             const middle_name = document.getElementById("addMiddleName").value.trim();
             const last_name = document.getElementById("addLastName").value.trim();
+            const campus_id = document.getElementById("addCampus").value;
             const username = document.getElementById("addUsername").value.trim();
             const role = document.getElementById("userRoleDropdownValue").textContent.trim();
 
@@ -854,8 +917,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
             let payloadData = {};
 
-            if (!first_name || !last_name || !username || role === "Select Role") {
-                return showErrorToast("Required Fields Missing", "Please fill in all required fields (First Name, Last Name, Username, Role).");
+            if (!first_name || !last_name || !username || !campus_id || role === "Select Role") {
+                return showErrorToast("Required Fields Missing", "Please fill in all required fields (First Name, Last Name, Campus, Username, Role).");
             }
 
             if (selectWrapper && !selectWrapper.classList.contains('hidden')) {
@@ -890,6 +953,7 @@ window.addEventListener("DOMContentLoaded", () => {
                         first_name: first_name,
                         middle_name: middle_name || null,
                         last_name: last_name,
+                        campus_id: campus_id,
                         username: username,
                         role: role,
                         ...(payloadData.course_id && {
@@ -959,42 +1023,114 @@ window.addEventListener("DOMContentLoaded", () => {
                 currentEditingUserId = user.user_id;
                 const userRole = user.role.toLowerCase();
 
-                document.getElementById("editFirstName").value = user.first_name || '';
-                document.getElementById("editMiddleName").value = user.middle_name || '';
-                document.getElementById("editLastName").value = user.last_name || '';
-                document.getElementById("editUsername").value = user.username || '';
-                document.getElementById("editEmail").value = user.email || '';
-                document.getElementById("editRoleDropdownValue").textContent = user.role;
-                document.getElementById("editStatusDropdownValue").textContent = user.status;
-                document.querySelector("#editUserTitle span").textContent = user.name;
+                // --- 1. SHOW LOADING MODAL ---
+                showLoadingModal("Fetching Details...", `Retrieving information for ${user.name}.`);
+                const fetchStartTime = Date.now();
 
-                const editModulesContainer = document.getElementById("editPermissionsContainer");
-                if (editModulesContainer) {
-                    if (userRole === 'admin' || userRole === 'librarian') {
-                        editModulesContainer.classList.remove("hidden");
+                try {
+                    // --- 2. FETCH FULL DETAILS FROM API ---
+                    const res = await fetch(`api/admin/userManagement/get/${user.user_id}`);
+                    const data = await res.json();
 
-                        if (editUserUserManagementModuleWrapper) {
-                            if (userRole === 'admin') {
-                                editUserUserManagementModuleWrapper.classList.remove('hidden');
-                            } else {
-                                editUserUserManagementModuleWrapper.classList.add('hidden');
-                            }
+                    // Mabilis na pagsara ng modal
+                    const elapsed = Date.now() - fetchStartTime;
+                    const minModalDisplay = 500;
+                    if (elapsed < minModalDisplay) await new Promise(r => setTimeout(r, minModalDisplay - elapsed));
+                    Swal.close();
+
+                    if (!data.user) throw new Error("User data not found.");
+
+                    const fullUser = data.user;
+                    const extra = data.extra; // Extra info (Student details)
+
+                    // --- 3. POPULATE BASIC FIELDS ---
+                    document.getElementById("editFirstName").value = fullUser.first_name || '';
+                    document.getElementById("editMiddleName").value = fullUser.middle_name || '';
+                    document.getElementById("editLastName").value = fullUser.last_name || '';
+                    document.getElementById("editUsername").value = fullUser.username || '';
+                    document.getElementById("editEmail").value = fullUser.email || '';
+                    
+                    await loadCampuses('editCampusField', fullUser.campus_id || null);
+
+                    document.getElementById("editRoleDropdownValue").textContent = fullUser.role;
+                    document.getElementById("editStatusDropdownValue").textContent = fullUser.is_active == 1 ? "Active" : "Inactive";
+                    document.querySelector("#editUserTitle span").textContent = buildFullName(fullUser.first_name, fullUser.middle_name, fullUser.last_name);
+
+                    // --- 4. HANDLE STUDENT FIELDS ---
+                    const studentWrapper = document.getElementById("editStudentFieldsWrapper");
+                    if (studentWrapper) {
+                        if (userRole === 'student') {
+                            studentWrapper.classList.remove("hidden");
+                            
+                            await loadCourses('editCourseId', extra ? extra.course_id : null);
+                            
+                            document.getElementById("editYearLevel").value = extra ? (extra.year_level || '1') : '1';
+                            document.getElementById("editSection").value = extra ? (extra.section || '') : '';
+                        } else {
+                            studentWrapper.classList.add("hidden");
                         }
-
-                        editModulesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-                            cb.checked = user.modules?.some(
-                                m => m.toLowerCase().trim() === cb.value.toLowerCase().trim()
-                            ) || false;
-                        });
-
-                    } else {
-                        editModulesContainer.classList.add("hidden");
-                        editModulesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
                     }
-                }
 
-                editUserModal.classList.remove("hidden");
-                document.body.classList.add("overflow-hidden");
+                    const editModulesContainer = document.getElementById("editPermissionsContainer");
+                    if (editModulesContainer) {
+                        const isPrivileged = ['admin', 'librarian', 'campus admin', 'campus_admin'].includes(userRole);
+                        if (isPrivileged) {
+                            editModulesContainer.classList.remove("hidden");
+
+                            if (editUserUserManagementModuleWrapper) {
+                                if (userRole === 'admin' || userRole === 'librarian' || userRole === 'campus admin' || userRole === 'campus_admin') {
+                                    editUserUserManagementModuleWrapper.classList.remove('hidden');
+                                } else {
+                                    editUserUserManagementModuleWrapper.classList.add('hidden');
+                                }
+                            }
+
+                            // Restore User (Admin only)
+                            if (editUserRestoreUserModuleWrapper) {
+                                if (userRole === 'admin') {
+                                    editUserRestoreUserModuleWrapper.classList.remove('hidden');
+                                } else {
+                                    editUserRestoreUserModuleWrapper.classList.add('hidden');
+                                }
+                            }
+
+                            // Bulk Delete Queue (Admin and Campus Admin only)
+                            if (editUserBulkDeleteQueueModuleWrapper) {
+                                if (userRole === 'admin' || userRole === 'campus admin' || userRole === 'campus_admin') {
+                                    editUserBulkDeleteQueueModuleWrapper.classList.remove('hidden');
+                                } else {
+                                    editUserBulkDeleteQueueModuleWrapper.classList.add('hidden');
+                                }
+                            }
+
+                            // Extra safety for Librarian: hide specific wrappers
+                            if (userRole === 'librarian') {
+                                if (editUserUserManagementModuleWrapper) editUserUserManagementModuleWrapper.classList.add('hidden');
+                                if (editUserRestoreUserModuleWrapper) editUserRestoreUserModuleWrapper.classList.add('hidden');
+                                if (editUserBulkDeleteQueueModuleWrapper) editUserBulkDeleteQueueModuleWrapper.classList.add('hidden');
+                            }
+
+                            editModulesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                                const moduleVal = cb.value.toLowerCase().trim();
+                                cb.checked = data.modules?.some(
+                                    m => m.toLowerCase().trim() === moduleVal
+                                ) || false;
+                            });
+
+                        } else {
+                            editModulesContainer.classList.add("hidden");
+                            editModulesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+                        }
+                    }
+
+                    editUserModal.classList.remove("hidden");
+                    document.body.classList.add("overflow-hidden");
+
+                } catch (err) {
+                    console.error("Error fetching user details:", err);
+                    Swal.close();
+                    showErrorToast("Fetch Failed", "Could not retrieve user details.");
+                }
             }
 
             if (e.target.closest(".deleteUserBtn")) {
@@ -1038,7 +1174,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
             // TOGGLE STATUS
             if (e.target.closest(".toggle-status-btn")) {
-                if (user.role.toLowerCase() === 'superadmin') return showErrorToast("Action Denied", "Superadmin status cannot be changed!");
+                if (user.role.toLowerCase() === 'admin') return showErrorToast("Action Denied", "admin status cannot be changed!");
                 if (user.role.toLowerCase() === 'scanner') return showErrorToast("Action Denied", "Scanner status cannot be changed!");
 
                 const newStatus = user.status === 'Active' ? 'Inactive' : 'Active';
@@ -1132,9 +1268,16 @@ window.addEventListener("DOMContentLoaded", () => {
                 last_name: document.getElementById("editLastName").value.trim(),
                 username: document.getElementById("editUsername").value.trim(),
                 email: document.getElementById("editEmail").value.trim(),
+                campus_id: document.getElementById("editCampusField").value,
                 role: role,
                 is_active: document.getElementById("editStatusDropdownValue").textContent.trim().toLowerCase() === 'active' ? 1 : 0
             };
+
+            if (role.toLowerCase() === 'student') {
+                payload.course_id = document.getElementById("editCourseId").value;
+                payload.year_level = document.getElementById("editYearLevel").value;
+                payload.section = document.getElementById("editSection").value.trim();
+            }
 
             if (!payload.first_name || !payload.last_name || !payload.email || !payload.username) {
                 return showErrorToast("Required Fields Missing", "First Name, Last Name, Username, and Email are required.");
@@ -1213,28 +1356,38 @@ window.addEventListener("DOMContentLoaded", () => {
     if (toggleConfirmPass) toggleConfirmPass.addEventListener('click', () => togglePassword('confirmPassword', toggleConfirmPass));
 
     function getRoleBadge(role) {
-        const base = "px-2 py-1 text-xs rounded-md font-medium";
-        switch (role.toLowerCase()) {
+        if (!role) return '<span class="bg-gray-100 text-gray-700 px-3 py-1 text-xs rounded-full font-medium">N/A</span>';
+        
+        const base = "px-3 py-1 text-xs rounded-full font-medium inline-flex items-center";
+        const normalizedRole = role.toLowerCase().trim();
+        const displayRole = normalizedRole.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        
+        switch (normalizedRole) {
             case "student":
-                return `<span class="bg-green-500 text-white ${base}">${role}</span>`;
+                return `<span class="bg-purple-100 text-purple-700 ${base}">${displayRole}</span>`;
             case "librarian":
-                return `<span class="bg-amber-500 text-white ${base}">${role}</span>`;
+                return `<span class="bg-amber-100 text-amber-700 ${base}">${displayRole}</span>`;
             case "admin":
-                return `<span class="bg-orange-600 text-white ${base}">${role}</span>`;
+                return `<span class="bg-blue-100 text-blue-700 ${base}">${displayRole}</span>`;
+            case "campus_admin":
+            case "campus admin":
+                return `<span class="bg-indigo-100 text-indigo-700 ${base}">${displayRole}</span>`;
             case "faculty":
-                return `<span class="bg-emerald-600 text-white ${base}">${role}</span>`;
+                return `<span class="bg-sky-100 text-sky-700 ${base}">${displayRole}</span>`;
             case "staff":
-                return `<span class="bg-teal-600 text-white ${base}">${role}</span>`;
+                return `<span class="bg-teal-100 text-teal-700 ${base}">${displayRole}</span>`;
             case "superadmin":
-                return `<span class="bg-purple-600 text-white ${base}">${role}</span>`;
+                return `<span class="bg-violet-100 text-violet-700 ${base}">${displayRole}</span>`;
             default:
-                return `<span class="bg-gray-300 text-gray-800 ${base}">${role}</span>`;
+                return `<span class="bg-gray-100 text-gray-700 ${base}">${displayRole}</span>`;
         }
     }
 
     function getStatusBadge(status) {
-        const base = "px-2 py-1 text-xs rounded-md font-medium";
-        return status.toLowerCase() === "active" ? `<span class="bg-green-500 text-white ${base}">Active</span>` : `<span class="bg-gray-300 text-gray-700 ${base}">Inactive</span>`;
+        const base = "px-3 py-1 text-xs rounded-full font-medium";
+        return status.toLowerCase() === "active"
+            ? `<span class="bg-emerald-100 text-emerald-700 ${base}">Active</span>`
+            : `<span class="bg-rose-100 text-rose-700 ${base}">Inactive</span>`;
     }
 
     loadUsers(currentPage);
@@ -1308,15 +1461,45 @@ window.addEventListener("DOMContentLoaded", () => {
                 return showErrorToast("No Users Selected", "Please select users to delete.");
             }
 
-            const isConfirmed = await showConfirmationModal(
-                `Delete ${userIds.length} Users?`,
-                `Are you sure you want to permanently delete the selected ${userIds.length} user(s)? This action cannot be undone.`,
-                "Yes, Delete All"
-            );
+            // --- BULK APPROVAL CHECK (5+ USERS) ---
+            let reason = null;
+            if (userIds.length >= 5) {
+                const { value: inputReason, isConfirmed: isReasonConfirmed } = await Swal.fire({
+                    title: 'Bulk Deactivation Reason',
+                    text: `You are about to request deactivation for ${userIds.length} users. This requires Superadmin approval. Please provide a reason:`,
+                    input: 'textarea',
+                    inputPlaceholder: 'Type your reason here...',
+                    inputAttributes: {
+                        'aria-label': 'Type your reason here'
+                    },
+                    showCancelButton: true,
+                    confirmButtonText: 'Submit Request',
+                    cancelButtonText: 'Cancel',
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'You need to write something!'
+                        }
+                    },
+                    customClass: {
+                        popup: "!rounded-xl !border-2 !border-orange-400 shadow-[0_0_15px_#ffb34780]",
+                        confirmButton: "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700 !mx-2 !font-semibold",
+                        cancelButton: "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300 !mx-2 !font-semibold"
+                    },
+                    buttonsStyling: false
+                });
 
-            if (!isConfirmed) return;
+                if (!isReasonConfirmed) return;
+                reason = inputReason;
+            } else {
+                const isConfirmed = await showConfirmationModal(
+                    `Delete ${userIds.length} Users?`,
+                    `Are you sure you want to permanently delete the selected ${userIds.length} user(s)? This action cannot be undone.`,
+                    "Yes, Delete All"
+                );
+                if (!isConfirmed) return;
+            }
 
-            showLoadingModal("Deleting Users...", `Processing ${userIds.length} user(s).`);
+            showLoadingModal("Processing Request...", `Handling ${userIds.length} user(s).`);
 
             try {
                 const res = await fetch('api/admin/userManagement/deleteMultiple', {
@@ -1325,7 +1508,8 @@ window.addEventListener("DOMContentLoaded", () => {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        user_ids: userIds
+                        user_ids: userIds,
+                        reason: reason
                     })
                 });
 
@@ -1333,13 +1517,17 @@ window.addEventListener("DOMContentLoaded", () => {
                 Swal.close();
 
                 if (data.success) {
-                    showSuccessToast("Deletion Successful", data.message);
+                    if (data.requires_approval) {
+                        showSuccessToast("Request Submitted", data.message);
+                    } else {
+                        showSuccessToast("Deletion Successful", data.message);
+                    }
                 } else {
                     let errorMessage = data.message;
                     if (data.errors && data.errors.length > 0) {
                         errorMessage += ` ${data.errors.join(' ')}`;
                     }
-                    showErrorToast("Deletion Failed", errorMessage);
+                    showErrorToast("Action Failed", errorMessage);
                 }
 
                 isMultiSelectMode = false;

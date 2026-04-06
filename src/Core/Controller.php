@@ -14,6 +14,15 @@ class Controller
             session_start();
         }
 
+        // Refresh permissions from DB on every request to avoid "stale" session data
+        if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
+            $role = strtolower($_SESSION['role']);
+            if (in_array($role, ['admin', 'librarian', 'superadmin', 'campus_admin', 'campus admin'])) {
+                $userPermissionRepo = new \App\Repositories\UserPermissionModuleRepository();
+                $_SESSION['user_permissions'] = $userPermissionRepo->getModulesByUserId($_SESSION['user_id']);
+            }
+        }
+
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
@@ -25,10 +34,35 @@ class Controller
             if (!$currentUser || !$currentUser['is_active']) {
                 session_unset();
                 session_destroy();
-                header("Location: " . BASE_URL . "/login?error=deactivated");
+                
+                if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                    header('Content-Type: application/json');
+                    http_response_code(401);
+                    echo json_encode(['success' => false, 'message' => 'Session expired or account deactivated.']);
+                    exit;
+                }
+
+                header("Location: " . \BASE_URL . "/login?error=deactivated");
                 exit;
             }
         }
+    }
+
+    protected function getCampusFilter(): ?int
+    {
+        $role = strtolower(trim(str_replace([' ', '-', '_'], '', $_SESSION['role'] ?? '')));
+        
+        // Superadmin and Admin have global access (Global/All Campuses)
+        if (in_array($role, ['superadmin', 'admin'])) {
+            return null;
+        }
+
+        // Campus Admin and Librarian are restricted to their own campus
+        if (in_array($role, ['campusadmin', 'librarian'])) {
+            return $_SESSION['user_data']['campus_id'] ?? null;
+        }
+
+        return null;
     }
 
     protected function validateCsrf(): bool
@@ -48,6 +82,13 @@ class Controller
     protected function getPostData(): array
     {
         return $this->sanitize($_POST);
+    }
+
+    protected function getJsonData(): array
+    {
+        $json = file_get_contents('php://input');
+        $data = json_decode($json, true) ?: [];
+        return $this->sanitize($data);
     }
 
     public function view(string $view, array $data = [], bool $withLayout = true): void
@@ -107,5 +148,66 @@ class Controller
                 include $basePath . "errors/404.php";
             }
         }
+    }
+
+    protected function json($data, int $statusCode = 200)
+    {
+        http_response_code($statusCode);
+        header('Content-Type: application/json');
+        echo json_encode($data);
+        exit;
+    }
+
+    protected function saveFileLocally($file, $subFolder, $prefix = 'profile')
+    {
+        if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
+            return null;
+        }
+
+        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $uniqueId = uniqid();
+        $fileName = "{$prefix}_{$uniqueId}.{$extension}";
+
+        $uploadDir = ROOT_PATH . "/public/storage/uploads/{$subFolder}/";
+
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $destPath = $uploadDir . $fileName;
+
+        if (move_uploaded_file($file['tmp_name'], $destPath)) {
+            return "storage/uploads/{$subFolder}/" . $fileName;
+        }
+
+        return null;
+    }
+
+    protected function validateImageUpload($file)
+    {
+        $maxSize = 2 * 1024 * 1024; // 2MB
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+        if ($file['error'] !== UPLOAD_ERR_OK) return "Upload error.";
+        if ($file['size'] > $maxSize) return "Image must be less than 2MB.";
+
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+
+        if (!in_array($mime, $allowedTypes)) return "Invalid image type. Only JPG, PNG, GIF, WEBP allowed.";
+        return true;
+    }
+
+    protected function validatePDFUpload($file)
+    {
+        $maxSize = 5 * 1024 * 1024; // 5MB
+        if ($file['error'] !== UPLOAD_ERR_OK) return "Upload error.";
+        if ($file['size'] > $maxSize) return "PDF must be less than 5MB.";
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+        if ($mime !== 'application/pdf') return "Invalid file type. Only PDF allowed.";
+        return true;
     }
 }

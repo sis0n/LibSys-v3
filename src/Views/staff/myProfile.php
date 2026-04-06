@@ -116,6 +116,18 @@
                         class="font-medium text-gray-800 bg-gray-50 border-gray-200 border rounded-md px-2 py-1 w-full"
                         disabled>
                 </div>
+                <div class="min-w-[200px]">
+                    <label class="text-sm text-gray-500" for="gender">Gender</label>
+                    <select id="gender" name="gender" class="font-medium text-gray-800 bg-gray-50 border-gray-200 border rounded-md px-2 py-1 w-full" disabled>
+                        <option value="" disabled selected>Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="LGBTQIA+">LGBTQIA+</option>
+                        <option value="Prefer not to say">Prefer not to say</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <input type="text" id="genderOther" name="gender_other" placeholder="Please specify" class="hidden font-medium text-gray-800 bg-gray-50 border-gray-200 border rounded-md px-2 py-1 w-full mt-2" disabled>
+                </div>
             </div>
         </section>
 
@@ -129,6 +141,14 @@
                     <div>
                         <label class="text-sm text-gray-500" for="facultyId">Staff Id</label>
                         <input type="text" id="facultyId" name="faculty_id"
+                            class="font-medium text-gray-800 bg-gray-100 border-gray-300 border rounded-md px-2 py-1 w-full"
+                            disabled>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div>
+                        <label class="text-sm text-gray-500" for="campus">Campus</label>
+                        <input type="text" id="campus" name="campus"
                             class="font-medium text-gray-800 bg-gray-100 border-gray-300 border rounded-md px-2 py-1 w-full"
                             disabled>
                     </div>

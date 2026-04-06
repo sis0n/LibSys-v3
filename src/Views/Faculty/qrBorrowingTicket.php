@@ -7,7 +7,7 @@ $transaction_code = $transaction_code ?? null;
 // Initial QR Path logic
 $qrPath = null;
 if ($transaction_code && !$isBorrowed && !$isExpired) {
-    $qrPath = STORAGE_URL . "/uploads/qrcodes/" . $transaction_code . ".svg";
+    $qrPath = STORAGE_URL . "/storage/uploads/qrcodes/" . $transaction_code . ".svg";
 }
 ?>
 <main class="min-h-screen">
@@ -187,11 +187,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function showQR(ticket) {
         ticketMessageContainer.innerHTML = '';
         if (qrImage) {
-            qrImage.src = `${STORAGE_URL}/uploads/qrcodes/${ticket.transaction_code}.svg?t=${Date.now()}`;
+            qrImage.src = `${STORAGE_URL}/storage/uploads/qrcodes/${ticket.transaction_code}.svg?t=${Date.now()}`;
             qrImage.classList.remove('hidden');
         }
         if (downloadButton) {
-            downloadButton.href = `${STORAGE_URL}/uploads/qrcodes/${ticket.transaction_code}.svg`;
+            downloadButton.href = `${STORAGE_URL}/storage/uploads/qrcodes/${ticket.transaction_code}.svg`;
             downloadButton.classList.remove('hidden');
         }
         if (ticketInstruction) ticketInstruction.textContent = 'Present this to the librarian';
@@ -201,10 +201,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateDetails(data) {
-        if (data.student) {
-            detailsElems.number.textContent = data.student.student_number || 'N/A';
-            detailsElems.name.textContent = data.student.name || 'N/A';
-            detailsElems.course.textContent = data.student.course || 'N/A';
+        if (data.borrower) {
+            detailsElems.number.textContent = data.borrower.id || 'N/A';
+            detailsElems.name.textContent = data.borrower.name || 'N/A';
+            detailsElems.course.textContent = data.borrower.department || 'N/A';
         }
         detailsElems.count.textContent = data.books ? `${data.books.length} Item(s)` : '0 Item(s)';
 

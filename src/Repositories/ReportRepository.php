@@ -15,7 +15,17 @@ class ReportRepository
         $this->db = Database::getInstance()->getConnection();
     }
 
-    public function getCirculatedBooksSummary(string $filter = 'month')
+    private function getBorrowerJoinSql()
+    {
+        return "
+            LEFT JOIN students s ON bt.student_id = s.student_id
+            LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+            LEFT JOIN staff st ON bt.staff_id = st.staff_id
+            JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+        ";
+    }
+
+    public function getCirculatedBooksSummary(string $filter = 'month', ?int $campusId = null)
     {
         try {
             $whereClause = "";
@@ -27,6 +37,10 @@ class ReportRepository
                 $whereClause = "AND YEAR(bt.borrowed_at) = YEAR(CURDATE())";
             }
 
+            $campusWhere = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+
+            $borrowerJoin = $this->getBorrowerJoinSql();
+
             $sql = "
                 SELECT
                     'Student' AS category,
@@ -36,7 +50,8 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(CURDATE()) THEN bti.item_id END) AS year,
                     COUNT(bti.item_id) AS filtered_count
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bt.student_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL $whereClause
+                $borrowerJoin
+                WHERE bt.student_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL $whereClause $campusWhere
                 UNION ALL
                 SELECT
                     'Faculty' AS category,
@@ -46,7 +61,8 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(CURDATE()) THEN bti.item_id END) AS year,
                     COUNT(bti.item_id) AS filtered_count
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bt.faculty_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL $whereClause
+                $borrowerJoin
+                WHERE bt.faculty_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL $whereClause $campusWhere
                 UNION ALL
                 SELECT
                     'Staff' AS category,
@@ -56,7 +72,8 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(CURDATE()) THEN bti.item_id END) AS year,
                     COUNT(bti.item_id) AS filtered_count
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bt.staff_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL $whereClause
+                $borrowerJoin
+                WHERE bt.staff_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL $whereClause $campusWhere
                 UNION ALL
                 SELECT
                     'TOTAL' AS category,
@@ -66,7 +83,8 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(CURDATE()) THEN bti.item_id END) AS year,
                     COUNT(bti.item_id) AS filtered_count
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL $whereClause;
+                $borrowerJoin
+                WHERE bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL $whereClause $campusWhere;
             ";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
@@ -77,7 +95,7 @@ class ReportRepository
         }
     }
 
-    public function getCirculatedEquipmentsSummary(string $filter = 'month')
+    public function getCirculatedEquipmentsSummary(string $filter = 'month', ?int $campusId = null)
     {
         try {
             $whereClause = "";
@@ -89,6 +107,9 @@ class ReportRepository
                 $whereClause = "AND YEAR(bt.borrowed_at) = YEAR(CURDATE())";
             }
 
+            $campusWhere = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+            $borrowerJoin = $this->getBorrowerJoinSql();
+
             $sql = "
                 SELECT
                     'Student' AS category,
@@ -98,7 +119,8 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(CURDATE()) THEN bti.item_id END) AS year,
                     COUNT(bti.item_id) AS filtered_count
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bt.student_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL $whereClause
+                $borrowerJoin
+                WHERE bt.student_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL $whereClause $campusWhere
                 UNION ALL
                 SELECT
                     'Faculty' AS category,
@@ -108,7 +130,8 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(CURDATE()) THEN bti.item_id END) AS year,
                     COUNT(bti.item_id) AS filtered_count
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bt.faculty_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL $whereClause
+                $borrowerJoin
+                WHERE bt.faculty_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL $whereClause $campusWhere
                 UNION ALL
                 SELECT
                     'Staff' AS category,
@@ -118,7 +141,8 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(CURDATE()) THEN bti.item_id END) AS year,
                     COUNT(bti.item_id) AS filtered_count
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bt.staff_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL $whereClause
+                $borrowerJoin
+                WHERE bt.staff_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL $whereClause $campusWhere
                 UNION ALL
                 SELECT
                     'TOTAL' AS category,
@@ -128,7 +152,8 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(CURDATE()) THEN bti.item_id END) AS year,
                     COUNT(bti.item_id) AS filtered_count
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL $whereClause;
+                $borrowerJoin
+                WHERE bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL $whereClause $campusWhere;
             ";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
@@ -139,16 +164,20 @@ class ReportRepository
         }
     }
 
-    public function getTopVisitorsFiltered(string $filter = 'month')
+    public function getTopVisitorsFiltered(string $filter = 'month', ?int $campusId = null)
     {
         try {
             $whereClause = "";
             if ($filter === 'day') {
-                $whereClause = "DATE(a.date) = CURDATE()";
+                $whereClause = "DATE(a.first_scan_at) = CURDATE()";
             } elseif ($filter === 'month') {
-                $whereClause = "MONTH(a.date) = MONTH(CURDATE()) AND YEAR(a.date) = YEAR(CURDATE())";
+                $whereClause = "MONTH(a.first_scan_at) = MONTH(CURDATE()) AND YEAR(a.first_scan_at) = YEAR(CURDATE())";
             } else { // year
-                $whereClause = "YEAR(a.date) = YEAR(CURDATE())";
+                $whereClause = "YEAR(a.first_scan_at) = YEAR(CURDATE())";
+            }
+
+            if ($campusId !== null) {
+                $whereClause .= " AND u.campus_id = " . (int)$campusId;
             }
 
             $sql = "
@@ -175,7 +204,7 @@ class ReportRepository
         }
     }
 
-    public function getTopBorrowers(string $filter = 'month')
+    public function getTopBorrowers(string $filter = 'month', ?int $campusId = null)
     {
         try {
             $whereClause = "";
@@ -185,6 +214,10 @@ class ReportRepository
                 $whereClause = "MONTH(bt.borrowed_at) = MONTH(CURDATE()) AND YEAR(bt.borrowed_at) = YEAR(CURDATE())";
             } else { // year
                 $whereClause = "YEAR(bt.borrowed_at) = YEAR(CURDATE())";
+            }
+
+            if ($campusId !== null) {
+                $whereClause .= " AND u.campus_id = " . (int)$campusId;
             }
 
             $sql = "
@@ -212,7 +245,7 @@ class ReportRepository
         }
     }
 
-    public function getMostBorrowedBooks(string $filter = 'month')
+    public function getMostBorrowedBooks(string $filter = 'month', ?int $campusId = null)
     {
         try {
             $whereClause = "WHERE bti.book_id IS NOT NULL";
@@ -224,6 +257,12 @@ class ReportRepository
                 $whereClause .= " AND YEAR(bt.borrowed_at) = YEAR(CURDATE())";
             }
 
+            if ($campusId !== null) {
+                $whereClause .= " AND u.campus_id = " . (int)$campusId;
+            }
+
+            $borrowerJoin = $this->getBorrowerJoinSql();
+
             $sql = "
                 SELECT 
                     b.title,
@@ -233,6 +272,7 @@ class ReportRepository
                 FROM borrow_transaction_items bti
                 JOIN books b ON bti.book_id = b.book_id
                 JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+                $borrowerJoin
                 $whereClause
                 GROUP BY b.book_id, b.title, b.author, b.accession_number
                 ORDER BY borrow_count DESC
@@ -247,29 +287,33 @@ class ReportRepository
         }
     }
 
-    public function getLibraryVisitsByDepartment(string $filter = 'month')
+    public function getLibraryVisitsByDepartment(string $filter = 'month', ?int $campusId = null)
     {
         try {
+            $campusWhere = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+
             $sql = "
                 WITH DepartmentVisits AS (
                     SELECT
                         cl.college_name AS department,
-                        COUNT(CASE WHEN DATE(a.date) = CURDATE() THEN a.id END) AS today,
-                        COUNT(CASE WHEN YEARWEEK(a.date, 1) = YEARWEEK(CURDATE(), 1) THEN a.id END) AS week,
-                        COUNT(CASE WHEN MONTH(a.date) = MONTH(CURDATE()) AND YEAR(a.date) = YEAR(CURDATE()) THEN a.id END) AS month,
-                        COUNT(CASE WHEN YEAR(a.date) = YEAR(CURDATE()) THEN a.id END) AS year,
+                        COUNT(CASE WHEN DATE(a.first_scan_at) = CURDATE() THEN a.id END) AS today,
+                        COUNT(CASE WHEN YEARWEEK(a.first_scan_at, 1) = YEARWEEK(CURDATE(), 1) THEN a.id END) AS week,
+                        COUNT(CASE WHEN MONTH(a.first_scan_at) = MONTH(CURDATE()) AND YEAR(a.first_scan_at) = YEAR(CURDATE()) THEN a.id END) AS month,
+                        COUNT(CASE WHEN YEAR(a.first_scan_at) = YEAR(CURDATE()) THEN a.id END) AS year,
                         COUNT(a.id) AS filtered_count
                     FROM colleges cl
                     LEFT JOIN (
-                        -- Combine Students and Faculty attendance
-                        SELECT s.user_id, s.course_id, NULL as college_id FROM students s
+                        -- Combine Students and Faculty
+                        SELECT user_id, course_id, NULL as college_id FROM students
                         UNION ALL
-                        SELECT f.user_id, NULL as course_id, f.college_id FROM faculty f
+                        SELECT user_id, NULL as course_id, college_id FROM faculty
                     ) u_combined ON (
                         (u_combined.college_id = cl.college_id) OR 
                         (u_combined.course_id IN (SELECT course_id FROM courses WHERE college_id = cl.college_id))
                     )
                     LEFT JOIN attendance a ON u_combined.user_id = a.user_id
+                    JOIN users u ON a.user_id = u.user_id
+                    WHERE 1=1 $campusWhere
                     GROUP BY cl.college_name
                 )
                 SELECT * FROM DepartmentVisits
@@ -292,7 +336,7 @@ class ReportRepository
         }
     }
 
-    public function getDeletedBooksReport(string $filter = 'month')
+    public function getDeletedBooksReport(string $filter = 'month', ?int $campusId = null)
     {
         try {
             $whereClause = "";
@@ -304,6 +348,10 @@ class ReportRepository
                 $whereClause = "AND YEAR(deleted_at) = YEAR(CURDATE())";
             }
 
+            if ($campusId !== null) {
+                $whereClause .= " AND campus_id = " . (int)$campusId;
+            }
+
             $sql = "
                 SELECT
                     YEAR(deleted_at) as year,
@@ -311,7 +359,7 @@ class ReportRepository
                     SUM(CASE WHEN DATE(deleted_at) = CURDATE() THEN 1 ELSE 0 END) as today,
                     COUNT(*) as filtered_count
                 FROM books
-                WHERE deleted_at IS NOT NULL $whereClause
+                WHERE is_active = 0 $whereClause
                 GROUP BY YEAR(deleted_at)
             ";
             $stmt = $this->db->prepare($sql);
@@ -323,7 +371,7 @@ class ReportRepository
         }
     }
 
-    public function getLostDamagedBooksSummary(string $filter = 'month')
+    public function getLostDamagedBooksSummary(string $filter = 'month', ?int $campusId = null)
     {
         try {
             $whereClause = "";
@@ -335,6 +383,9 @@ class ReportRepository
                 $whereClause = "AND YEAR(bti.returned_at) = YEAR(CURDATE())";
             }
 
+            $campusWhere = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+            $borrowerJoin = $this->getBorrowerJoinSql();
+
             $sql = "
                 SELECT
                     'Lost' AS category,
@@ -344,7 +395,9 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bti.returned_at) = YEAR(CURDATE()) THEN bti.item_id END) AS year,
                     COUNT(bti.item_id) AS filtered_count
                 FROM borrow_transaction_items bti
-                WHERE bti.status = 'lost' AND bti.book_id IS NOT NULL $whereClause
+                JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+                $borrowerJoin
+                WHERE bti.status = 'lost' AND bti.book_id IS NOT NULL $whereClause $campusWhere
                 UNION ALL
                 SELECT
                     'Damaged' AS category,
@@ -354,7 +407,9 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bti.returned_at) = YEAR(CURDATE()) THEN bti.item_id END) AS year,
                     COUNT(bti.item_id) AS filtered_count
                 FROM borrow_transaction_items bti
-                WHERE bti.status = 'damaged' AND bti.book_id IS NOT NULL $whereClause
+                JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+                $borrowerJoin
+                WHERE bti.status = 'damaged' AND bti.book_id IS NOT NULL $whereClause $campusWhere
                 UNION ALL
                 SELECT
                     'TOTAL' AS category,
@@ -364,7 +419,9 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bti.returned_at) = YEAR(CURDATE()) THEN bti.item_id END) AS year,
                     COUNT(bti.item_id) AS filtered_count
                 FROM borrow_transaction_items bti
-                WHERE bti.status IN ('lost', 'damaged') AND bti.book_id IS NOT NULL $whereClause;
+                JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+                $borrowerJoin
+                WHERE bti.status IN ('lost', 'damaged') AND bti.book_id IS NOT NULL $whereClause $campusWhere;
             ";
             $stmt = $this->db->prepare($sql);
             $stmt->execute();
@@ -375,9 +432,12 @@ class ReportRepository
         }
     }
 
-    public function getMostBorrowedBooksData($startDate, $endDate)
+    public function getMostBorrowedBooksData($startDate, $endDate, ?int $campusId = null)
     {
         try {
+            $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+            $borrowerJoin = $this->getBorrowerJoinSql();
+
             $sql = "
                 SELECT 
                     b.title,
@@ -387,13 +447,16 @@ class ReportRepository
                 FROM borrow_transaction_items bti
                 JOIN books b ON bti.book_id = b.book_id
                 JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
-                WHERE bti.book_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate
+                $borrowerJoin
+                WHERE bti.book_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate $campusWhere
                 GROUP BY b.book_id, b.title, b.author, b.accession_number
                 ORDER BY range_total DESC
                 LIMIT 10;
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['startDate' => $startDate, 'endDate' => $endDate]);
+            $params = ['startDate' => $startDate, 'endDate' => $endDate];
+            if ($campusId !== null) $params['campus_id'] = $campusId;
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getMostBorrowedBooksData: " . $e->getMessage());
@@ -401,9 +464,11 @@ class ReportRepository
         }
     }
 
-    public function getTopBorrowersData($startDate, $endDate)
+    public function getTopBorrowersData($startDate, $endDate, ?int $campusId = null)
     {
         try {
+            $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+
             $sql = "
                 SELECT 
                     CONCAT(u.first_name, ' ', u.last_name) AS full_name,
@@ -415,13 +480,15 @@ class ReportRepository
                 LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
                 LEFT JOIN staff st ON bt.staff_id = st.staff_id
                 JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
-                WHERE DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate
+                WHERE DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate $campusWhere
                 GROUP BY u.user_id, u.first_name, u.last_name, u.username, u.role
                 ORDER BY range_total DESC
                 LIMIT 10;
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['startDate' => $startDate, 'endDate' => $endDate]);
+            $params = ['startDate' => $startDate, 'endDate' => $endDate];
+            if ($campusId !== null) $params['campus_id'] = $campusId;
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getTopBorrowersData: " . $e->getMessage());
@@ -429,30 +496,41 @@ class ReportRepository
         }
     }
 
-    public function getOverdueSummaryData($startDate, $endDate)
+    public function getOverdueSummaryData($startDate, $endDate, ?int $campusId = null)
     {
         try {
-            // Count items that became overdue within the date range or are currently overdue and were borrowed in the range
-            // For simplicity, we count items where the due_date falls within the range and status is 'overdue' or 'returned' (if it was returned late)
+            $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+            $borrowerJoin = "
+                JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+                LEFT JOIN students s ON bt.student_id = s.student_id
+                LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+                LEFT JOIN staff st ON bt.staff_id = st.staff_id
+                JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+            ";
+
             $sql = "
                 SELECT
                     'Overdue Books' as category,
-                    COUNT(item_id) as range_total
-                FROM borrow_transaction_items
-                WHERE book_id IS NOT NULL 
-                AND status = 'overdue'
-                AND DATE(due_date) BETWEEN :startDate AND :endDate
+                    COUNT(bti.item_id) as range_total
+                FROM borrow_transaction_items bti
+                $borrowerJoin
+                WHERE bti.book_id IS NOT NULL 
+                AND bti.status = 'overdue'
+                AND DATE(bt.due_date) BETWEEN :startDate AND :endDate $campusWhere
                 UNION ALL
                 SELECT
                     'Overdue Equipments' as category,
-                    COUNT(item_id) as range_total
-                FROM borrow_transaction_items
-                WHERE equipment_id IS NOT NULL 
-                AND status = 'overdue'
-                AND DATE(due_date) BETWEEN :startDate AND :endDate
+                    COUNT(bti.item_id) as range_total
+                FROM borrow_transaction_items bti
+                $borrowerJoin
+                WHERE bti.equipment_id IS NOT NULL 
+                AND bti.status = 'overdue'
+                AND DATE(bt.due_date) BETWEEN :startDate AND :endDate $campusWhere
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['startDate' => $startDate, 'endDate' => $endDate]);
+            $params = ['startDate' => $startDate, 'endDate' => $endDate];
+            if ($campusId !== null) $params['campus_id'] = $campusId;
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getOverdueSummaryData: " . $e->getMessage());
@@ -460,9 +538,12 @@ class ReportRepository
         }
     }
 
-    public function getLostDamagedBooksData($startDate, $endDate)
+    public function getLostDamagedBooksData($startDate, $endDate, ?int $campusId = null)
     {
         try {
+            $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+            $borrowerJoin = $this->getBorrowerJoinSql();
+
             $sql = "
                 SELECT
                     'Lost' AS category,
@@ -471,7 +552,9 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bti.returned_at) = YEAR(:endDate) AND MONTH(bti.returned_at) = MONTH(:endDate) THEN bti.item_id END) AS month,
                     COUNT(bti.item_id) AS range_total
                 FROM borrow_transaction_items bti
-                WHERE bti.status = 'lost' AND bti.book_id IS NOT NULL AND DATE(bti.returned_at) BETWEEN :startDate AND :endDate
+                JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+                $borrowerJoin
+                WHERE bti.status = 'lost' AND bti.book_id IS NOT NULL AND DATE(bti.returned_at) BETWEEN :startDate AND :endDate $campusWhere
                 UNION ALL
                 SELECT
                     'Damaged' AS category,
@@ -480,7 +563,9 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bti.returned_at) = YEAR(:endDate) AND MONTH(bti.returned_at) = MONTH(:endDate) THEN bti.item_id END) AS month,
                     COUNT(bti.item_id) AS range_total
                 FROM borrow_transaction_items bti
-                WHERE bti.status = 'damaged' AND bti.book_id IS NOT NULL AND DATE(bti.returned_at) BETWEEN :startDate AND :endDate
+                JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+                $borrowerJoin
+                WHERE bti.status = 'damaged' AND bti.book_id IS NOT NULL AND DATE(bti.returned_at) BETWEEN :startDate AND :endDate $campusWhere
                 UNION ALL
                 SELECT
                     'TOTAL' AS category,
@@ -489,10 +574,14 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bti.returned_at) = YEAR(:endDate) AND MONTH(bti.returned_at) = MONTH(:endDate) THEN bti.item_id END) AS month,
                     COUNT(bti.item_id) AS range_total
                 FROM borrow_transaction_items bti
-                WHERE bti.status IN ('lost', 'damaged') AND bti.book_id IS NOT NULL AND DATE(bti.returned_at) BETWEEN :startDate AND :endDate;
+                JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+                $borrowerJoin
+                WHERE bti.status IN ('lost', 'damaged') AND bti.book_id IS NOT NULL AND DATE(bti.returned_at) BETWEEN :startDate AND :endDate $campusWhere;
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['startDate' => $startDate, 'endDate' => $endDate]);
+            $params = ['startDate' => $startDate, 'endDate' => $endDate];
+            if ($campusId !== null) $params['campus_id'] = $campusId;
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getLostDamagedBooksData: " . $e->getMessage());
@@ -500,19 +589,21 @@ class ReportRepository
         }
     }
 
-    public function getLibraryResourcesData()
+    public function getLibraryResourcesData(?int $campusId = null)
     {
         try {
-            // Count active books (available or borrowed, not deleted)
-            $stmtBooks = $this->db->query("SELECT COUNT(*) FROM books WHERE deleted_at IS NULL");
+            $campusWhere = $campusId !== null ? " AND campus_id = " . (int)$campusId : "";
+
+            // Count active books (available or borrowed, not deactivated)
+            $stmtBooks = $this->db->query("SELECT COUNT(*) FROM books WHERE is_active = 1 $campusWhere");
             $totalBooks = $stmtBooks->fetchColumn();
 
             // Count available books specifically
-            $stmtAvail = $this->db->query("SELECT COUNT(*) FROM books WHERE deleted_at IS NULL AND availability = 'available'");
+            $stmtAvail = $this->db->query("SELECT COUNT(*) FROM books WHERE is_active = 1 AND availability = 'available' $campusWhere");
             $availableBooks = $stmtAvail->fetchColumn();
 
-            // Count active equipments (not deleted)
-            $stmtEquip = $this->db->query("SELECT COUNT(*) FROM equipments WHERE deleted_at IS NULL");
+            // Count active equipments (not deactivated)
+            $stmtEquip = $this->db->query("SELECT COUNT(*) FROM equipments WHERE is_active = 1 $campusWhere");
             $totalEquip = $stmtEquip->fetchColumn();
 
             return [
@@ -530,9 +621,11 @@ class ReportRepository
         }
     }
 
-    public function getDeletedBooksData($startDate, $endDate)
+    public function getDeletedBooksData($startDate, $endDate, ?int $campusId = null)
     {
         try {
+            $campusWhere = $campusId !== null ? " AND campus_id = :campus_id" : "";
+
             $sql = "
                 SELECT
                     SUM(CASE WHEN DATE(deleted_at) = :endDate THEN 1 ELSE 0 END) as today,
@@ -540,10 +633,12 @@ class ReportRepository
                     SUM(CASE WHEN MONTH(deleted_at) = MONTH(:endDate) AND YEAR(deleted_at) = YEAR(:endDate) THEN 1 ELSE 0 END) as month,
                     COUNT(*) as range_total
                 FROM books
-                WHERE deleted_at BETWEEN :startDate AND :endDate;
+                WHERE deleted_at BETWEEN :startDate AND :endDate $campusWhere;
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['startDate' => $startDate, 'endDate' => $endDate]);
+            $params = ['startDate' => $startDate, 'endDate' => $endDate];
+            if ($campusId !== null) $params['campus_id'] = $campusId;
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getDeletedBooksData: " . $e->getMessage());
@@ -551,9 +646,12 @@ class ReportRepository
         }
     }
 
-    public function getCirculatedBooksData($startDate, $endDate)
+    public function getCirculatedBooksData($startDate, $endDate, ?int $campusId = null)
     {
         try {
+            $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+            $borrowerJoin = $this->getBorrowerJoinSql();
+
             $sql = "
                 SELECT
                     'Student' AS category,
@@ -562,7 +660,8 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(:endDate) AND MONTH(bt.borrowed_at) = MONTH(:endDate) THEN bti.item_id END) AS month,
                     COUNT(bti.item_id) AS range_total
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bt.student_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate
+                $borrowerJoin
+                WHERE bt.student_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate $campusWhere
                 UNION ALL
                 SELECT
                     'Faculty' AS category,
@@ -571,7 +670,8 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(:endDate) AND MONTH(bt.borrowed_at) = MONTH(:endDate) THEN bti.item_id END) AS month,
                     COUNT(bti.item_id) AS range_total
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bt.faculty_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate
+                $borrowerJoin
+                WHERE bt.faculty_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate $campusWhere
                 UNION ALL
                 SELECT
                     'Staff' AS category,
@@ -580,7 +680,8 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(:endDate) AND MONTH(bt.borrowed_at) = MONTH(:endDate) THEN bti.item_id END) AS month,
                     COUNT(bti.item_id) AS range_total
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bt.staff_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate
+                $borrowerJoin
+                WHERE bt.staff_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate $campusWhere
                 UNION ALL
                 SELECT
                     'TOTAL' AS category,
@@ -589,10 +690,13 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(:endDate) AND MONTH(bt.borrowed_at) = MONTH(:endDate) THEN bti.item_id END) AS month,
                     COUNT(bti.item_id) AS range_total
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate;
+                $borrowerJoin
+                WHERE bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate $campusWhere;
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['startDate' => $startDate, 'endDate' => $endDate]);
+            $params = ['startDate' => $startDate, 'endDate' => $endDate];
+            if ($campusId !== null) $params['campus_id'] = $campusId;
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getCirculatedBooksData: " . $e->getMessage());
@@ -600,9 +704,12 @@ class ReportRepository
         }
     }
 
-    public function getCirculatedEquipmentsData($startDate, $endDate)
+    public function getCirculatedEquipmentsData($startDate, $endDate, ?int $campusId = null)
     {
         try {
+            $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+            $borrowerJoin = $this->getBorrowerJoinSql();
+
             $sql = "
                 SELECT
                     'Student' AS category,
@@ -611,7 +718,8 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(:endDate) AND MONTH(bt.borrowed_at) = MONTH(:endDate) THEN bti.item_id END) AS month,
                     COUNT(bti.item_id) AS range_total
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bt.student_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate
+                $borrowerJoin
+                WHERE bt.student_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate $campusWhere
                 UNION ALL
                 SELECT
                     'Faculty' AS category,
@@ -620,7 +728,8 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(:endDate) AND MONTH(bt.borrowed_at) = MONTH(:endDate) THEN bti.item_id END) AS month,
                     COUNT(bti.item_id) AS range_total
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bt.faculty_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate
+                $borrowerJoin
+                WHERE bt.faculty_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate $campusWhere
                 UNION ALL
                 SELECT
                     'Staff' AS category,
@@ -629,7 +738,8 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(:endDate) AND MONTH(bt.borrowed_at) = MONTH(:endDate) THEN bti.item_id END) AS month,
                     COUNT(bti.item_id) AS range_total
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bt.staff_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate
+                $borrowerJoin
+                WHERE bt.staff_id IS NOT NULL AND bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate $campusWhere
                 UNION ALL
                 SELECT
                     'TOTAL' AS category,
@@ -638,10 +748,13 @@ class ReportRepository
                     COUNT(CASE WHEN YEAR(bt.borrowed_at) = YEAR(:endDate) AND MONTH(bt.borrowed_at) = MONTH(:endDate) THEN bti.item_id END) AS month,
                     COUNT(bti.item_id) AS range_total
                 FROM borrow_transactions bt JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-                WHERE bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate;
+                $borrowerJoin
+                WHERE bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL AND DATE(bt.borrowed_at) BETWEEN :startDate AND :endDate $campusWhere;
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['startDate' => $startDate, 'endDate' => $endDate]);
+            $params = ['startDate' => $startDate, 'endDate' => $endDate];
+            if ($campusId !== null) $params['campus_id'] = $campusId;
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getCirculatedEquipmentsData: " . $e->getMessage());
@@ -649,9 +762,11 @@ class ReportRepository
         }
     }
 
-    public function getTopVisitorsData($startDate, $endDate)
+    public function getTopVisitorsData($startDate, $endDate, ?int $campusId = null)
     {
         try {
+            $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+
             $sql = "
                 SELECT
                     CONCAT(u.first_name, ' ', u.last_name) AS full_name,
@@ -662,13 +777,15 @@ class ReportRepository
                 JOIN students s ON a.user_id = s.user_id
                 JOIN users u ON s.user_id = u.user_id
                 LEFT JOIN courses c ON s.course_id = c.course_id
-                WHERE a.date BETWEEN :startDate AND :endDate
+                WHERE a.first_scan_at BETWEEN :startDate AND :endDate $campusWhere
                 GROUP BY a.user_id, u.first_name, u.last_name, s.student_id, c.course_code
                 ORDER BY visits DESC
                 LIMIT 10;
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['startDate' => $startDate, 'endDate' => $endDate]);
+            $params = ['startDate' => $startDate, 'endDate' => $endDate];
+            if ($campusId !== null) $params['campus_id'] = $campusId;
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getTopVisitorsData: " . $e->getMessage());
@@ -676,21 +793,25 @@ class ReportRepository
         }
     }
 
-    public function getLibraryVisitsData($startDate, $endDate)
+    public function getLibraryVisitsData($startDate, $endDate, ?int $campusId = null)
     {
         try {
+            $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+
             $sql = "
                 WITH DepartmentVisits AS (
                     SELECT
                         cl.college_name AS department,
-                        COUNT(CASE WHEN DATE(a.date) = :endDate THEN a.id END) AS today,
-                        COUNT(CASE WHEN a.date BETWEEN DATE_SUB(:endDate, INTERVAL 6 DAY) AND :endDate THEN a.id END) AS week,
-                        COUNT(CASE WHEN MONTH(a.date) = MONTH(:endDate) AND YEAR(a.date) = YEAR(:endDate) THEN a.id END) AS month,
+                        COUNT(CASE WHEN DATE(a.first_scan_at) = :endDate THEN a.id END) AS today,
+                        COUNT(CASE WHEN a.first_scan_at BETWEEN DATE_SUB(:endDate, INTERVAL 6 DAY) AND :endDate THEN a.id END) AS week,
+                        COUNT(CASE WHEN MONTH(a.first_scan_at) = MONTH(:endDate) AND YEAR(a.first_scan_at) = YEAR(:endDate) THEN a.id END) AS month,
                         COUNT(a.id) AS range_total
                     FROM colleges cl
                     LEFT JOIN courses c ON cl.college_id = c.college_id
                     LEFT JOIN students s ON c.course_id = s.course_id
-                    LEFT JOIN attendance a ON s.user_id = a.user_id AND a.date BETWEEN :startDate AND :endDate
+                    LEFT JOIN attendance a ON s.user_id = a.user_id AND a.first_scan_at BETWEEN :startDate AND :endDate
+                    LEFT JOIN users u ON a.user_id = u.user_id
+                    WHERE 1=1 $campusWhere
                     GROUP BY cl.college_name
                 )
                 SELECT * FROM DepartmentVisits
@@ -704,7 +825,9 @@ class ReportRepository
                 FROM DepartmentVisits;
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute(['startDate' => $startDate, 'endDate' => $endDate]);
+            $params = ['startDate' => $startDate, 'endDate' => $endDate];
+            if ($campusId !== null) $params['campus_id'] = $campusId;
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getLibraryVisitsData: " . $e->getMessage());
@@ -712,13 +835,18 @@ class ReportRepository
         }
     }
 
-    public function getTopVisitors(int $limit = 5): array
+    public function getTopVisitors(int $limit = 5, ?int $campusId = null): array
     {
+        $where = "WHERE DATE(a.first_scan_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+        if ($campusId !== null) {
+            $where .= " AND u.campus_id = :campus_id";
+        }
+
         $sql = "
             SELECT u.first_name, u.last_name, COUNT(a.user_id) AS visits
             FROM attendance a
             JOIN users u ON u.user_id = a.user_id
-            WHERE DATE(a.first_scan_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            $where
             GROUP BY a.user_id
             ORDER BY visits DESC
             LIMIT :limit
@@ -726,6 +854,7 @@ class ReportRepository
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        if ($campusId !== null) $stmt->bindValue(':campus_id', $campusId, PDO::PARAM_INT);
         $stmt->execute();
 
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -738,52 +867,86 @@ class ReportRepository
         }, $rows);
     }
 
-    public function getActivityReport(string $filter = 'month'): array
+    public function getActivityReport(string $filter = 'month', ?int $campusId = null): array
     {
         $data = [];
+        $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+        $params = [];
+        if ($campusId !== null) $params['campus_id'] = $campusId;
+
         if ($filter === 'day') {
-            // Group by hour for today
             for ($i = 0; $i < 24; $i++) {
                 $hour = str_pad($i, 2, '0', STR_PAD_LEFT);
                 $label = $hour . ":00";
                 
-                $stmt = $this->db->prepare("SELECT COUNT(DISTINCT user_id) FROM attendance WHERE DATE(first_scan_at) = CURDATE() AND HOUR(first_scan_at) = :hour");
-                $stmt->execute(['hour' => $i]);
+                $currParams = $params;
+                $currParams['hour'] = $i;
+
+                $stmt = $this->db->prepare("SELECT COUNT(DISTINCT a.user_id) FROM attendance a JOIN users u ON a.user_id = u.user_id WHERE DATE(a.first_scan_at) = CURDATE() AND HOUR(a.first_scan_at) = :hour $campusWhere");
+                $stmt->execute($currParams);
                 $visitors = (int) $stmt->fetchColumn();
 
-                $stmt = $this->db->prepare("SELECT COUNT(*) FROM borrow_transactions WHERE DATE(borrowed_at) = CURDATE() AND HOUR(borrowed_at) = :hour");
-                $stmt->execute(['hour' => $i]);
+                $stmt = $this->db->prepare("
+                    SELECT COUNT(*) 
+                    FROM borrow_transactions bt 
+                    LEFT JOIN students s ON bt.student_id = s.student_id
+                    LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+                    LEFT JOIN staff st ON bt.staff_id = st.staff_id
+                    JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+                    WHERE DATE(bt.borrowed_at) = CURDATE() AND HOUR(bt.borrowed_at) = :hour $campusWhere
+                ");
+                $stmt->execute($currParams);
                 $borrows = (int) $stmt->fetchColumn();
 
                 $data[] = ['label' => $label, 'visitors' => $visitors, 'borrows' => $borrows];
             }
         } elseif ($filter === 'year') {
-            // Group by month for this year
             for ($i = 1; $i <= 12; $i++) {
                 $label = date('M', mktime(0, 0, 0, $i, 1));
                 
-                $stmt = $this->db->prepare("SELECT COUNT(DISTINCT user_id) FROM attendance WHERE YEAR(first_scan_at) = YEAR(CURDATE()) AND MONTH(first_scan_at) = :month");
-                $stmt->execute(['month' => $i]);
+                $currParams = $params;
+                $currParams['month'] = $i;
+
+                $stmt = $this->db->prepare("SELECT COUNT(DISTINCT a.user_id) FROM attendance a JOIN users u ON a.user_id = u.user_id WHERE YEAR(a.first_scan_at) = YEAR(CURDATE()) AND MONTH(a.first_scan_at) = :month $campusWhere");
+                $stmt->execute($currParams);
                 $visitors = (int) $stmt->fetchColumn();
 
-                $stmt = $this->db->prepare("SELECT COUNT(*) FROM borrow_transactions WHERE YEAR(borrowed_at) = YEAR(CURDATE()) AND MONTH(borrowed_at) = :month");
-                $stmt->execute(['month' => $i]);
+                $stmt = $this->db->prepare("
+                    SELECT COUNT(*) 
+                    FROM borrow_transactions bt 
+                    LEFT JOIN students s ON bt.student_id = s.student_id
+                    LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+                    LEFT JOIN staff st ON bt.staff_id = st.staff_id
+                    JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+                    WHERE YEAR(bt.borrowed_at) = YEAR(CURDATE()) AND MONTH(bt.borrowed_at) = :month $campusWhere
+                ");
+                $stmt->execute($currParams);
                 $borrows = (int) $stmt->fetchColumn();
 
                 $data[] = ['label' => $label, 'visitors' => $visitors, 'borrows' => $borrows];
             }
         } else {
-            // Default: Group by day for this month (last 30 days)
             for ($i = 29; $i >= 0; $i--) {
                 $date = date('Y-m-d', strtotime("-$i days"));
                 $label = date('M d', strtotime($date));
 
-                $stmt = $this->db->prepare("SELECT COUNT(DISTINCT user_id) FROM attendance WHERE DATE(first_scan_at) = :date");
-                $stmt->execute(['date' => $date]);
+                $currParams = $params;
+                $currParams['date'] = $date;
+
+                $stmt = $this->db->prepare("SELECT COUNT(DISTINCT a.user_id) FROM attendance a JOIN users u ON a.user_id = u.user_id WHERE DATE(a.first_scan_at) = :date $campusWhere");
+                $stmt->execute($currParams);
                 $visitors = (int) $stmt->fetchColumn();
 
-                $stmt = $this->db->prepare("SELECT COUNT(*) FROM borrow_transactions WHERE DATE(borrowed_at) = :date");
-                $stmt->execute(['date' => $date]);
+                $stmt = $this->db->prepare("
+                    SELECT COUNT(*) 
+                    FROM borrow_transactions bt 
+                    LEFT JOIN students s ON bt.student_id = s.student_id
+                    LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+                    LEFT JOIN staff st ON bt.staff_id = st.staff_id
+                    JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+                    WHERE DATE(bt.borrowed_at) = :date $campusWhere
+                ");
+                $stmt->execute($currParams);
                 $borrows = (int) $stmt->fetchColumn();
 
                 $data[] = ['label' => $label, 'visitors' => $visitors, 'borrows' => $borrows];

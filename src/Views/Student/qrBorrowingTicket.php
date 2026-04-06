@@ -7,7 +7,7 @@ $transaction_code = $transaction_code ?? null;
 // Initial QR path construction
 $qrPath = null;
 if ($transaction_code && !$isBorrowed && !$isExpired) {
-    $qrPath = STORAGE_URL . "/uploads/qrcodes/" . $transaction_code . ".svg";
+    $qrPath = STORAGE_URL . "/storage/uploads/qrcodes/" . $transaction_code . ".svg";
 }
 ?>
 <main class="min-h-screen">
@@ -192,11 +192,11 @@ document.addEventListener('DOMContentLoaded', function() {
     function showQR(ticket) {
         ticketMessageContainer.innerHTML = '';
         if (qrImage) {
-            qrImage.src = `${STORAGE_URL}/uploads/qrcodes/${ticket.transaction_code}.svg?t=${Date.now()}`;
+            qrImage.src = `${STORAGE_URL}/storage/uploads/qrcodes/${ticket.transaction_code}.svg?t=${Date.now()}`;
             qrImage.classList.remove('hidden');
         }
         if (downloadButton) {
-            downloadButton.href = `${STORAGE_URL}/uploads/qrcodes/${ticket.transaction_code}.svg`;
+            downloadButton.href = `${STORAGE_URL}/storage/uploads/qrcodes/${ticket.transaction_code}.svg`;
             downloadButton.classList.remove('hidden');
         }
         if (ticketInstruction) ticketInstruction.textContent = 'Present this to the librarian';
@@ -206,11 +206,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateDetails(data) {
-        if (data.student) {
-            detailsElems.number.textContent = data.student.student_number || 'N/A';
-            detailsElems.name.textContent = data.student.name || 'N/A';
-            detailsElems.yrsec.textContent = `${data.student.year_level ?? 'N/A'}${data.student.section ?? ''}`;
-            detailsElems.course.textContent = data.student.course || 'N/A';
+        if (data.borrower) {
+            detailsElems.number.textContent = data.borrower.student_number || 'N/A';
+            detailsElems.name.textContent = data.borrower.name || 'N/A';
+            detailsElems.yrsec.textContent = `${data.borrower.year_level ?? 'N/A'}${data.borrower.section ?? ''}`;
+            detailsElems.course.textContent = data.borrower.course || 'N/A';
         }
         detailsElems.count.textContent = data.books ? `${data.books.length} Book(s)` : '0 Book(s)';
 
@@ -273,6 +273,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     dueDateP.textContent = `Expiration: Expires at ${new Date(data.expires_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })}`;
                     dueDateP.classList.remove('hidden');
                 }
+            } else if (data.status === 'expired') {
+                displayMessage('QR Code Ticket Expired', 'expired');
+                if (generatedDateP) generatedDateP.classList.add('hidden');
+                if (dueDateP) dueDateP.classList.add('hidden');
+                if (ticketCodeSpan) ticketCodeSpan.textContent = data.transaction_code || 'N/A';
+                checkedOutSection.classList.add('hidden');
+                clearInterval(statusInterval); // Stop polling if expired
             } else if (data.status === 'none') {
                 if (hadActiveTicket) {
                     displayMessage('Borrowed Successfully!', 'success');

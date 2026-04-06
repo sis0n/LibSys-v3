@@ -14,31 +14,33 @@ class LibraryPolicyRepository
         $this->db = Database::getInstance()->getConnection();
     }
 
-    public function getAllPolicies(): array
+    public function getPoliciesByCampus(int $campusId): array
     {
-        $stmt = $this->db->query("SELECT * FROM library_policies ORDER BY role ASC");
+        $stmt = $this->db->prepare("SELECT * FROM library_policies WHERE campus_id = :campus_id ORDER BY role ASC");
+        $stmt->execute(['campus_id' => $campusId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getPolicyByRole(string $role): ?array
+    public function getPolicyByRole(string $role, int $campusId): ?array
     {
-        $stmt = $this->db->prepare("SELECT * FROM library_policies WHERE role = :role LIMIT 1");
-        $stmt->execute(['role' => $role]);
+        $stmt = $this->db->prepare("SELECT * FROM library_policies WHERE role = :role AND campus_id = :campus_id LIMIT 1");
+        $stmt->execute(['role' => $role, 'campus_id' => $campusId]);
         return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
-    public function updatePolicy(string $role, int $maxBooks, int $durationDays): bool
+    public function updatePolicy(string $role, int $maxBooks, int $durationDays, int $campusId): bool
     {
         $stmt = $this->db->prepare("
             UPDATE library_policies 
             SET max_books = :max_books, 
                 borrow_duration_days = :duration 
-            WHERE role = :role
+            WHERE role = :role AND campus_id = :campus_id
         ");
         return $stmt->execute([
             'role' => $role,
             'max_books' => $maxBooks,
-            'duration' => $durationDays
+            'duration' => $durationDays,
+            'campus_id' => $campusId
         ]);
     }
 

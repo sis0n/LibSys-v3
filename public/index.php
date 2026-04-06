@@ -6,6 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // [1] I-define ang ROOT_PATH
 define('ROOT_PATH', dirname(__DIR__)); 
+define('PUBLIC_PATH', __DIR__); 
 
 // [2] I-load ang Autoloader
 require ROOT_PATH . '/vendor/autoload.php';
@@ -25,12 +26,11 @@ if (!defined('BASE_URL')) {
     define('BASE_URL', rtrim($appUrl, '/')); 
 }
 
-// I-define ang STORAGE_URL (Laravel Storage)
+// I-define ang STORAGE_URL bilang local public folder
 if (!defined('STORAGE_URL')) {
-    $storageUrl = $_ENV['STORAGE_URL'] ?? 'http://127.0.0.1:8000/storage';
-    define('STORAGE_URL', rtrim($storageUrl, '/')); 
+    $appUrl = $_ENV['APP_URL'] ?? 'http://localhost/libsys-v3/public';
+    define('STORAGE_URL', rtrim($appUrl, '/'));
 }
-
 // ---------------------------------------------------------------------
 // --- FRONT CONTROLLER LOGIC: Mas Matibay na URI Calculation ---
 // ---------------------------------------------------------------------

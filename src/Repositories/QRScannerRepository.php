@@ -24,7 +24,7 @@ class QRScannerRepository
             s.student_number, s.year_level, s.section, s.registration_form,
             f.unique_faculty_id, f.college_id,
             st.staff_id, st.employee_id, st.position, st.contact,
-            u.profile_picture, u.first_name, u.last_name, u.middle_name, u.suffix,
+            u.profile_picture, u.first_name, u.last_name, u.middle_name, u.suffix, u.campus_id,
             s.course_id,
             c.course_code, c.course_title,
             cl.college_code, cl.college_name
@@ -112,35 +112,58 @@ class QRScannerRepository
   {
     try {
       $this->db->beginTransaction();
+
+      // 1. Get user details and campus to find the policy
+      $details = $this->getTransactionDetailsByCode($transactionCode);
+      if (!$details) throw new Exception("Transaction not found.");
+
+      $role = !empty($details['student_id']) ? 'student' : (!empty($details['faculty_id']) ? 'faculty' : 'staff');
+      $campusId = $details['campus_id'] ?? 1;
+
+      // 2. Fetch the duration from library_policies
+      $policyStmt = $this->db->prepare("SELECT borrow_duration_days FROM library_policies WHERE campus_id = :cid AND role = :role LIMIT 1");
+      $policyStmt->execute(['cid' => $campusId, 'role' => $role]);
+      $duration = $policyStmt->fetchColumn();
+      
+      // Default to 7 if no policy found
+      $days = ($duration !== false) ? (int)$duration : 7;
+
+      // 3. Update transaction: Set status, librarian, borrowed_at (now), and recalculated due_date
       $stmt = $this->db->prepare("
                 UPDATE borrow_transactions
                 SET status = 'borrowed',
                     borrowed_at = NOW(),
+                    due_date = DATE_ADD(NOW(), INTERVAL :days DAY),
                     librarian_id = :librarian_id
                 WHERE transaction_code = :code AND status = 'pending'
             ");
       $stmt->execute([
         'code' => $transactionCode,
-        'librarian_id' => $staffId
+        'librarian_id' => $staffId,
+        'days' => $days
       ]);
-      $transactionIdStmt = $this->db->prepare("SELECT transaction_id FROM borrow_transactions WHERE transaction_code = :code");
-      $transactionIdStmt->execute(['code' => $transactionCode]);
-      $transactionId = $transactionIdStmt->fetchColumn();
+
+      $transactionId = $details['transaction_id'];
+      
+      // 4. Update items status
       $stmtItemStatus = $this->db->prepare("
                 UPDATE borrow_transaction_items
                 SET status = 'borrowed'
                 WHERE transaction_id = :transaction_id AND status = 'pending'
             ");
       $stmtItemStatus->execute(['transaction_id' => $transactionId]);
+
+      // 5. Update books availability
       $items = $this->getTransactionItems($transactionCode);
       $stmtBook = $this->db->prepare("UPDATE books SET availability = 'borrowed' WHERE book_id = :book_id");
       foreach ($items as $item) {
         $stmtBook->execute(['book_id' => $item['book_id']]);
       }
+
       $this->db->commit();
       return true;
     } catch (Exception $e) {
-      $this->db->rollBack();
+      if ($this->db->inTransaction()) $this->db->rollBack();
       return false;
     }
   }
@@ -193,10 +216,52 @@ class QRScannerRepository
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
 
-  public function getAllTransactions()
+  public function getTicketByCode(string $code)
   {
-    $stmt = $this->db->query("SELECT transaction_code, status FROM borrow_transactions");
+    return $this->getTransactionDetailsByCode($code);
+  }
+
+  public function getTicketItems(int $transactionId)
+  {
+    $stmt = $this->db->prepare("
+            SELECT b.title, b.author, b.accession_number, b.call_number, b.book_isbn, b.book_id,
+                   b.campus_id AS item_campus_id
+            FROM borrow_transaction_items bti
+            JOIN books b ON bti.book_id = b.book_id
+            WHERE bti.transaction_id = :tid
+        ");
+    $stmt->execute(['tid' => $transactionId]);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+  }
+
+  public function completeTransaction(int $transactionId, int $librarianId, int $librarianCampusId): bool
+  {
+    try {
+      $this->db->beginTransaction();
+      
+      // Update transaction status
+      $stmt = $this->db->prepare("UPDATE borrow_transactions SET status = 'borrowed', borrowed_at = NOW(), librarian_id = :lid WHERE transaction_id = :tid");
+      $stmt->execute(['lid' => $librarianId, 'tid' => $transactionId]);
+
+      // Update items status
+      $stmt = $this->db->prepare("UPDATE borrow_transaction_items SET status = 'borrowed' WHERE transaction_id = :tid AND status = 'pending'");
+      $stmt->execute(['tid' => $transactionId]);
+
+      // Update books availability
+      $stmt = $this->db->prepare("
+        UPDATE books b
+        JOIN borrow_transaction_items bti ON b.book_id = bti.book_id
+        SET b.availability = 'borrowed'
+        WHERE bti.transaction_id = :tid
+      ");
+      $stmt->execute(['tid' => $transactionId]);
+
+      $this->db->commit();
+      return true;
+    } catch (Exception $e) {
+      $this->db->rollBack();
+      return false;
+    }
   }
 
   public function expireOldPendingTransactions(): void

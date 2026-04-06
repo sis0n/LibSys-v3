@@ -3,182 +3,138 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
-use App\Repositories\EquipmentManagementRepository;
+use App\Services\EquipmentService;
+use App\Services\CampusService;
 use Exception;
 
 class EquipmentManagementController extends Controller
 {
-    private EquipmentManagementRepository $equipmentRepo;
-    private \App\Repositories\AuditLogRepository $auditRepo;
+    private EquipmentService $equipmentService;
+    private CampusService $campusService;
 
     public function __construct()
     {
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-        $this->equipmentRepo = new EquipmentManagementRepository();
-        $this->auditRepo = new \App\Repositories\AuditLogRepository();
-    }
-
-    private function json($data, int $statusCode = 200)
-    {
-        http_response_code($statusCode);
-        header('Content-Type: application/json');
-        echo json_encode($data);
-        exit;
-    }
-
-    private function generateAssetTag(): string
-    {
-        $prefix = "EQP-" . date('Y') . "-";
-        $isUnique = false;
-        $newTag = "";
-
-        while (!$isUnique) {
-            $random = str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
-            $newTag = $prefix . $random;
-            if ($this->equipmentRepo->isAssetTagUnique($newTag)) {
-                $isUnique = true;
-            }
-        }
-        return $newTag;
+        parent::__construct();
+        $this->equipmentService = new EquipmentService();
+        $this->campusService = new CampusService();
     }
 
     public function index()
     {
         $role = $_SESSION['role'] ?? 'guest';
         $viewPath = ucfirst($role) . "/equipmentManagement";
-        $this->view($viewPath, ["title" => "Equipment Management"]);
+        
+        $campuses = $this->campusService->getAllCampuses();
+        $activeCampuses = array_filter($campuses, fn($c) => $c['is_active'] == 1);
+
+        $this->view($viewPath, [
+            "title" => "Equipment Management",
+            "campuses" => $activeCampuses
+        ]);
     }
 
     public function getAll()
     {
+        header('Content-Type: application/json');
         try {
-            $search = $_GET['search'] ?? '';
-            $status = $_GET['status'] ?? 'All Status';
-            $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
-            $offset = isset($_GET['offset']) ? (int)$_GET['offset'] : 0;
-
-            $equipments = $this->equipmentRepo->fetchEquipments($search, $status, 'default', $limit, $offset);
-            $totalCount = $this->equipmentRepo->countEquipments($search, $status);
-
-            $this->json([
-                'success' => true,
-                'equipments' => $equipments,
-                'totalCount' => (int)$totalCount
-            ]);
+            $campusFilter = $this->getCampusFilter();
+            $result = $this->equipmentService->getPaginatedEquipment($_GET, $campusFilter);
+            echo json_encode(array_merge(['success' => true], $result));
         } catch (Exception $e) {
-            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
     public function get($id = null)
     {
+        header('Content-Type: application/json');
         try {
-            if (!$id) $this->json(['success' => false, 'message' => 'ID required'], 400);
-            $equipment = $this->equipmentRepo->getById($id);
-            if ($equipment) {
-                $this->json(['success' => true, 'equipment' => $equipment]);
-            } else {
-                $this->json(['success' => false, 'message' => 'Equipment not found'], 404);
-            }
+            if (!$id) throw new Exception('ID required');
+            $equipment = $this->equipmentService->getEquipmentDetails((int)$id);
+            echo json_encode(['success' => true, 'equipment' => $equipment]);
         } catch (Exception $e) {
-            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()], 404);
         }
     }
 
-    public function add()
+    public function store()
     {
+        header('Content-Type: application/json');
         try {
-            $data = [
-                'equipment_name' => $_POST['equipment_name'] ?? '',
-                'category'       => $_POST['category'] ?? 'General',
-                'asset_tag'      => $this->generateAssetTag(),
-                'status'         => $_POST['status'] ?? 'available',
-                'is_active'      => 1
-            ];
+            $adminId = $_SESSION['user_id'] ?? null;
+            if (!$adminId) throw new Exception('Authentication required.');
 
-            if (empty($data['equipment_name'])) {
-                $this->json(['success' => false, 'message' => 'Equipment Name is required'], 400);
-            }
+            $campusIdFilter = $this->getCampusFilter();
+            $assetTag = $this->equipmentService->createEquipment($_POST, $adminId, $campusIdFilter);
 
-            $equipmentId = $this->equipmentRepo->addEquipment($data);
-
-            if ($equipmentId) {
-                $this->auditRepo->log($_SESSION['user_id'], 'ADD', 'EQUIPMENTS', $data['asset_tag'], "Added new equipment: {$data['equipment_name']}");
-                $this->json(['success' => true, 'message' => 'Equipment added successfully', 'asset_tag' => $data['asset_tag']]);
-            } else {
-                $this->json(['success' => false, 'message' => 'Failed to add equipment'], 500);
-            }
+            echo json_encode(['success' => true, 'message' => 'Equipment added successfully', 'asset_tag' => $assetTag]);
         } catch (Exception $e) {
-            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
-
-    public function store() { $this->add(); }
 
     public function update($id = null)
     {
+        header('Content-Type: application/json');
         try {
             $equipmentId = $id ?? $_POST['equipment_id'] ?? null;
-            if (!$equipmentId) $this->json(['success' => false, 'message' => 'Equipment ID required'], 400);
+            $adminId = $_SESSION['user_id'] ?? null;
+            if (!$equipmentId) throw new Exception('Equipment ID required');
+            if (!$adminId) throw new Exception('Authentication required.');
 
-            $data = [
-                'equipment_name' => $_POST['equipment_name'] ?? '',
-                'status'         => $_POST['status'] ?? 'available'
-            ];
+            $campusIdFilter = $this->getCampusFilter();
+            $this->equipmentService->updateEquipment((int)$equipmentId, $_POST, $adminId, $campusIdFilter);
 
-            if (empty($data['equipment_name'])) {
-                $this->json(['success' => false, 'message' => 'Equipment Name is required'], 400);
-            }
-
-            $success = $this->equipmentRepo->updateEquipment((int)$equipmentId, $data);
-
-            if ($success) {
-                $this->auditRepo->log($_SESSION['user_id'], 'UPDATE', 'EQUIPMENTS', $equipmentId, "Updated equipment ID $equipmentId: {$data['equipment_name']}");
-                $this->json(['success' => true, 'message' => 'Equipment updated successfully']);
-            } else {
-                $this->json(['success' => false, 'message' => 'Failed to update equipment'], 500);
-            }
+            echo json_encode(['success' => true, 'message' => 'Equipment updated successfully']);
         } catch (Exception $e) {
-            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    public function toggleActive($id = null)
-    {
-        try {
-            if (!$id) $this->json(['success' => false, 'message' => 'ID required'], 400);
-            $newStatus = $_POST['is_active'] ?? 0;
-            
-            $success = $this->equipmentRepo->toggleActiveStatus((int)$id, (int)$newStatus);
-
-            if ($success) {
-                $action = $newStatus ? 'activated' : 'deactivated';
-                $this->auditRepo->log($_SESSION['user_id'], 'TOGGLE_STATUS', 'EQUIPMENTS', $id, "Equipment $id was $action");
-                $this->json(['success' => true, 'message' => "Equipment successfully $action"]);
-            } else {
-                $this->json(['success' => false, 'message' => 'Failed to toggle status'], 500);
-            }
-        } catch (Exception $e) {
-            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 
     public function destroy($id = null)
     {
+        header('Content-Type: application/json');
         try {
-            if (!$id) $this->json(['success' => false, 'message' => 'ID required'], 400);
-            $success = $this->equipmentRepo->softDeleteEquipment((int)$id);
-
-            if ($success) {
-                $this->auditRepo->log($_SESSION['user_id'], 'DELETE', 'EQUIPMENTS', $id, "Deleted (archived) equipment ID $id");
-                $this->json(['success' => true, 'message' => 'Equipment deleted successfully']);
-            } else {
-                $this->json(['success' => false, 'message' => 'Failed to delete equipment'], 500);
-            }
+            if (!$id) throw new Exception('ID required');
+            $adminId = $_SESSION['user_id'] ?? null;
+            $campusIdFilter = $this->getCampusFilter();
+            
+            $this->equipmentService->deactivateEquipment((int)$id, $adminId, $campusIdFilter);
+            echo json_encode(['success' => true, 'message' => 'Equipment deactivated successfully']);
         } catch (Exception $e) {
-            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function deleteMultiple()
+    {
+        header('Content-Type: application/json');
+        try {
+            $data = json_decode(file_get_contents("php://input"), true);
+            $adminId = $_SESSION['user_id'] ?? null;
+            $campusIdFilter = $this->getCampusFilter();
+
+            if (!$adminId) throw new Exception('Authentication required.');
+
+            $deletedCount = 0;
+            $errors = [];
+            foreach ($data['equipment_ids'] ?? [] as $id) {
+                try {
+                    $this->equipmentService->deactivateEquipment((int)$id, $adminId, $campusIdFilter);
+                    $deletedCount++;
+                } catch (Exception $e) {
+                    $errors[] = $e->getMessage();
+                }
+            }
+
+            echo json_encode([
+                'success' => $deletedCount > 0,
+                'message' => "Successfully deactivated $deletedCount equipment(s).",
+                'deleted_count' => $deletedCount,
+                'errors' => $errors
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 }

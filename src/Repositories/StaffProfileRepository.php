@@ -24,10 +24,13 @@ class StaffProfileRepository
                 u.middle_name,
                 u.last_name,
                 u.suffix,
+                u.gender,
                 u.email,
                 u.profile_picture,
                 u.role,
                 u.is_active,
+                u.campus_id,
+                cp.campus_name,
                 s.employee_id,
                 s.position,
                 s.contact,
@@ -35,6 +38,7 @@ class StaffProfileRepository
                 s.profile_updated
             FROM users u
             LEFT JOIN staff s ON u.user_id = s.user_id
+            LEFT JOIN campuses cp ON u.campus_id = cp.campus_id
             WHERE u.user_id = :userId AND u.deleted_at IS NULL
         ");
     $stmt->execute([':userId' => $userId]);

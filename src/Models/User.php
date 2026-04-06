@@ -67,30 +67,42 @@ class User
     // static role checks – secure role methods
     public static function isAdmin(array $user): bool
     {
-        return ($user['role'] ?? '') === 'admin';
+        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
+        return $role === 'admin';
     }
     public static function isLibrarian(array $user): bool
     {
-        return ($user['role'] ?? '') === 'librarian';
+        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
+        return $role === 'librarian';
     }
     public static function isStudent(array $user): bool
     {
-        return ($user['role'] ?? '') === 'student';
+        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
+        return $role === 'student';
     }
     public static function isSuperadmin(array $user): bool
     {
-        return ($user['role'] ?? '') === 'superadmin';
+        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
+        return $role === 'superadmin';
+    }
+    public static function isCampusAdmin(array $user): bool
+    {
+        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
+        return $role === 'campus_admin' || $role === 'campus_admin'; // handles both
     }
     public static function isScanner(array $user): bool
     {
-        return ($user['role'] ?? '') === 'scanner';
+        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
+        return $role === 'scanner';
     }
     public static function isFaculty(array $user): bool
     {
-        return ($user['role'] ?? '') === 'faculty';
+        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
+        return $role === 'faculty';
     }
     public static function isStaff(array $user): bool
     {
-        return ($user['role'] ?? '') === 'staff';
+        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
+        return $role === 'staff';
     }
 }

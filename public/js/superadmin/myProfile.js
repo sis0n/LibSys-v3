@@ -7,7 +7,26 @@ window.addEventListener("DOMContentLoaded", () => {
   const formActions = document.getElementById("formActions");
   const profileLockedInfo = document.getElementById("profileLockedInfo");
 
-  const fields = ['lastName', 'firstName', 'middleName', 'suffix', 'email'];
+  const genderSelect = document.getElementById("gender");
+  const genderOtherInput = document.getElementById("genderOther");
+  const campusSelect = document.getElementById("campus");
+
+  // Gender Logic: Toggle 'Other' input visibility
+  if (genderSelect) {
+    genderSelect.addEventListener("change", function () {
+      if (this.value === "Other") {
+        genderOtherInput.classList.remove("hidden");
+        genderOtherInput.disabled = false;
+        genderOtherInput.focus();
+      } else {
+        genderOtherInput.classList.add("hidden");
+        genderOtherInput.value = "";
+        genderOtherInput.disabled = true;
+      }
+    });
+  }
+
+  const fields = ['lastName', 'firstName', 'middleName', 'suffix', 'email', 'gender', 'genderOther', 'campus'];
   const inputElements = {};
   fields.forEach(id => inputElements[id] = document.getElementById(id));
 
@@ -29,10 +48,35 @@ window.addEventListener("DOMContentLoaded", () => {
     }, 3000);
   }
 
+  async function loadCampuses(currentCampusId = null) {
+      if (!campusSelect) return;
+      try {
+          const res = await fetch('api/campuses/all');
+          const data = await res.json();
+          if (data.success) {
+              campusSelect.innerHTML = '<option value="" disabled selected>Select Campus</option>';
+              data.campuses.forEach(campus => {
+                  const option = document.createElement('option');
+                  option.value = campus.campus_id;
+                  option.textContent = campus.campus_name;
+                  campusSelect.appendChild(option);
+              });
+              if (currentCampusId) {
+                  campusSelect.value = currentCampusId;
+              }
+          }
+      } catch (err) {
+          console.error("Failed to load campuses:", err);
+      }
+  }
+
   function toggleEditMode(isEditing) {
     if (isEditing) {
       fields.forEach(id => {
         if(inputElements[id]) {
+            // Special case for genderOther: only enable if genderSelect value is 'Other'
+            if (id === 'genderOther' && genderSelect && genderSelect.value !== 'Other') return;
+
             inputElements[id].disabled = false;
             inputElements[id].classList.remove('bg-gray-50', 'border-gray-200');
             inputElements[id].classList.add('bg-white');
@@ -49,6 +93,14 @@ window.addEventListener("DOMContentLoaded", () => {
             inputElements[id].value = originalFormState[id] || '';
         }
       });
+      // Ensure genderOther visibility is reset based on loaded value
+      if (genderSelect) {
+        if (genderSelect.value === 'Other') {
+            genderOtherInput.classList.remove('hidden');
+        } else {
+            genderOtherInput.classList.add('hidden');
+        }
+      }
       formActions.classList.add('hidden');
       editProfileBtn.classList.remove('hidden');
     }
@@ -70,13 +122,29 @@ window.addEventListener("DOMContentLoaded", () => {
       document.getElementById('profileName').textContent = profileName || profile.username;
       document.getElementById('profileStudentId').textContent = profile.username;
       
+      await loadCampuses(profile.campus_id);
+
+      // Gender Logic
+      let genderValue = profile.gender || "";
+      let genderOtherValue = "";
+      const standardOptions = ["Male", "Female", "LGBTQIA+", "Prefer not to say", "Other"];
+
+      if (standardOptions.includes(genderValue)) {
+        // value remains genderValue
+      } else if (genderValue) {
+        genderOtherValue = genderValue;
+        genderValue = "Other";
+      }
+
       const dataMap = {
           'firstName': profile.first_name,
           'lastName': profile.last_name,
           'middleName': profile.middle_name,
           'suffix': profile.suffix,
           'email': profile.email,
-          'contact': profile.contact 
+          'gender': genderValue,
+          'genderOther': genderOtherValue,
+          'campus': profile.campus_id
       };
       
       fields.forEach(id => {
@@ -86,6 +154,12 @@ window.addEventListener("DOMContentLoaded", () => {
           }
           originalFormState[id] = value; 
       });
+
+      if (genderSelect && genderSelect.value === 'Other') {
+        genderOtherInput.classList.remove('hidden');
+      } else {
+        genderOtherInput.classList.add('hidden');
+      }
 
 
       if (profile.allow_edit === 1) {
@@ -114,7 +188,10 @@ window.addEventListener("DOMContentLoaded", () => {
         'last_name': document.getElementById("lastName").value,
         'middle_name': document.getElementById("middleName").value,
         'suffix': document.getElementById("suffix").value,
-        'email': document.getElementById("email").value
+        'email': document.getElementById("email").value,
+        'gender': document.getElementById("gender").value,
+        'gender_other': document.getElementById("genderOther").value,
+        'campus_id': document.getElementById("campus").value
     };
 
     try {
@@ -142,7 +219,10 @@ window.addEventListener("DOMContentLoaded", () => {
             'firstName': payload.first_name,
             'middleName': payload.middle_name,
             'suffix': payload.suffix,
-            'email': payload.email
+            'email': payload.email,
+            'gender': payload.gender,
+            'genderOther': payload.gender_other,
+            'campus': payload.campus_id
         };
         
         toggleEditMode(false); 

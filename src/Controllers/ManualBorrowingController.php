@@ -3,160 +3,71 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
-use App\Repositories\ManualBorrowingRepository;
+use App\Services\BorrowingService;
 use Exception;
 
 class ManualBorrowingController extends Controller
 {
-  private ManualBorrowingRepository $manualRepo;
-  private \App\Repositories\AuditLogRepository $auditRepo;
+    private BorrowingService $borrowingService;
 
-  public function __construct()
-  {
-    $this->manualRepo = new ManualBorrowingRepository();
-    $this->auditRepo = new \App\Repositories\AuditLogRepository();
-  }
-
-  public function getEquipments(): void
-  {
-    try {
-      $equipments = $this->manualRepo->getEquipments();
-      $this->sendJson($equipments);
-    } catch (Exception $e) {
-      $this->sendJson(['error' => 'Failed to fetch equipments'], 500);
-    }
-  }
-
-  public function getCollaterals(): void
-  {
-    try {
-      $collaterals = $this->manualRepo->getCollaterals();
-      $this->sendJson($collaterals);
-    } catch (Exception $e) {
-      $this->sendJson(['error' => 'Failed to fetch collaterals'], 500);
-    }
-  }
-
-  private function sendJson(array $data, int $statusCode = 200): void
-  {
-    http_response_code($statusCode);
-    header('Content-Type: application/json');
-    echo json_encode($data);
-    exit;
-  }
-
-  public function checkUser(): void
-  {
-    $input_user_id = $_POST['input_user_id'] ?? null;
-    if (!$input_user_id) {
-      $this->sendJson(['success' => false, 'message' => 'No input_user_id provided']);
+    public function __construct()
+    {
+        parent::__construct();
+        $this->borrowingService = new BorrowingService();
     }
 
-    $role = $this->manualRepo->checkIfUserExists($input_user_id);
-    if ($role) {
-      $userInfo = $this->manualRepo->getUserInfo($input_user_id);
-      $this->sendJson(['success' => true, 'exists' => true, 'data' => $userInfo]);
-    } else {
-      $this->sendJson(['success' => true, 'exists' => false]);
+    public function getEquipments(): void
+    {
+        header('Content-Type: application/json');
+        try {
+            $campusId = $this->getCampusFilter();
+            $equipments = $this->borrowingService->getAvailableEquipments($campusId);
+            echo json_encode($equipments);
+        } catch (Exception $e) {
+            echo json_encode(['error' => 'Failed to fetch equipments'], 500);
+        }
     }
-  }
 
-  public function create(): void
-  {
-    try {
-      $data = [
-        'input_user_id'    => $_POST['input_user_id'] ?? null,
-        'first_name'       => $_POST['first_name'] ?? null,
-        'middle_name'      => $_POST['middle_name'] ?? null,
-        'last_name'        => $_POST['last_name'] ?? null,
-        'suffix'           => $_POST['suffix'] ?? null,
-        'role'             => $_POST['role'] ?? null,
-        'email'            => $_POST['email'] ?? null,
-        'contact'          => $_POST['contact'] ?? null,
-        'collateral_id'    => $_POST['collateral_id_hidden'] ?? null,
-        'equipment_type'   => $_POST['equipment_type'] ?? null,
-        'accession_number' => $_POST['accession_number'] ?? null,
-        'equipment_name'   => $_POST['equipment_name'] ?? null,
-        'equipment_id'     => $_POST['equipment_id'] ?? null
-      ];
-
-      $required = ['first_name', 'last_name', 'role', 'collateral_id', 'equipment_type'];
-      if ($data['equipment_type'] === 'Book') {
-        $required[] = 'accession_number';
-      } else {
-        if (empty($data['equipment_id'])) {
-          $required[] = 'equipment_name';
+    public function getCollaterals(): void
+    {
+        header('Content-Type: application/json');
+        try {
+            $collaterals = $this->borrowingService->getCollaterals();
+            echo json_encode($collaterals);
+        } catch (Exception $e) {
+            echo json_encode(['error' => 'Failed to fetch collaterals'], 500);
         }
-      }
-
-      foreach ($required as $field) {
-        if (empty($data[$field])) {
-          $this->sendJson(['success' => false, 'message' => "Missing required field: {$field}"]);
-        }
-      }
-
-      $existingRole = $this->manualRepo->checkIfUserExists($data['input_user_id']);
-      $borrowerType = null;
-      $borrowerId = null;
-
-      if ($existingRole) {
-        $userInfo = $this->manualRepo->getUserInfo($data['input_user_id']);
-        if (empty($userInfo['profile_updated'])) {
-          $this->sendJson(['success' => false, 'message' => 'Profile incomplete. Borrower must update their profile first.']);
-        }
-        $borrowerType = strtolower($existingRole);
-        $borrowerId = $data['input_user_id'];
-      } else {
-        $borrowerType = 'guest';
-        $borrowerId = $this->manualRepo->createGuest([
-          'first_name' => $data['first_name'],
-          'last_name'  => $data['last_name'],
-          'email'      => $data['email'] ?? null,
-          'contact'    => $data['contact'] ?? null
-        ]);
-      }
-
-      $itemId = null; 
-      if ($data['equipment_type'] === 'Book') {
-        $book = $this->manualRepo->checkBook($data['accession_number']);
-        if (!$book['exists']) {
-          $this->sendJson(['success' => false, 'message' => 'Book not found']);
-        }
-        if (!$book['available']) {
-          $this->sendJson(['success' => false, 'message' => 'Book is currently not available']);
-        }
-        $itemId = $book['details']['book_id'];
-      } else {
-        $itemId = !empty($data['equipment_id']) ? $data['equipment_id'] : $data['equipment_name']; 
-      }
-
-      $borrowData = [
-        'borrower_type' => $borrowerType,
-        'borrower_id'   => $borrowerId,
-        'collateral_id' => $data['collateral_id'],
-        'librarian_id'  => $_SESSION['user_id'] ?? null
-      ];
-
-      if ($data['equipment_type'] === 'Book') {
-        $borrowData['book_id'] = $itemId;
-      } else {
-        $borrowData['equipment_id'] = $itemId; 
-      }
-
-      $insert = $this->manualRepo->createManualBorrow($borrowData);
-
-      if ($insert['success']) {
-        $this->auditRepo->log($_SESSION['user_id'], 'BORROW', 'TRANSACTIONS', $insert['transaction_code'], "Manual borrow processed for {$data['first_name']} {$data['last_name']} ({$data['role']}) - Item: {$data['equipment_type']}");
-        $this->sendJson([
-          'success' => true,
-          'message' => 'Borrow transaction created successfully',
-          'transaction_code' => $insert['transaction_code']
-        ]);
-      } else {
-        $this->sendJson(['success' => false, 'message' => $insert['message']]);
-      }
-    } catch (Exception $e) {
-      $this->sendJson(['success' => false, 'message' => $e->getMessage()]);
     }
-  }
+
+    public function checkUser(): void
+    {
+        header('Content-Type: application/json');
+        $input_user_id = $_POST['input_user_id'] ?? null;
+        if (!$input_user_id) {
+            echo json_encode(['success' => false, 'message' => 'No input_user_id provided']);
+            return;
+        }
+
+        $campusId = $this->getCampusFilter();
+        $result = $this->borrowingService->checkUser($input_user_id, $campusId);
+        
+        echo json_encode(array_merge(['success' => true], $result));
+    }
+
+    public function create(): void
+    {
+        header('Content-Type: application/json');
+        try {
+            $data = $_POST;
+            $campusId = $this->getCampusFilter();
+            $librarianId = $_SESSION['user_id'] ?? null;
+
+            if (!$librarianId) throw new Exception('Librarian authentication required.');
+
+            $result = $this->borrowingService->processManualBorrow($data, $campusId, $librarianId);
+            echo json_encode($result);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
 }

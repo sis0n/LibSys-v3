@@ -32,10 +32,12 @@ class UserRepository
                 u.middle_name, 
                 u.last_name, 
                 u.suffix, 
+                u.gender,
                 u.profile_picture, 
                 u.is_active, 
                 u.role,
                 u.email,
+                u.campus_id,
                 s.student_id, 
                 s.student_number, 
                 s.year_level, 
@@ -63,10 +65,12 @@ class UserRepository
                 u.middle_name, 
                 u.last_name, 
                 u.suffix, 
+                u.gender,
                 u.profile_picture, 
                 u.is_active, 
                 u.role,
                 u.email,
+                u.campus_id,
                 s.student_id, 
                 s.student_number, 
                 s.year_level, 
@@ -98,6 +102,7 @@ class UserRepository
                 u.is_active,
                 u.role,
                 u.email,
+                u.campus_id,
                 f.faculty_id,
                 f.college_id
             FROM faculty f
@@ -136,7 +141,7 @@ class UserRepository
   {
     if (empty($usersBatch)) return [];
 
-    $columns = ['username', 'password', 'first_name', 'middle_name', 'last_name', 'email', 'role', 'is_active', 'created_at'];
+    $columns = ['username', 'password', 'first_name', 'middle_name', 'last_name', 'email', 'role', 'is_active', 'created_at', 'campus_id'];
     $colString = implode(',', $columns);
 
     $placeholders = [];
@@ -160,8 +165,8 @@ class UserRepository
   public function insertUser(array $data): int
   {
     $stmt = $this->db->prepare("
-            INSERT INTO users (username, password, first_name, middle_name, last_name, suffix, email, role, is_active, created_at)
-            VALUES (:username, :password, :first_name, :middle_name, :last_name, :suffix, :email, :role, :is_active, :created_at)
+            INSERT INTO users (username, password, first_name, middle_name, last_name, suffix, campus_id, email, role, is_active, created_at)
+            VALUES (:username, :password, :first_name, :middle_name, :last_name, :suffix, :campus_id, :email, :role, :is_active, :created_at)
         ");
 
     $stmt->execute([
@@ -171,6 +176,7 @@ class UserRepository
       ':middle_name' => $data['middle_name'] ?? null,
       ':last_name' => $data['last_name'],
       ':suffix' => $data['suffix'] ?? null,
+      ':campus_id' => $data['campus_id'] ?? null,
       ':email' => $data['email'] ?? null,
       ':role' => $data['role'],
       ':is_active' => $data['is_active'] ?? 1,
@@ -201,6 +207,10 @@ class UserRepository
       $fields[] = "suffix = :suffix";
       $params[':suffix'] = $data['suffix'];
     }
+    if (isset($data['gender'])) {
+      $fields[] = "gender = :gender";
+      $params[':gender'] = $data['gender'];
+    }
     if (isset($data['username'])) {
       $fields[] = "username = :username";
       $params[':username'] = $data['username'];
@@ -225,6 +235,10 @@ class UserRepository
       $fields[] = "profile_picture = :profile_picture";
       $params[':profile_picture'] = $data['profile_picture'];
     }
+    if (isset($data['campus_id'])) {
+      $fields[] = "campus_id = :campus_id";
+      $params[':campus_id'] = $data['campus_id'];
+    }
 
     if (empty($fields)) {
       return false;
@@ -235,7 +249,8 @@ class UserRepository
     $query = "UPDATE users SET " . implode(', ', $fields) . " WHERE user_id = :id";
     try {
       $stmt = $this->db->prepare($query);
-      return $stmt->execute($params);
+      $stmt->execute($params);
+      return true;
     } catch (\PDOException $e) {
       error_log("[UserRepository::updateUser] " . $e->getMessage());
       return false;
@@ -296,7 +311,8 @@ class UserRepository
                     s.student_number, 
                     s.year_level, 
                     s.course,
-                    s.section
+                    s.section,
+                    s.campus
                 FROM users u
                 JOIN students s ON u.user_id = s.user_id
                 WHERE UPPER(s.student_number) = UPPER(:student_number)
@@ -322,10 +338,12 @@ class UserRepository
                 middle_name, 
                 last_name, 
                 suffix,
+                gender,
                 username, 
                 email,
                 role, 
-                is_active 
+                is_active,
+                campus_id
             FROM users 
             WHERE user_id = :id AND deleted_at IS NULL
         ");
@@ -498,8 +516,8 @@ class UserRepository
     ]);
 
     $stmt = $this->db->prepare("
-        INSERT INTO students (user_id, student_number, year_level, course, section)
-        VALUES (:user_id, :student_number, :year_level, :course, :section)
+        INSERT INTO students (user_id, student_number, year_level, course, section, campus)
+        VALUES (:user_id, :student_number, :year_level, :course, :section, :campus)
     ");
 
     $stmt->execute([
@@ -507,7 +525,8 @@ class UserRepository
       ':student_number' => $data['username'],
       ':year_level' => $data['year_level'] ?? 1,
       ':course' => $data['course'] ?? 'N/A',
-      ':section' => $data['section'] ?? 'N/A'
+      ':section' => $data['section'] ?? 'N/A',
+      ':campus' => $data['campus'] ?? 'N/A'
     ]);
 
     return $userId;
@@ -519,7 +538,7 @@ class UserRepository
       $stmt = $this->db->prepare("
             SELECT 
                 u.user_id, u.username, u.password, u.first_name, u.middle_name, u.last_name, u.suffix, 
-                u.profile_picture, s.student_number, s.course_id, s.year_level, s.section,
+                u.profile_picture, s.student_number, s.course_id, s.year_level, s.section, s.campus,
                 s.profile_updated, c.course_title, c.course_code
             FROM students s
             JOIN users u ON s.user_id = u.user_id
@@ -559,6 +578,7 @@ class UserRepository
                     s.year_level, 
                     s.course_id,
                     s.section,
+                    s.campus,
                     f.faculty_id,
                     f.college_id
                 FROM users u
@@ -579,18 +599,26 @@ class UserRepository
     }
   }
 
-  public function getPaginatedUsers(int $limit, int $offset, string $search, string $role, string $status, ?int $excludeUserId = null): array
+  public function getPaginatedUsers(int $limit, int $offset, string $search, string $role, string $status, ?int $excludeUserId = null, ?int $campusId = null): array
   {
     $baseQuery = "
         FROM users u
         LEFT JOIN user_module_permissions um ON um.user_id = u.user_id
-        WHERE u.deleted_at IS NULL AND u.role NOT IN ('superadmin')
+        LEFT JOIN campuses c ON u.campus_id = c.campus_id
+        WHERE u.deleted_at IS NULL 
+        AND u.role NOT IN ('superadmin')
+        AND (c.is_active = 1 OR c.is_active IS NULL)
     ";
     $params = [];
 
     if ($excludeUserId !== null) {
-        $baseQuery .= " AND u.user_id != ?";
-        $params[] = $excludeUserId;
+      $baseQuery .= " AND u.user_id != ?";
+      $params[] = $excludeUserId;
+    }
+
+    if ($campusId !== null) {
+      $baseQuery .= " AND u.campus_id = ?";
+      $params[] = $campusId;
     }
 
     if ($search !== '') {
@@ -634,14 +662,24 @@ class UserRepository
     }
   }
 
-  public function countPaginatedUsers(string $search, string $role, string $status, ?int $excludeUserId = null): int
+  public function countPaginatedUsers(string $search, string $role, string $status, ?int $excludeUserId = null, ?int $campusId = null): int
   {
-    $query = "SELECT COUNT(DISTINCT u.user_id) FROM users u WHERE u.deleted_at IS NULL AND u.role NOT IN ('superadmin')";
+    $query = "SELECT COUNT(DISTINCT u.user_id) 
+              FROM users u 
+              INNER JOIN campuses c ON u.campus_id = c.campus_id
+              WHERE u.deleted_at IS NULL 
+              AND u.role NOT IN ('superadmin')
+              AND c.is_active = 1";
     $params = [];
 
     if ($excludeUserId !== null) {
-        $query .= " AND u.user_id != ?";
-        $params[] = $excludeUserId;
+      $query .= " AND u.user_id != ?";
+      $params[] = $excludeUserId;
+    }
+
+    if ($campusId !== null) {
+      $query .= " AND u.campus_id = ?";
+      $params[] = $campusId;
     }
 
     if ($search !== '') {

@@ -12,6 +12,12 @@ class RestoreUserController extends Controller
 
   public function __construct()
   {
+    parent::__construct();
+    $role = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
+    if (!in_array($role, ['superadmin', 'admin'])) {
+        http_response_code(403);
+        die("Forbidden: Access denied.");
+    }
     $this->restoreUserRepo = new RestoreUserRepository();
     $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }

@@ -3,15 +3,22 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
-use App\Repositories\AuditLogRepository;
+use App\Services\AuditLogService;
+use Exception;
 
 class AuditLogController extends Controller
 {
-    private $auditRepo;
+    private AuditLogService $auditService;
 
     public function __construct()
     {
-        $this->auditRepo = new AuditLogRepository();
+        parent::__construct();
+        // RBAC: Only Superadmin can view audit logs
+        if (($_SESSION['role'] ?? '') !== 'superadmin') {
+            http_response_code(403);
+            die("Forbidden");
+        }
+        $this->auditService = new AuditLogService();
     }
 
     public function index()
@@ -26,25 +33,20 @@ class AuditLogController extends Controller
     {
         header('Content-Type: application/json');
         try {
-            $search   = $_GET['search'] ?? '';
-            $action   = $_GET['action'] ?? '';
-            $resource = $_GET['resource'] ?? '';
-            $limit    = (int)($_GET['limit'] ?? 50);
-            $page     = (int)($_GET['page'] ?? 1);
-            if ($page < 1) $page = 1;
+            $limit = (int)($_GET['limit'] ?? 10);
+            $offset = (int)($_GET['offset'] ?? 0);
+            $search = $_GET['search'] ?? '';
+            $campusId = $this->getCampusFilter();
 
-            $offset = ($page - 1) * $limit;
-
-            $logs = $this->auditRepo->fetchLogs($search, $limit, $offset, $action, $resource);
-            $totalCount = $this->auditRepo->countLogs($search, $action, $resource);
-
+            $logs = $this->auditService->getLogs($limit, $offset, $search, $campusId);
+            $totalCount = $this->auditService->countLogs($search, $campusId);
+            
             echo json_encode([
                 'success' => true,
                 'logs' => $logs,
-                'totalCount' => (int)$totalCount,
-                'totalPages' => ceil($totalCount / $limit)
+                'totalCount' => $totalCount
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }

@@ -10,7 +10,6 @@
         <p class="text-gray-700">Manage your account information and view your activity</p>
     </div>
 
-    <!-- Ginawang FORM ang buong section -->
     <form id="profileForm" class="bg-white px-6 py-4 max-w-max mx-auto rounded-lg shadow-md border border-gray-200">
         <h3 class="text-lg font-semibold mb-2">
             <i class="ph ph-user-circle"></i>
@@ -111,6 +110,26 @@
                         class="font-medium text-gray-800 bg-gray-50 border-gray-200 border rounded-md px-2 py-1 w-full"
                         disabled>
                 </div>
+
+                <div class="min-w-[200px]">
+                    <label class="text-sm text-gray-500" for="gender">Gender</label>
+                    <select id="gender" name="gender" class="font-medium text-gray-800 bg-gray-50 border-gray-200 border rounded-md px-2 py-1 w-full" disabled>
+                        <option value="" disabled selected>Select Gender</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="LGBTQIA+">LGBTQIA+</option>
+                        <option value="Prefer not to say">Prefer not to say</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <input type="text" id="genderOther" name="gender_other" placeholder="Please specify" class="hidden font-medium text-gray-800 bg-gray-50 border-gray-200 border rounded-md px-2 py-1 w-full mt-2" disabled>
+                </div>
+                <!-- Campus -->
+                <div class="sm:col-span-2">
+                    <label class="text-sm text-gray-500" for="campusName">Campus</label>
+                    <input type="text" id="campusName" name="campus_name"
+                        class="font-medium text-gray-800 bg-gray-100 border-gray-300 border rounded-md px-2 py-1 w-full"
+                        disabled>
+                </div>
             </div>
         </section>
 
@@ -207,6 +226,13 @@
                             Remove
                         </button>
                     </div>
+                </div>
+                <!-- Campus -->
+                <div class="sm:col-span-2">
+                    <label class="text-sm text-gray-500" for="campusName">Campus</label>
+                    <input type="text" id="campusName" name="campus_name"
+                        class="font-medium text-gray-800 bg-gray-100 border-gray-300 border rounded-md px-2 py-1 w-full"
+                        disabled>
                 </div>
             </div>
         </section>

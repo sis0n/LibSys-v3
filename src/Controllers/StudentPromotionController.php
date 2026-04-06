@@ -3,25 +3,32 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
-use App\Repositories\StudentPromotionRepository;
-use App\Repositories\AuditLogRepository;
+use App\Services\PromotionService;
+use App\Repositories\CollegeCourseRepository;
+use Exception;
 
 class StudentPromotionController extends Controller
 {
-    private $promoRepo;
-    private $auditRepo;
+    private PromotionService $promotionService;
+    private CollegeCourseRepository $courseRepo;
 
     public function __construct()
     {
-        $this->promoRepo = new StudentPromotionRepository();
-        $this->auditRepo = new \App\Repositories\AuditLogRepository();
+        parent::__construct();
+        $this->promotionService = new PromotionService();
+        $this->courseRepo = new CollegeCourseRepository();
     }
 
     public function index()
     {
-        $this->view('superadmin/studentPromotion', [
+        $courses = $this->courseRepo->getAllCourses();
+        $role = strtolower(str_replace([' ', '-', '_'], '', $_SESSION['role'] ?? ''));
+        $viewPath = ($role === 'superadmin' || $role === 'admin') ? 'Superadmin/studentPromotion' : 'campus_admin/studentPromotion';
+
+        $this->view($viewPath, [
             'title' => 'Student Promotion',
-            'currentPage' => 'studentPromotion'
+            'currentPage' => 'studentPromotion',
+            'courses' => $courses
         ]);
     }
 
@@ -29,32 +36,30 @@ class StudentPromotionController extends Controller
     {
         header('Content-Type: application/json');
         try {
+            $campusId = $this->getCampusFilter();
+            
             $filters = [
-                'course_id' => $_GET['course_id'] ?? null,
-                'year_level' => $_GET['year_level'] ?? null,
                 'search' => $_GET['search'] ?? '',
+                'course_id' => $_GET['course_id'] ?? '',
+                'campus_id' => $campusId ?? $_GET['campus_id'] ?? '',
+                'year_level' => $_GET['year_level'] ?? '',
                 'status' => $_GET['status'] ?? 1
             ];
+
             $limit = (int)($_GET['limit'] ?? 100);
             $offset = (int)($_GET['offset'] ?? 0);
-            $page = (int)($_GET['page'] ?? 1);
-            
-            if ($page > 1) {
-                $offset = ($page - 1) * $limit;
-            }
 
-            $students = $this->promoRepo->fetchStudents($filters, $limit, $offset);
-            $totalCount = $this->promoRepo->countStudents($filters);
-            $stats = $this->promoRepo->getYearLevelStats($filters['status']);
+            $result = $this->promotionService->getStudentsForPromotion($filters, $limit, $offset);
+            $stats = $this->promotionService->getPromotionStats((int)$filters['status'], $filters['campus_id'] ?: null);
 
             echo json_encode([
                 'success' => true,
-                'students' => $students,
-                'totalCount' => (int)$totalCount,
-                'totalPages' => ceil($totalCount / $limit),
+                'students' => $result['students'],
+                'totalCount' => $result['totalCount'],
+                'totalPages' => $result['totalPages'],
                 'stats' => $stats
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
@@ -62,29 +67,14 @@ class StudentPromotionController extends Controller
     public function promote()
     {
         header('Content-Type: application/json');
-        $data = json_decode(file_get_contents("php://input"), true);
-        $isAll = $data['is_all'] ?? false;
-        $ids = $data['student_ids'] ?? [];
-        $filters = $data['filters'] ?? [];
-
         try {
-            if ($isAll) {
-                $count = $this->promoRepo->countStudents($filters);
-                if ($this->promoRepo->bulkPromoteByFilter($filters)) {
-                    $this->auditRepo->log($_SESSION['user_id'], 'PROMOTE_ALL', 'STUDENTS', null, "Global promotion: Promoted all $count matching students.");
-                    echo json_encode(['success' => true, 'message' => "Successfully promoted all $count matching students!"]);
-                }
-            } else {
-                if (empty($ids)) {
-                    echo json_encode(['success' => false, 'message' => 'No students selected.']);
-                    return;
-                }
-                if ($this->promoRepo->bulkPromote($ids)) {
-                    $this->auditRepo->log($_SESSION['user_id'], 'PROMOTE', 'STUDENTS', count($ids) . ' items', "Bulk promoted " . count($ids) . " selected students.");
-                    echo json_encode(['success' => true, 'message' => 'Selected students promoted successfully!']);
-                }
-            }
-        } catch (\Exception $e) {
+            $data = $this->getJsonData();
+            $adminId = $_SESSION['user_id'] ?? null;
+            if (!$adminId) throw new Exception('Unauthorized.');
+
+            $count = $this->promotionService->processBulkPromotion($data, $adminId);
+            echo json_encode(['success' => true, 'message' => "Successfully promoted $count students!"]);
+        } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
@@ -92,29 +82,14 @@ class StudentPromotionController extends Controller
     public function deactivate()
     {
         header('Content-Type: application/json');
-        $data = json_decode(file_get_contents("php://input"), true);
-        $isAll = $data['is_all'] ?? false;
-        $ids = $data['student_ids'] ?? [];
-        $filters = $data['filters'] ?? [];
-
         try {
-            if ($isAll) {
-                $count = $this->promoRepo->countStudents($filters);
-                if ($this->promoRepo->bulkDeactivateByFilter($filters)) {
-                    $this->auditRepo->log($_SESSION['user_id'], 'DEACTIVATE_ALL', 'STUDENTS', null, "Global deactivation: Deactivated all $count matching students.");
-                    echo json_encode(['success' => true, 'message' => "Successfully deactivated all $count matching students!"]);
-                }
-            } else {
-                if (empty($ids)) {
-                    echo json_encode(['success' => false, 'message' => 'No students selected.']);
-                    return;
-                }
-                if ($this->promoRepo->bulkDeactivate($ids)) {
-                    $this->auditRepo->log($_SESSION['user_id'], 'DEACTIVATE', 'STUDENTS', count($ids) . ' items', "Bulk deactivated " . count($ids) . " selected students.");
-                    echo json_encode(['success' => true, 'message' => 'Selected students deactivated successfully!']);
-                }
-            }
-        } catch (\Exception $e) {
+            $data = $this->getJsonData();
+            $adminId = $_SESSION['user_id'] ?? null;
+            if (!$adminId) throw new Exception('Unauthorized.');
+
+            $count = $this->promotionService->processBulkDeactivation($data, $adminId);
+            echo json_encode(['success' => true, 'message' => "Successfully deactivated $count students!"]);
+        } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
@@ -122,29 +97,14 @@ class StudentPromotionController extends Controller
     public function activate()
     {
         header('Content-Type: application/json');
-        $data = json_decode(file_get_contents("php://input"), true);
-        $isAll = $data['is_all'] ?? false;
-        $ids = $data['student_ids'] ?? [];
-        $filters = $data['filters'] ?? [];
-
         try {
-            if ($isAll) {
-                $count = $this->promoRepo->countStudents($filters);
-                if ($this->promoRepo->bulkActivateByFilter($filters)) {
-                    $this->auditRepo->log($_SESSION['user_id'], 'ACTIVATE_ALL', 'STUDENTS', null, "Global activation: Activated all $count matching students.");
-                    echo json_encode(['success' => true, 'message' => "Successfully activated all $count matching students!"]);
-                }
-            } else {
-                if (empty($ids)) {
-                    echo json_encode(['success' => false, 'message' => 'No students selected.']);
-                    return;
-                }
-                if ($this->promoRepo->bulkActivate($ids)) {
-                    $this->auditRepo->log($_SESSION['user_id'], 'ACTIVATE', 'STUDENTS', count($ids) . ' items', "Bulk activated " . count($ids) . " selected students.");
-                    echo json_encode(['success' => true, 'message' => 'Selected students activated successfully!']);
-                }
-            }
-        } catch (\Exception $e) {
+            $data = $this->getJsonData();
+            $adminId = $_SESSION['user_id'] ?? null;
+            if (!$adminId) throw new Exception('Unauthorized.');
+
+            $count = $this->promotionService->processBulkActivation($data, $adminId);
+            echo json_encode(['success' => true, 'message' => "Successfully activated $count students!"]);
+        } catch (Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }

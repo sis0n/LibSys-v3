@@ -1,17 +1,16 @@
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h2 class="text-2xl font-bold mb-4">User Management</h2>
-        <p class="text-gray-700">Manage students, librarians, and system access.</p>
+        <h2 class="text-2xl font-bold tracking-wider text-gray-900 uppercase">User Management</h2>
     </div>
     <div class="flex gap-2 text-sm">
         <button
-            class="inline-flex items-center bg-white font-medium border border-orange-200 justify-center px-4 py-2 rounded-lg hover:bg-gray-100 px-4 gap-2"
+            class="inline-flex items-center bg-white font-medium border border-orange-200 justify-center px-4 py-2 rounded-full hover:bg-orange-50 gap-2 shadow-sm"
             id="bulkImportBtn">
             <i class="ph ph-upload-simple"></i>
             Bulk Import
         </button>
         <button
-            class="px-4 py-2 bg-orange-500 text-white font-medium rounded-lg border hover:bg-orange-600 gap-2 inline-flex items-center"
+            class="px-4 py-2 bg-orange-500 text-white font-medium rounded-full border hover:bg-orange-600 gap-2 inline-flex items-center shadow-sm"
             id="addUserBtn">
             <i class="ph ph-plus"></i>
             Add User
@@ -19,59 +18,54 @@
     </div>
 </div>
 
-<div class="bg-[var(--color-card)] border border-orange-200 rounded-xl shadow-sm p-6 mt-6">
-    <div class="flex items-center justify-between mb-4">
-        <div>
-            <h3 class="text-lg font-semibold text-gray-800">User Management</h3>
-            <p class="text-sm text-gray-600">Registered users in the system</p>
-        </div>
-        <div class="flex items-center gap-2 text-sm">
-            <div class="relative">
-                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2"></i>
-                <input type="text" id="userSearchInput" placeholder="Search"
-                    class="bg-orange-50 border border-orange-200 rounded-lg pl-9 pr-3 py-2 outline-none transition text-sm">
-            </div>
-            <div class="relative inline-block text-left">
-                <button id="roleDropdownBtn"
-                    class="border border-orange-200 rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-36 hover:bg-orange-50 transition">
-                    <span id="roleDropdownValue">All Roles</span>
-                    <i class="ph ph-caret-down text-xs"></i>
-                </button>
-                <div id="roleDropdownMenu"
-                    class="absolute mt-1 w-full bg-white border border-orange-200 rounded-lg shadow-md hidden z-20">
-                    <div class="dropdown-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
-                        onclick="selectRole(this, 'All Roles')">All Roles</div>
-                    <div class="dropdown-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
-                        onclick="selectRole(this, 'Student')">Student</div>
-                    <div class="dropdown-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
-                        onclick="selectRole(this, 'Librarian')">Librarian</div>
-                    <div class="dropdown-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
-                        onclick="selectRole(this, 'Admin')">Admin</div>
-                    <div class="dropdown-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
-                        onclick="selectRole(this, 'Faculty')">Faculty</div>
-                    <div class="dropdown-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
-                        onclick="selectRole(this, 'Staff')">Staff</div>
-                </div>
-            </div>
-
-            <div class="relative inline-block text-left ml-3">
-                <button id="statusDropdownBtn"
-                    class="border border-orange-200 rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-36 hover:bg-orange-50 transition">
-                    <span id="statusDropdownValue">All Status</span>
-                    <i class="ph ph-caret-down text-xs"></i>
-                </button>
-                <div id="statusDropdownMenu"
-                    class="absolute mt-1 w-full bg-white border border-orange-200 rounded-lg shadow-md hidden z-20">
-                    <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
-                        onclick="selectStatus(this, 'All Status')">All Status</div>
-                    <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
-                        onclick="selectStatus(this, 'Active')">Active</div>
-                    <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
-                        onclick="selectStatus(this, 'Inactive')">Inactive</div>
-                </div>
-            </div>
+<div class="flex flex-wrap items-center gap-3 text-sm mb-4">
+    <div class="relative w-[300px]">
+        <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-orange-500"></i>
+        <input type="text" id="userSearchInput" placeholder="Search by name, email, or ID..."
+            class="w-full bg-white border border-gray-200 rounded-full pl-10 pr-4 py-2.5 outline-none transition text-sm shadow-sm focus:ring-2 focus:ring-orange-200">
+    </div>
+    <div class="relative inline-block text-left">
+        <button id="roleDropdownBtn"
+            class="border border-gray-200 bg-white rounded-full px-4 py-2.5 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition">
+            <span id="roleDropdownValue">All Roles</span>
+            <i class="ph ph-caret-down text-xs"></i>
+        </button>
+        <div id="roleDropdownMenu"
+            class="absolute mt-2 w-full bg-white border border-orange-200 rounded-xl shadow-md hidden z-20">
+            <div class="dropdown-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
+                onclick="selectRole(this, 'All Roles')">All Roles</div>
+            <div class="dropdown-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
+                onclick="selectRole(this, 'Student')">Student</div>
+            <div class="dropdown-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
+                onclick="selectRole(this, 'Librarian')">Librarian</div>
+            <div class="dropdown-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
+                onclick="selectRole(this, 'Admin')">Admin</div>
+            <div class="dropdown-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
+                onclick="selectRole(this, 'Faculty')">Faculty</div>
+            <div class="dropdown-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
+                onclick="selectRole(this, 'Staff')">Staff</div>
         </div>
     </div>
+
+    <div class="relative inline-block text-left">
+        <button id="statusDropdownBtn"
+            class="border border-gray-200 bg-white rounded-full px-4 py-2.5 text-sm text-gray-700 flex items-center justify-between gap-2 w-36 hover:bg-orange-50 transition">
+            <span id="statusDropdownValue">All Status</span>
+            <i class="ph ph-caret-down text-xs"></i>
+        </button>
+        <div id="statusDropdownMenu"
+            class="absolute mt-2 w-full bg-white border border-orange-200 rounded-xl shadow-md hidden z-20">
+            <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
+                onclick="selectStatus(this, 'All Status')">All Status</div>
+            <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
+                onclick="selectStatus(this, 'Active')">Active</div>
+            <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
+                onclick="selectStatus(this, 'Inactive')">Inactive</div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-6">
     <!-- Updated -->
     <div class="flex items-center justify-between my-4">
 
@@ -115,16 +109,16 @@
 
     </div>
     <!-- end -->
-    <div class="overflow-x-auto rounded-lg border border-orange-200">
-        <table class="w-full text-sm border-collapse">
-            <thead class="bg-orange-50 text-gray-700 border border-orange-100">
+    <div class="overflow-x-auto rounded-2xl border border-orange-200 bg-white shadow-sm">
+        <table class="w-full text-sm border-collapse text-gray-700">
+            <thead class="bg-orange-100 text-orange-700 uppercase text-xs tracking-wider border-b border-orange-200">
                 <tr>
-                    <th class="text-left px-4 py-3 font-medium">User</th>
-                    <th class="text-left px-4 py-3 font-medium">Email</th>
-                    <th class="text-left px-4 py-3 font-medium">Role</th>
-                    <th class="text-left px-4 py-3 font-medium">Status</th>
-                    <th class="text-left px-4 py-3 font-medium">Date Registered</th>
-                    <th class="text-left px-4 py-3 font-medium">Actions</th>
+                    <th class="text-left px-4 py-4 font-semibold">User</th>
+                    <th class="text-left px-4 py-4 font-semibold">Email</th>
+                    <th class="text-left px-4 py-4 font-semibold">Role</th>
+                    <th class="text-left px-4 py-4 font-semibold">Status</th>
+                    <th class="text-left px-4 py-4 font-semibold">Date Registered</th>
+                    <th class="text-left px-4 py-4 font-semibold">Actions</th>
                 </tr>
             </thead>
             <tbody id="userTableBody" class="divide-y divide-orange-100">
@@ -220,12 +214,20 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Username <span
                                     class="text-red-500">*</span></label>
                             <input type="text" id="addUsername" placeholder="username"
                                 class="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm focus-visible:ring-[var(--color-ring)] focus-visible:border-[var(--color-ring)] outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Campus <span
+                                    class="text-red-500">*</span></label>
+                            <select id="addCampus"
+                                class="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm focus-visible:ring-[var(--color-ring)] focus-visible:border-[var(--color-ring)] outline-none">
+                                <option value="">Select Campus</option>
+                            </select>
                         </div>
                         <div class="relative w-full">
                             <label class="block text-sm text-gray-700 mb-1">Role</label>
@@ -242,6 +244,8 @@
                                     onclick="selectUserRole(this, 'Librarian')">Librarian</div>
                                 <div class="user-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
                                     onclick="selectUserRole(this, 'Admin')">Admin</div>
+                                <div class="user-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
+                                    onclick="selectUserRole(this, 'Campus Admin')">Campus Admin</div>
                                 <div class="user-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
                                     onclick="selectUserRole(this, 'Faculty')">Faculty</div>
                                 <div class="user-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
@@ -264,21 +268,29 @@
                     <h3 class="font-medium text-[var(--color-ring)]">Student Information</h3>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label id="addCollegeLabel" class="block text-sm font-medium text-gray-700 mb-1">College
-                                <span class="text-red-500">*</span></label>
-                            <select id="addCollegeDropdown" required
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Campus <span class="text-red-500">*</span></label>
+                            <select id="addCampus" required
                                 class="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm focus-visible:ring-[var(--color-ring)] focus-visible:border-[var(--color-ring)] outline-none">
-                                <option value="">Select College</option>
+                                <option value="">Select Campus</option>
                             </select>
                         </div>
                         <div>
-                            <label id="addCourseLabel"
-                                class="block text-sm font-medium text-gray-700 mb-1">Course/Program <span
-                                    class="text-red-500">*</span></label>
-                            <select id="addCourseDropdown" name="course_id" required disabled
-                                class="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm bg-gray-100 focus-visible:ring-[var(--color-ring)] focus-visible:border-[var(--color-ring)] outline-none">
-                                <option value="">Select College First</option>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Year Level <span class="text-red-500">*</span></label>
+                            <select id="addYearLevel" required
+                                class="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm focus-visible:ring-[var(--color-ring)] focus-visible:border-[var(--color-ring)] outline-none">
+                                <option value="1">1st Year</option>
+                                <option value="2">2nd Year</option>
+                                <option value="3">3rd Year</option>
+                                <option value="4">4th Year</option>
+                                <option value="5">5th Year</option>
                             </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Section <span class="text-red-500">*</span></label>
+                            <input type="text" id="addSection" placeholder="A, B, C..."
+                                class="w-full border border-[var(--color-border)] rounded-md px-3 py-2 text-sm focus-visible:ring-[var(--color-ring)] focus-visible:border-[var(--color-ring)] outline-none">
                         </div>
                     </div>
                 </div>
@@ -312,20 +324,22 @@
                             'attendance logs',
                             'reports',
                             'transaction history',
-                            'restore books',
-                            'restore equipment',
                             'user management',
                             'restore users',
-                            'student promotion'
+                            'bulk delete queue'
                         ];
 
                         foreach ($modules as $module):
                             $isUserManagement = ($module === 'user management');
                             $isRestoreUser = ($module === 'restore users');
-                            $wrapperId = $isUserManagement ? 'id="addUserUserManagementModuleWrapper"' : '';
-                            $restoreId = $isRestoreUser ? 'id="addUserRestoreUserModuleWrapper"' : '';
+                            $isBulkDelete = ($module === 'bulk delete queue');
+                            
+                            $wrapperId = '';
+                            if ($isUserManagement) $wrapperId = 'id="addUserUserManagementModuleWrapper"';
+                            elseif ($isRestoreUser) $wrapperId = 'id="addUserRestoreUserModuleWrapper"';
+                            elseif ($isBulkDelete) $wrapperId = 'id="addUserBulkDeleteQueueModuleWrapper"';
                         ?>
-                        <div <?= $wrapperId ?> <?= $restoreId ?>
+                        <div <?= $wrapperId ?>
                             class="border rounded-md p-3 bg-orange-50/50 border-orange-200">
                             <label class="inline-flex items-center text-sm text-gray-700">
                                 <input type="checkbox" class="mr-2 accent-orange-500" name="modules[]"
@@ -400,7 +414,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm text-gray-700 mb-1 font-medium">Email <span
                                 class="text-red-500">*</span></label>
@@ -413,6 +427,45 @@
                         <input id="editUsername" type="text"
                             class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none"
                             placeholder="username">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Campus</label>
+                        <select id="editCampusField"
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
+                            <option value="">Select Campus</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="editStudentFieldsWrapper" class="hidden space-y-4 pt-4 border-t border-orange-100">
+                    <h3 class="font-medium text-orange-600">Student Details</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="col-span-2">
+                            <label class="block text-sm text-gray-700 mb-1 font-medium">Course/Program</label>
+                            <select id="editCourseId" 
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
+                                <option value="">Select Course</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm text-gray-700 mb-1 font-medium">Year Level</label>
+                            <select id="editYearLevel" 
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none">
+                                <option value="1">1st Year</option>
+                                <option value="2">2nd Year</option>
+                                <option value="3">3rd Year</option>
+                                <option value="4">4th Year</option>
+                                <option value="5">5th Year</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-700 mb-1 font-medium">Section</label>
+                            <input id="editSection" type="text"
+                                class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-orange-400 outline-none"
+                                placeholder="A, B, C...">
+                        </div>
                     </div>
                 </div>
 
@@ -430,15 +483,17 @@
                             <div id="editRoleDropdownMenu"
                                 class="absolute mt-1 w-full bg-white border border-orange-200 rounded-lg shadow-md hidden z-20">
                                 <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
-                                    onclick="selectEditRole(this, 'Student',selected)">Student</div>
-                                <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
-                                    onclick="selectEditRole(this, 'Faculty')">Faculty</div>
-                                <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
-                                    onclick="selectEditRole(this, 'Staff')">Staff</div>
+                                    onclick="selectEditRole(this, 'Student')">Student</div>
                                 <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
                                     onclick="selectEditRole(this, 'Librarian')">Librarian</div>
                                 <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
                                     onclick="selectEditRole(this, 'Admin')">Admin</div>
+                                <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
+                                    onclick="selectEditRole(this, 'Campus Admin')">Campus Admin</div>
+                                <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
+                                    onclick="selectEditRole(this, 'Faculty')">Faculty</div>
+                                <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
+                                    onclick="selectEditRole(this, 'Staff')">Staff</div>
                             </div>
                         </div>
                     </div>
@@ -532,19 +587,21 @@
                         'attendance logs',
                         'reports',
                         'transaction history',
-                        'restore books',
-                        'restore equipment',
                         'user management',
                         'restore users',
-                        'student promotion'
+                        'bulk delete queue'
                     ];
                     foreach ($modules as $module):
                         $isUserManagement = ($module === 'user management');
                         $isRestoreUser = ($module === 'restore users');
-                        $wrapperId = $isUserManagement ? 'id="editUserUserManagementModuleWrapper"' : '';
-                        $restoreId = $isRestoreUser ? 'id="editUserRestoreUserModuleWrapper"' : '';
+                        $isBulkDelete = ($module === 'bulk delete queue');
+                        
+                        $wrapperId = '';
+                        if ($isUserManagement) $wrapperId = 'id="editUserUserManagementModuleWrapper"';
+                        elseif ($isRestoreUser) $wrapperId = 'id="editUserRestoreUserModuleWrapper"';
+                        elseif ($isBulkDelete) $wrapperId = 'id="editUserBulkDeleteQueueModuleWrapper"';
                     ?>
-                    <div <?= $wrapperId ?> <?= $restoreId ?>
+                    <div <?= $wrapperId ?>
                         class="border rounded-md p-3 bg-orange-50/50 border-orange-200">
                         <label class="inline-flex items-center text-sm text-gray-700">
                             <input type="checkbox" class="mr-2 accent-orange-500" name="editModules[]"

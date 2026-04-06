@@ -4,7 +4,7 @@
         <!-- Logo + Title -->
         <div class="flex justify-center gap-2 items-center mb-3">
             <i class="ph ph-book-open text-orange-600 text-2xl mr-2"></i>
-            <span class="text-base sm:text-lg font-semibold text-orange-700">LOSUCC</span>
+            <span class="text-base sm:text-lg font-semibold text-orange-700">LibSys</span>
         </div>
 
         <!-- Vision -->

@@ -25,7 +25,9 @@ class FacultyProfileRepository
             u.middle_name,
             u.last_name,
             u.suffix,
+            u.gender,
             u.email,
+            u.campus_id,
             u.profile_picture,
             u.role,
             u.is_active,
@@ -35,10 +37,12 @@ class FacultyProfileRepository
             f.contact,
             f.profile_updated,
             c.college_code,         
-            c.college_name          
+            c.college_name,
+            cp.campus_name
         FROM users u
         LEFT JOIN faculty f ON u.user_id = f.user_id
         LEFT JOIN colleges c ON f.college_id = c.college_id /* JOIN sa colleges para sa pangalan */
+        LEFT JOIN campuses cp ON u.campus_id = cp.campus_id
         WHERE u.user_id = :userId AND u.deleted_at IS NULL
     ");
     $stmt->execute([':userId' => $userId]);

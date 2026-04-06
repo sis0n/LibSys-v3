@@ -1,14 +1,10 @@
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h2 class="text-2xl font-bold mb-4 text-gray-800 flex items-center gap-2">
-            <i class="ph ph-books text-orange-600"></i>
-            Book Management
-        </h2>
-        <p class="text-gray-700">Manage library books, availability, and inventory.</p>
+        <h2 class="text-2xl font-bold tracking-wider text-gray-900 uppercase">Book Management</h2>
     </div>
     <div class="flex gap-2 text-sm">
         <button
-            class="inline-flex items-center bg-white font-medium border border-orange-200 justify-center px-4 py-2 rounded-lg hover:bg-gray-100 px-4 gap-2 shadow-sm transition-all"
+            class="inline-flex items-center bg-white font-medium border border-orange-200 justify-center px-4 py-2 rounded-full hover:bg-orange-50 gap-2 shadow-sm transition-all"
             id="bulkImportBtn">
             <i class="ph ph-upload-simple"></i>
             Bulk Import
@@ -30,8 +26,8 @@
                         class="block border-2 border-dashed border-[var(--color-border)] rounded-lg p-8 text-center cursor-pointer hover:border-[var(--color-ring)]/60 transition">
                         <i class="ph ph-upload text-[var(--color-ring)] text-3xl mb-2 block"></i>
                         <p class="font-medium text-[var(--color-ring)]">Drop CSV file here or click to browse</p>
-                        <p class="text-xs text-gray-500 mt-1">Expected format: accession_number,call_number,title</p>
-                        <input type="file" id="csvFile" accept=".csv" class="hidden" />
+                        <p class="text-xs text-gray-500 mt-1">Expected format: accession_number,call_number,title,author,place,publisher,year,edition,desc,isbn,supp,subj,campus_id</p>
+                        <input type="file" id="csvFile" name="csv_file" accept=".csv" class="hidden" />
                     </label>
                 </form>
                 <div class="text-center mt-4">
@@ -43,14 +39,14 @@
             </div>
         </div>
         <button
-            class="px-4 py-2 bg-orange-500 text-white font-medium rounded-lg border border-orange-600 hover:bg-orange-600 gap-2 inline-flex items-center shadow-sm"
+            class="px-4 py-2 bg-orange-500 text-white font-medium rounded-full border hover:bg-orange-600 gap-2 inline-flex items-center shadow-sm"
             id="openAddBookBtn">
             <i class="ph ph-plus"></i>
             Add New Book
         </button>
         <div id="addBookModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
             <div
-                class="bg-[var(--color-card)] rounded-xl shadow-lg border border-[var(--color-border)] w-full max-w-md h-[85vh] flex flex-col animate-fadeIn">
+                class="bg-[var(--color-card)] rounded-xl shadow-lg border border-[var(--color-border)] w-full max-w-md h-[85vh] flex flex-col animate-fadeIn mx-4">
                 <div class="flex justify-between items-start p-6 border-b border-[var(--color-border)] flex-shrink-0">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">Add New Book</h2>
@@ -78,7 +74,18 @@
                         <input type="text" name="author" required class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1"> ISBN <span class="text-red-500">*</span> </label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1"> Campus <span class="text-red-500">*</span> </label>
+                        <select name="campus_id" required class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
+                            <option value="">Select Campus</option>
+                            <!-- Options loaded by JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1"> Borrow Duration Override (Days) </label>
+                        <input type="number" name="borrowing_duration_override" min="0" placeholder="Default from policy" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1"> ISBN </label>
                         <input type="text" name="book_isbn" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
                     </div>
                     <div>
@@ -116,10 +123,9 @@
                             <span id="uploadText">Upload Image</span>
                         </label>
                         <input type="file" id="book_image" name="book_image" accept="image/*" class="hidden">
-                        <div id="previewContainer" class="mt-2 hidden">
-                            <img id="previewImage" class="w-32 h-48 object-cover rounded-lg border border-orange-200 shadow-md" />
+                        <div id="previewContainer" class="mt-2 hidden text-center">
+                            <img id="previewImage" class="w-32 h-48 object-cover rounded-lg border border-orange-200 shadow-md inline-block" />
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">Supported file types: JPG, PNG. <br> Recommended: 400×600 (2:3 ratio) </p>
                     </div>
                 </form>
                 <div class="flex justify-end gap-3 p-6 border-t border-[var(--color-border)] flex-shrink-0">
@@ -134,60 +140,71 @@
         </div>
     </div>
 </div>
-<div class="bg-[var(--color-card)] border border-orange-200 rounded-xl shadow-sm p-6 mt-6">
-    <div class="flex items-center justify-between mb-4">
-        <div>
-            <h3 class="text-lg font-semibold text-gray-800">Book Management</h3>
-            <p class="text-sm text-gray-600">Registered Books in the system</p>
+
+<div class="mt-6">
+    <div class="flex flex-wrap items-center gap-3 text-sm mb-4">
+        <div class="relative w-[300px]">
+            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-orange-500"></i>
+            <input type="text" id="bookSearchInput" placeholder="Search by title, author, or ISBN..."
+                class="bg-white border border-gray-200 rounded-full pl-10 pr-4 py-2.5 outline-none transition text-sm w-full shadow-sm focus:ring-2 focus:ring-orange-200">
         </div>
-        <div class="flex items-center text-sm">
-            <div class="relative w-[330px]">
-                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                <input type="text" id="bookSearchInput" placeholder="Search by title, author, isbn..."
-                    class="bg-orange-50 border border-orange-200 rounded-lg pl-9 pr-3 py-2 outline-none transition text-sm w-full focus:ring-1 focus:ring-orange-300 shadow-sm">
+        
+        <div class="relative inline-block text-left">
+            <button id="campusDropdownBtn"
+                class="border border-gray-200 bg-white rounded-full px-4 py-2.5 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition shadow-sm">
+                <span class="flex items-center gap-2 text-gray-700">
+                    <i class="ph ph-buildings text-gray-500"></i>
+                    <span id="campusDropdownValue">All Campuses</span>
+                </span>
+                <i class="ph ph-caret-down text-xs"></i>
+            </button>
+            <div id="campusDropdownMenu"
+                class="absolute mt-2 w-full bg-white border border-orange-200 rounded-xl shadow-md hidden z-20">
+                <div class="campus-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectCampus(this, 0, 'All Campuses')">All Campuses</div>
+                <!-- Campuses will be loaded here via JS -->
             </div>
-            <div class="relative inline-block text-left ml-3">
-                <button id="sortDropdownBtn"
-                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition shadow-sm">
-                    <span class="flex items-center gap-2 text-gray-700">
-                        <i class="ph ph-sort-ascending text-gray-500"></i>
-                        <span id="sortDropdownValue">Default Order</span>
-                    </span>
-                    <i class="ph ph-caret-down text-xs"></i>
-                </button>
-                <div id="sortDropdownMenu"
-                    class="absolute mt-1 w-full bg-white border border-orange-200 rounded-lg shadow-md hidden z-20">
-                    <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'default')">Default Order</div>
-                    <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'title_asc')">Title (A-Z)</div>
-                    <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'title_desc')">Title (Z-A)</div>
-                    <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'year_desc')">Year (newest)</div>
-                    <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'year_asc')">Year (oldest)</div>
-                </div>
+        </div>
+
+        <div class="relative inline-block text-left">
+            <button id="sortDropdownBtn"
+                class="border border-gray-200 bg-white rounded-full px-4 py-2.5 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition shadow-sm">
+                <span class="flex items-center gap-2 text-gray-700">
+                    <i class="ph ph-sort-ascending text-gray-500"></i>
+                    <span id="sortDropdownValue">Default Order</span>
+                </span>
+                <i class="ph ph-caret-down text-xs"></i>
+            </button>
+            <div id="sortDropdownMenu"
+                class="absolute mt-2 w-full bg-white border border-orange-200 rounded-xl shadow-md hidden z-20">
+                <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'default')">Default Order</div>
+                <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'title_asc')">Title (A-Z)</div>
+                <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'title_desc')">Title (Z-A)</div>
+                <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'year_desc')">Year (newest)</div>
+                <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'year_asc')">Year (oldest)</div>
             </div>
-            <div class="relative inline-block text-left ml-3">
-                <button id="statusDropdownBtn"
-                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-36 hover:bg-orange-50 transition shadow-sm">
-                    <span>
-                        <i class="ph ph-check-circle text-gray-500"></i>
-                        <span id="statusDropdownValue">All Status</span>
-                    </span>
-                    <i class="ph ph-caret-down text-xs"></i>
-                </button>
-                <div id="statusDropdownMenu"
-                    class="absolute mt-1 w-full bg-white border border-orange-200 rounded-lg shadow-md hidden z-20">
-                    <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'All Status')">All Status</div>
-                    <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Available')">Available</div>
-                    <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Borrowed')">Borrowed</div>
-                    <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Damaged')">Damaged</div>
-                    <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Lost')">Lost</div>
-                </div>
+        </div>
+        <div class="relative inline-block text-left">
+            <button id="statusDropdownBtn"
+                class="border border-gray-200 bg-white rounded-full px-4 py-2.5 text-sm text-gray-700 flex items-center justify-between gap-2 w-36 hover:bg-orange-50 transition shadow-sm">
+                <span>
+                    <i class="ph ph-check-circle text-gray-500"></i>
+                    <span id="statusDropdownValue">All Status</span>
+                </span>
+                <i class="ph ph-caret-down text-xs"></i>
+            </button>
+            <div id="statusDropdownMenu"
+                class="absolute mt-2 w-full bg-white border border-orange-200 rounded-xl shadow-md hidden z-20">
+                <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'All Status')">All Status</div>
+                <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Available')">Available</div>
+                <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Borrowed')">Borrowed</div>
+                <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Damaged')">Damaged</div>
+                <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Lost')">Lost</div>
             </div>
         </div>
     </div>
 
-    <!-- Update -->
     <div class="flex items-center justify-between my-4">
-        <h4 id="resultsIndicator" class="text-sm text-gray-600">
+        <h4 id="resultsIndicator" class="text-sm text-gray-600 font-medium">
             Loading...
         </h4>
 
@@ -217,24 +234,22 @@
             </button>
         </div>
     </div>
-    <!-- end -->
 
-    <div class="overflow-hidden border border-orange-200 rounded-lg shadow-sm">
+    <div class="overflow-hidden border border-orange-200 rounded-2xl bg-white shadow-sm">
         <table class="min-w-full text-sm text-gray-700">
-            <thead class="bg-orange-100 text-left text-gray-800">
+            <thead class="bg-orange-100 text-orange-700 uppercase text-xs tracking-wider sticky top-0 z-0 border-b border-orange-200">
                 <tr>
-                    <th class="py-3 px-4 font-medium">Book Title</th>
-                    <th class="py-3 px-4 font-medium">Author</th>
-                    <th class="py-3 px-4 font-medium">Accession Number</th>
-                    <th class="py-3 px-4 font-medium">Call Number</th>
-                    <th class="py-3 px-4 font-medium">ISBN</th>
-                    <th class="py-3 px-4 font-medium">Status</th>
-                    <th class="py-3 px-4 font-medium text-center">Actions</th>
+                    <th id="multi-select-header" class="py-3 px-4 font-semibold hidden w-10"></th>
+                    <th class="py-3 px-4 font-semibold">Book Title</th>
+                    <th class="py-3 px-4 font-semibold text-center">Campus</th>
+                    <th class="py-3 px-4 font-semibold">Author</th>
+                    <th class="py-3 px-4 font-semibold text-center">Status</th>
+                    <th class="py-3 px-4 font-semibold text-center">Actions</th>
                 </tr>
             </thead>
             <tbody id="bookTableBody" class="divide-y divide-orange-100 bg-white">
                 <tr data-placeholder="true">
-                    <td colspan="7" class="py-10 text-center text-gray-500">
+                    <td colspan="6" class="py-10 text-center text-gray-500">
                         <i class="ph ph-spinner animate-spin text-2xl"></i>
                     </td>
                 </tr>
@@ -251,7 +266,7 @@
 
 <div id="editBookModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
     <div
-        class="bg-[var(--color-card)] rounded-xl shadow-lg border border-[var(--color-border)] w-full max-md h-[85vh] flex flex-col animate-fadeIn">
+        class="bg-[var(--color-card)] rounded-xl shadow-lg border border-[var(--color-border)] w-full max-md h-[85vh] flex flex-col animate-fadeIn mx-4">
         <div class="flex justify-between items-start p-6 border-b border-[var(--color-border)] flex-shrink-0">
             <div>
                 <h2 class="text-lg font-semibold text-gray-900">Edit Book Details</h2>
@@ -294,17 +309,20 @@
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Status <span class="text-red-500">*</span></label>
-                <select id="edit_availability" name="availability" required
+                <label class="block text-sm font-medium text-gray-700 mb-1">Campus <span class="text-red-500">*</span></label>
+                <select id="edit_campus_id" name="campus_id" required
                     class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
-                    <option value="available">Available</option>
-                    <option value="damaged">Damaged</option>
-                    <option value="lost">Lost</option>
-                    <option value="borrowed" disabled>Borrowed (System Managed)</option>
+                    <option value="">Select Campus</option>
+                    <!-- Options loaded by JS -->
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">ISBN <span class="text-red-500">*</span></label>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Borrow Duration Override (Days)</label>
+                <input type="number" id="edit_borrowing_duration_override" name="borrowing_duration_override" min="0" placeholder="Default from policy"
+                    class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">ISBN</label>
                 <input type="text" id="edit_book_isbn" name="book_isbn"
                     class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
             </div>
@@ -357,11 +375,10 @@
                     </button>
                 </div>
                 <input type="file" id="edit_book_image" name="book_image" accept="image/*" class="hidden">
-                <div id="editPreviewContainer" class="mt-2 hidden">
+                <div id="editPreviewContainer" class="mt-2 hidden text-center">
                     <img id="editPreviewImage"
-                        class="w-32 h-48 object-cover rounded-lg border border-orange-200 shadow-md" />
+                        class="w-32 h-48 object-cover rounded-lg border border-orange-200 shadow-md inline-block" />
                 </div>
-                <p class="text-xs text-gray-500 mt-1">Recommended image size: 400×600 (2:3 ratio)</p>
             </div>
         </form>
         <div class="flex justify-end gap-3 p-6 border-t border-[var(--color-border)] flex-shrink-0">
@@ -398,13 +415,14 @@
                     <p id="viewModalStatus" class="font-bold text-sm text-gray-800 uppercase">AVAILABLE</p>
                 </div>
                 <div class="p-3 shadow-sm border border-orange-100 bg-white rounded flex flex-col items-start">
-                    <p class="text-xs text-orange-500 font-semibold mb-1 uppercase tracking-wider">Call Number</p>
-                    <p id="viewModalCallNumber" class="text-sm font-bold text-gray-800">N/A</p>
+                    <p class="text-xs text-orange-500 font-semibold mb-1 uppercase tracking-wider">Campus</p>
+                    <p id="viewModalCampus" class="font-bold text-sm text-gray-800 uppercase">N/A</p>
                 </div>
             </div>
             <div class="text-sm bg-white rounded-xl border border-orange-100 p-4 space-y-2 shadow-sm">
                 <p class="font-bold text-gray-700 text-sm mb-2 border-b border-orange-50 pb-1">Book Information</p>
                 <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Accession #:</span> <span id="viewModalAccessionNumber" class="font-mono text-sm font-semibold text-orange-600 break-words"></span></p>
+                <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Call Number:</span> <span id="viewModalCallNumber" class="text-gray-800 font-semibold"></span></p>
                 <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">ISBN:</span> <span id="viewModalIsbn" class="break-words text-gray-800"></span></p>
                 <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Subject:</span> <span id="viewModalSubject" class="break-words text-gray-800"></span></p>
                 <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Place:</span> <span id="viewModalPlace" class="break-words text-gray-800"></span></p>
@@ -426,10 +444,9 @@
     </div>
 </div>
 
-<!-- --- BORROWING HISTORY MODAL --- -->
-<div id="historyModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-    <div class="bg-[var(--color-card)] rounded-xl shadow-lg border border-[var(--color-border)] w-full max-w-2xl max-h-[85vh] flex flex-col animate-fadeIn mx-4">
-        <div class="bg-gradient-to-r from-orange-500 to-amber-500 p-5 text-white flex justify-between items-center rounded-t-xl">
+<div id="historyModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+    <div class="bg-[var(--color-card)] rounded-xl shadow-lg border border-[var(--color-border)] w-full max-w-2xl max-h-[85vh] flex flex-col animate-fadeIn overflow-hidden">
+        <div class="bg-gradient-to-r from-orange-500 to-amber-500 p-5 text-white flex justify-between items-center flex-shrink-0">
             <h2 class="text-xl font-bold flex items-center gap-2 text-white">
                 <i class="ph ph-clock-counter-clockwise text-2xl"></i>
                 Borrowing History
@@ -439,15 +456,15 @@
             </button>
         </div>
         <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-gray-50/30">
-            <div id="historyTableContainer" class="overflow-hidden border border-orange-100 rounded-lg shadow-sm">
+            <div id="historyTableContainer" class="overflow-hidden border border-orange-100 rounded-lg shadow-sm bg-white">
                 <table class="min-w-full text-base text-gray-700">
-                    <thead class="bg-orange-50 text-left text-gray-800">
+                    <thead class="bg-orange-50 text-left text-gray-800 sticky top-0 z-10 border-b border-orange-100">
                         <tr>
-                            <th class="py-4 px-5 font-bold border-b border-orange-100">Borrower</th>
-                            <th class="py-4 px-5 font-bold border-b border-orange-100">ID / Role</th>
-                            <th class="py-4 px-5 font-bold border-b border-orange-100">Borrowed Date</th>
-                            <th class="py-4 px-5 font-bold border-b border-orange-100">Returned Date</th>
-                            <th class="py-4 px-5 font-bold border-b border-orange-100 text-center">Status</th>
+                            <th class="py-4 px-5 font-bold">Borrower</th>
+                            <th class="py-4 px-5 font-bold">ID / Role</th>
+                            <th class="py-4 px-5 font-bold">Borrowed Date</th>
+                            <th class="py-4 px-5 font-bold">Returned Date</th>
+                            <th class="py-4 px-5 font-bold text-center">Status</th>
                         </tr>
                     </thead>
                     <tbody id="historyTableBody" class="divide-y divide-orange-100 bg-white">
@@ -458,10 +475,9 @@
             <div id="historyEmptyState" class="hidden py-16 text-center text-gray-500">
                 <i class="ph ph-scroll text-6xl mb-4 text-orange-200"></i>
                 <p class="font-bold text-lg text-gray-700">No borrowing history found</p>
-                <p class="text-sm text-gray-400 mt-1">This book appears to be new or hasn't circulated yet.</p>
             </div>
         </div>
-        <div class="p-5 border-t flex justify-end bg-white rounded-b-xl">
+        <div class="p-5 border-t flex justify-end bg-white flex-shrink-0">
             <button id="closeHistoryBtn" class="px-8 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-bold text-sm shadow-sm">Close</button>
         </div>
     </div>
@@ -469,3 +485,4 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="<?= BASE_URL ?>/js/librarian/bookManagement.js" defer></script>
+

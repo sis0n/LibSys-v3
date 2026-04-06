@@ -1,7 +1,77 @@
-window.addEventListener("DOMContentLoaded", () => {
-  // --- SweetAlert Helper Functions (Para ma-maintain ang design consistency) ---
+document.addEventListener("DOMContentLoaded", () => {
+  // --- Elements ---
+  const bookTableBody = document.getElementById("bookTableBody");
+  const bookSearchInput = document.getElementById("bookSearchInput");
+  const sortDropdownBtn = document.getElementById("sortDropdownBtn");
+  const sortDropdownValue = document.getElementById("sortDropdownValue");
+  const sortDropdownMenu = document.getElementById("sortDropdownMenu");
+  const statusDropdownBtn = document.getElementById("statusDropdownBtn");
+  const statusDropdownValue = document.getElementById("statusDropdownValue");
+  const statusDropdownMenu = document.getElementById("statusDropdownMenu");
+  const campusDropdownBtn = document.getElementById("campusDropdownBtn");
+  const campusDropdownValue = document.getElementById("campusDropdownValue");
+  const campusDropdownMenu = document.getElementById("campusDropdownMenu");
+  const resultsIndicator = document.getElementById("resultsIndicator");
 
-  function showSuccessToast(title, body = "") {
+  // Import Modal Elements
+  const bulkImportBtn = document.getElementById("bulkImportBtn");
+  const importModal = document.getElementById("importModal");
+  const closeImportModal = document.getElementById("closeImportModal");
+  const cancelImport = document.getElementById("cancelImport");
+  const bulkImportForm = document.getElementById("bulkImportForm");
+  const csvFile = document.getElementById("csvFile");
+  const uploadText = document.querySelector(
+    '#importModal label[for="csvFile"] p:first-of-type',
+  );
+  const uploadInstruction = document.querySelector(
+    '#importModal label[for="csvFile"] p:last-of-type',
+  );
+
+  const addBookModal = document.getElementById("addBookModal");
+  const openAddBookBtn = document.getElementById("openAddBookBtn");
+  const closeAddBookModal = document.getElementById("closeAddBookModal");
+  const cancelAddBook = document.getElementById("cancelAddBook");
+  const addBookForm = document.getElementById("addBookForm");
+
+  const editBookModal = document.getElementById("editBookModal");
+  const closeEditBookModal = document.getElementById("closeEditBookModal");
+  const cancelEditBook = document.getElementById("cancelEditBook");
+  const editBookForm = document.getElementById("editBookForm");
+
+  const viewBookModal = document.getElementById("viewBookModal");
+  const closeViewModal = document.getElementById("closeViewModal");
+  const closeViewModalBtn = document.getElementById("closeViewModalBtn");
+
+  const historyModal = document.getElementById("historyModal");
+  const closeHistoryModal = document.getElementById("closeHistoryModal");
+  const closeHistoryBtn = document.getElementById("closeHistoryBtn");
+
+  const multiSelectBtn = document.getElementById("multiSelectBtn");
+  const multiSelectActions = document.getElementById("multiSelectActions");
+  const selectAllBtn = document.getElementById("selectAllBtn");
+  const cancelSelectionBtn = document.getElementById("cancelSelectionBtn");
+  const multiDeleteBtn = document.getElementById("multiDeleteBtn");
+  const selectionCount = document.getElementById("selectionCount");
+
+  // --- State ---
+  let books = [];
+  let currentSort = "default";
+  let currentStatus = "All Status";
+  let currentCampusId = 0;
+  let currentPage = 1;
+  let limit = 30;
+  let totalCount = 0;
+  let isMultiSelectMode = false;
+  let selectedBookIds = new Set();
+  let searchTimeout;
+
+  // --- Helpers ---
+  function truncateText(text, length = 30) {
+    if (!text) return "N/A";
+    return text.length > length ? text.substring(0, length) + "..." : text;
+  }
+
+  function showSuccessToast(title, body = "Successfully processed.") {
     if (typeof Swal == "undefined") return alert(title);
     Swal.fire({
       toast: true,
@@ -18,10 +88,7 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function showErrorToast(
-    title,
-    body = "An error occurred during processing.",
-  ) {
+  function showErrorToast(title, body = "Please check the input details.") {
     if (typeof Swal == "undefined") return alert(title);
     Swal.fire({
       toast: true,
@@ -60,23 +127,20 @@ window.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  async function showConfirmationModal(
-    title,
-    text,
-    confirmText = "Confirm",
-    icon = "ph-warning-circle",
-  ) {
+  async function showConfirmationModal(title, text, confirmText = "Confirm") {
     if (typeof Swal == "undefined") return confirm(title);
     const result = await Swal.fire({
       background: "transparent",
+      buttonsStyling: false,
+      width: "450px",
       html: `
                 <div class="flex flex-col text-center">
                     <div class="flex justify-center mb-3">
-                        <div class="flex items-center justify-center w-14 h-14 rounded-full bg-orange-100 text-orange-600">
-                            <i class="ph ${icon} text-2xl"></i>
+                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 text-orange-600">
+                            <i class="ph ph-warning-circle text-3xl"></i>
                         </div>
                     </div>
-                    <h3 class="text-[17px] font-semibold text-orange-700">${title}</h3>
+                    <h3 class="text-xl font-semibold text-gray-800">${title}</h3>
                     <p class="text-[14px] text-gray-700 mt-1">${text}</p>
                 </div>
             `,
@@ -85,748 +149,458 @@ window.addEventListener("DOMContentLoaded", () => {
       cancelButtonText: "Cancel",
       customClass: {
         popup:
-          "!rounded-xl !shadow-md !p-6 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] !border-2 !border-orange-400 shadow-[0_0_8px_#ffb34770]",
+          "!rounded-xl !shadow-lg !p-6 !bg-white !border-2 !border-orange-400 shadow-[0_0_15px_#ffb34780]",
         confirmButton:
-          "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700",
+          "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700 !mx-2 !font-semibold !text-base",
         cancelButton:
-          "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300",
+          "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300 !mx-2 !font-semibold !text-base",
+        actions: "!mt-4",
       },
     });
     return result.isConfirmed;
   }
-  // --- End SweetAlert Helper Functions ---
 
-  // ==========================
-  // ELEMENT REFERENCES
-  // ==========================
-  const importModal = document.getElementById("importModal");
-  const bulkImportBtn = document.getElementById("bulkImportBtn");
-  const closeImportModal = document.getElementById("closeImportModal");
-  const cancelImport = document.getElementById("cancelImport");
+  // --- Modals & Modifiers ---
 
-  const addBookModal = document.getElementById("addBookModal");
-  const openAddBookBtn = document.getElementById("openAddBookBtn");
-  const closeAddBookModal = document.getElementById("closeAddBookModal");
-  const cancelAddBook = document.getElementById("cancelAddBook");
-  const addBookForm = document.getElementById("addBookForm");
-  const input = document.getElementById("book_image");
-  const uploadText = document.getElementById("uploadText");
-  const previewContainer = document.getElementById("previewContainer");
-  const previewImage = document.getElementById("previewImage");
-
-  const editBookModal = document.getElementById("editBookModal");
-  const closeEditBookModal = document.getElementById("closeEditBookModal");
-  const cancelEditBook = document.getElementById("cancelEditBook");
-  const editBookForm = document.getElementById("editBookForm");
-  const editInput = document.getElementById("edit_book_image");
-  const editUploadText = document.getElementById("editUploadText");
-  const editPreviewContainer = document.getElementById("editPreviewContainer");
-  const editPreviewImage = document.getElementById("editPreviewImage");
-  const removeImageBtn = document.getElementById("removeImageBtn");
-  const editRemoveImageInput = document.getElementById("edit_remove_image");
-
-  // --- View Modal Elements ---
-  const viewBookModal = document.getElementById("viewBookModal");
-  const viewBookModalContent = document.getElementById("viewBookModalContent");
-  const closeViewModal = document.getElementById("closeViewModal");
-  const closeViewModalBtn = document.getElementById("closeViewModalBtn");
-  const viewModalImg = document.getElementById("viewModalImg");
-  const viewModalTitle = document.getElementById("viewModalTitle");
-  const viewModalAuthor = document.getElementById("viewModalAuthor");
-  const viewModalStatus = document.getElementById("viewModalStatus");
-  const viewModalCallNumber = document.getElementById("viewModalCallNumber");
-  const viewModalAccessionNumber = document.getElementById(
-    "viewModalAccessionNumber",
-  );
-  const viewModalIsbn = document.getElementById("viewModalIsbn");
-  const viewModalSubject = document.getElementById("viewModalSubject");
-  const viewModalPlace = document.getElementById("viewModalPlace");
-  const viewModalPublisher = document.getElementById("viewModalPublisher");
-  const viewModalYear = document.getElementById("viewModalYear");
-  const viewModalEdition = document.getElementById("viewModalEdition");
-  const viewModalSupplementary = document.getElementById(
-    "viewModalSupplementary",
-  );
-  const viewModalDescription = document.getElementById("viewModalDescription");
-
-  const searchInput = document.getElementById("bookSearchInput");
-  const bookTableBody = document.getElementById("bookTableBody");
-  const resultsIndicator = document.getElementById("resultsIndicator");
-
-  const paginationControls = document.getElementById("paginationControls");
-  const paginationList = document.getElementById("paginationList");
-  const bulkImportForm = document.getElementById("bulkImportForm");
-  const fileInput = document.getElementById("csvFile");
-  const importMessage = document.getElementById("importMessage");
-
-  const multiSelectBtn = document.getElementById("multiSelectBtn");
-  const multiSelectActions = document.getElementById("multiSelectActions");
-  const selectAllBtn = document.getElementById("selectAllBtn");
-  const cancelSelectionBtn = document.getElementById("cancelSelectionBtn");
-  const multiDeleteBtn = document.getElementById("multiDeleteBtn");
-  const selectionCount = document.getElementById("selectionCount");
-
-  const historyModal = document.getElementById("historyModal");
-  const historyTableBody = document.getElementById("historyTableBody");
-  const historyTableContainer = document.getElementById(
-    "historyTableContainer",
-  );
-  const historyEmptyState = document.getElementById("historyEmptyState");
-  const closeHistoryModal = document.getElementById("closeHistoryModal");
-  const closeHistoryBtn = document.getElementById("closeHistoryBtn");
-
-  if (
-    !bookTableBody ||
-    !addBookModal ||
-    !editBookModal ||
-    !importModal ||
-    !searchInput ||
-    !paginationList ||
-    !resultsIndicator
-  ) {
-    console.error("BookManagement Error: Core components missing.");
-    if (bookTableBody)
-      bookTableBody.innerHTML = `<tr data-placeholder="true"><td colspan="7" class="text-center text-red-500 py-10">Page Error: Components missing.</td></tr>`;
-    return;
-  }
-
-  // ==========================
-  // STATE VARIABLES
-  // ==========================
-  let books = [];
-  let totalBooks = 0;
-  let currentEditingBookId = null;
-  let currentSort = "default";
-  let currentStatus = "All Status";
-  let currentSearch = "";
-  let isLoading = false;
-  let searchDebounce;
-  const limit = 30;
-  let currentPage = 1;
-  let totalPages = 1;
-  let isMultiSelectMode = false;
-  let selectedBooks = new Set();
-
-  fileInput.addEventListener("change", () => {
-    if (fileInput.files.length) {
-      bulkImportForm.requestSubmit();
+  const openModal = (modal) => {
+    modal.classList.remove("hidden");
+    // Force reflow
+    modal.offsetHeight;
+    modal.classList.add("opacity-100");
+    modal.classList.remove("opacity-0");
+    
+    const content = modal.querySelector(".animate-fadeIn, .animate-scaleIn, #viewBookModalContent");
+    if (content) {
+      content.classList.remove("animate-fadeOut", "opacity-0", "scale-95");
+      if (content.id === "viewBookModalContent") {
+        content.classList.remove("scale-95");
+        content.classList.add("scale-100");
+      }
     }
-  });
+  };
 
-  bulkImportForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  const closeModal = (modal) => {
+    modal.classList.add("opacity-0");
+    modal.classList.remove("opacity-100");
+    
+    const content = modal.querySelector(".animate-fadeIn, .animate-scaleIn, #viewBookModalContent");
+    if (content) {
+      content.classList.add("animate-fadeOut", "opacity-0");
+      if (content.id === "viewBookModalContent") {
+        content.classList.add("scale-95");
+        content.classList.remove("scale-100");
+      }
+    }
 
-    if (!fileInput.files.length)
-      return showErrorToast("Import Error", "Please select a CSV file.");
+    setTimeout(() => {
+      modal.classList.add("hidden");
+      if (content) {
+        content.classList.remove("animate-fadeOut", "opacity-0");
+      }
+    }, 300);
+  };
 
-    const formData = new FormData();
-    formData.append("csv_file", fileInput.files[0]);
-
+  // --- Fetching ---
+  const fetchBooks = async () => {
     try {
-      const res = await fetch(`api/admin/booksmanagement/bulkImport`, {
-        method: "POST",
-        body: formData,
+      const search = bookSearchInput.value.trim();
+      const offset = (currentPage - 1) * limit;
+
+      const params = new URLSearchParams({
+        search,
+        status: currentStatus,
+        sort: currentSort,
+        campus_id: currentCampusId,
+        limit,
+        offset,
       });
 
-      const data = await res.json();
+      const response = await fetch(
+        `api/admin/booksmanagement/fetch?${params}`,
+      );
+      const data = await response.json();
 
       if (data.success) {
-        if (importMessage) {
-          importMessage.textContent = `Imported: ${data.imported} rows successfully!`;
-          importMessage.classList.remove("hidden");
-          setTimeout(() => importMessage.classList.add("hidden"), 5000);
-        }
-        showSuccessToast(
-          "Import Successful",
-          `Successfully imported ${data.imported} books!`,
-        );
-        fileInput.value = "";
-        closeModal(document.getElementById("importModal"));
-        await loadBooks(1, false);
-      } else {
-        showErrorToast(
-          "Import Failed",
-          data.message || "Failed to import CSV.",
-        );
-      }
-    } catch (err) {
-      console.error("Error importing CSV:", err);
-      showErrorToast("Import Failed", "An error occurred during CSV import.");
-    }
-  });
-
-  // --- Page Memory ---
-  try {
-    const savedPage = sessionStorage.getItem("bookManagementPage");
-    if (savedPage) {
-      const parsedPage = parseInt(savedPage, 10);
-      if (!isNaN(parsedPage) && parsedPage > 0) currentPage = parsedPage;
-      else sessionStorage.removeItem("bookManagementPage");
-    }
-  } catch (e) {
-    console.error("SessionStorage Error:", e);
-    currentPage = 1;
-  }
-
-  function openModal(modal) {
-    if (modal) {
-      modal.classList.remove("hidden");
-      document.body.classList.add("overflow-hidden");
-    }
-  }
-
-  function closeModal(modal) {
-    if (modal) {
-      modal.classList.add("hidden");
-      document.body.classList.remove("overflow-hidden");
-    }
-  }
-
-  bulkImportBtn?.addEventListener("click", () => openModal(importModal));
-  closeImportModal?.addEventListener("click", () => closeModal(importModal));
-  cancelImport?.addEventListener("click", () => closeModal(importModal));
-  importModal?.addEventListener("click", (e) => {
-    if (e.target === importModal) closeModal(importModal);
-  });
-
-  openAddBookBtn?.addEventListener("click", () => {
-    addBookForm.reset();
-    previewContainer.classList.add("hidden");
-    uploadText.textContent = "Upload Image";
-    openModal(addBookModal);
-  });
-  closeAddBookModal?.addEventListener("click", () => closeModal(addBookModal));
-  cancelAddBook?.addEventListener("click", () => closeModal(addBookModal));
-  addBookModal?.addEventListener("click", (e) => {
-    if (e.target === addBookModal) closeModal(addBookModal);
-  });
-
-  closeEditBookModal?.addEventListener("click", () =>
-    closeModal(editBookModal),
-  );
-  cancelEditBook?.addEventListener("click", () => closeModal(editBookModal));
-  editBookModal?.addEventListener("click", (e) => {
-    if (e.target === editBookModal) closeModal(editBookModal);
-  });
-
-  input?.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const allowedTypes = ["image/jpeg", "image/png"];
-    if (!allowedTypes.includes(file.type)) {
-      showErrorToast(
-        "Invalid File Type",
-        "Please upload only JPG or PNG files.",
-      );
-      input.value = "";
-      uploadText.textContent = "Upload Image";
-      previewContainer.classList.add("hidden");
-      previewImage.src = "";
-      return;
-    }
-    uploadText.textContent = file.name;
-    if (file.type.startsWith("image/")) {
-      previewContainer.classList.remove("hidden");
-      const reader = new FileReader();
-      reader.onload = (event) => (previewImage.src = event.target.result);
-      reader.readAsDataURL(file);
-    }
-  });
-
-  editInput?.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const allowedTypes = ["image/jpeg", "image/png"];
-    if (!allowedTypes.includes(file.type)) {
-      showErrorToast(
-        "Invalid File Type",
-        "Please upload only JPG or PNG files.",
-      );
-      editInput.value = "";
-      editUploadText.textContent = "Upload Image";
-      editPreviewContainer.classList.add("hidden");
-      editPreviewImage.src = "";
-      return;
-    }
-    editUploadText.textContent = file.name;
-    if (file.type.startsWith("image/")) {
-      editPreviewContainer.classList.remove("hidden");
-      const reader = new FileReader();
-      reader.onload = (event) => (editPreviewImage.src = event.target.result);
-      reader.readAsDataURL(file);
-    }
-  });
-
-  // ==========================
-  // DROPDOWN LOGIC
-  // ==========================
-  function setupDropdown(btnId, menuId) {
-    const btn = document.getElementById(btnId);
-    const menu = document.getElementById(menuId);
-    if (!btn || !menu) return;
-    const closeAllDropdowns = () => {
-      document
-        .querySelectorAll(".absolute.mt-1.z-20")
-        .forEach((m) => m.classList.add("hidden"));
-    };
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const isHidden = menu.classList.contains("hidden");
-      closeAllDropdowns();
-      if (isHidden) menu.classList.toggle("hidden");
-    });
-  }
-  setupDropdown("statusDropdownBtn", "statusDropdownMenu");
-  setupDropdown("sortDropdownBtn", "sortDropdownMenu");
-  document.addEventListener("click", () => {
-    document
-      .querySelectorAll(".absolute.mt-1.z-20")
-      .forEach((menu) => menu.classList.add("hidden"));
-  });
-
-  window.selectSort = (el, val) => {
-    const valueEl = document.getElementById("sortDropdownValue");
-    if (valueEl) valueEl.textContent = el.textContent;
-    document
-      .querySelectorAll("#sortDropdownMenu .sort-item")
-      .forEach((i) => i.classList.remove("bg-orange-50", "font-semibold"));
-    if (el) el.classList.add("bg-orange-50", "font-semibold");
-    currentSort = val;
-    currentPage = 1;
-    try {
-      sessionStorage.removeItem("bookManagementPage");
-    } catch (e) {}
-    loadBooks(currentPage, false);
-  };
-  window.selectStatus = (el, val) => {
-    const valueEl = document.getElementById("statusDropdownValue");
-    if (valueEl) valueEl.textContent = val;
-    document
-      .querySelectorAll("#statusDropdownMenu .status-item")
-      .forEach((i) => i.classList.remove("bg-orange-50", "font-semibold"));
-    if (el) el.classList.add("bg-orange-50", "font-semibold");
-    currentStatus = val;
-    currentPage = 1;
-    try {
-      sessionStorage.removeItem("bookManagementPage");
-    } catch (e) {}
-    loadBooks(currentPage, false);
-  };
-
-  const defaultSort = document.querySelector("#sortDropdownMenu .sort-item");
-  if (defaultSort) defaultSort.classList.add("bg-orange-50", "font-semibold");
-  const defaultStatus = document.querySelector(
-    "#statusDropdownMenu .status-item",
-  );
-  if (defaultStatus)
-    defaultStatus.classList.add("bg-orange-50", "font-semibold");
-
-  searchInput.addEventListener("input", (e) => {
-    currentSearch = e.target.value.trim();
-    clearTimeout(searchDebounce);
-    searchDebounce = setTimeout(() => {
-      currentPage = 1;
-      try {
-        sessionStorage.removeItem("bookManagementPage");
-      } catch (e) {}
-      loadBooks(currentPage, false);
-    }, 500);
-  });
-
-  // ==========================
-  // DATA FETCHING (AJAX)
-  // ==========================
-  async function loadBooks(page = 1, isShowLoadingModal = true) {
-    if (isLoading) return;
-    isLoading = true;
-    currentPage = page;
-
-    const startTime = Date.now();
-
-    if (bookTableBody) bookTableBody.innerHTML = "";
-    paginationControls.classList.add("hidden");
-    resultsIndicator.textContent = "Loading...";
-
-    if (isShowLoadingModal && typeof Swal != "undefined") {
-      showLoadingModal(
-        "Loading Book Catalog...",
-        "Retrieving library records.",
-      );
-    }
-
-    const offset = (page - 1) * limit;
-
-    try {
-      const params = new URLSearchParams({
-        search: currentSearch,
-        status: currentStatus === "All Status" ? "" : currentStatus,
-        sort: currentSort,
-        limit: limit,
-        offset: offset,
-      });
-
-      const res = await fetch(
-        `api/admin/booksmanagement/fetch?${params.toString()}`,
-      );
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data = await res.json();
-
-      if (isShowLoadingModal) {
-        const elapsed = Date.now() - startTime;
-        const minDelay = 1000;
-        if (elapsed < minDelay)
-          await new Promise((r) => setTimeout(r, minDelay - elapsed));
-        if (typeof Swal != "undefined") Swal.close();
-      }
-
-      if (data.success && Array.isArray(data.books)) {
         books = data.books;
-        totalBooks = data.totalCount;
-        totalPages = Math.ceil(totalBooks / limit) || 1;
-
-        if (page > totalPages && totalPages > 0) {
-          loadBooks(totalPages, isShowLoadingModal);
-          return;
-        }
-        renderBooks(data.books);
-        renderPagination(totalPages, currentPage);
-        updateBookCounts(data.books.length, totalBooks, page, limit);
-        try {
-          sessionStorage.setItem("bookManagementPage", currentPage);
-        } catch (e) {}
-      } else {
-        throw new Error(data.message || "Invalid data format from server.");
+        totalCount = data.totalCount;
+        renderTable();
+        renderPagination();
+        updateResultsIndicator();
       }
-    } catch (err) {
-      console.error("Fetch books error:", err);
-      bookTableBody.innerHTML = `<tr data-placeholder="true"><td colspan="7" class="text-center text-red-500 py-10">Error loading books: ${err.message}</td></tr>`;
-      updateBookCounts(0, 0, 1, limit);
-      showErrorToast("Data Load Failed", "Could not retrieve book list data.");
-      if (isShowLoadingModal && typeof Swal != "undefined") Swal.close();
-      try {
-        sessionStorage.removeItem("bookManagementPage");
-      } catch (e) {}
-    } finally {
-      isLoading = false;
+    } catch (error) {
+      console.error("Error fetching books:", error);
     }
-  }
+  };
 
-  // ==========================
-  // RENDER TABLE FUNCTION
-  // ==========================
-  const renderBooks = (booksToRender) => {
+  const loadCampuses = async () => {
+    try {
+      const response = await fetch("api/campuses/all");
+      const data = await response.json();
+
+      if (data.success) {
+        const filterMenu = document.getElementById("campusDropdownMenu");
+        const allOption = filterMenu.querySelector(".campus-item");
+        filterMenu.innerHTML = "";
+        filterMenu.appendChild(allOption);
+
+        const addSelect = addBookForm.querySelector('select[name="campus_id"]');
+        const editSelect = editBookForm.querySelector(
+          'select[name="campus_id"]',
+        );
+
+        addSelect.innerHTML = '<option value="">Select Campus</option>';
+        editSelect.innerHTML = '<option value="">Select Campus</option>';
+
+        data.campuses.forEach((campus) => {
+          const item = document.createElement("div");
+          item.className =
+            "campus-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm";
+          item.textContent = campus.campus_name;
+          item.onclick = () =>
+            selectCampus(item, campus.campus_id, campus.campus_name);
+          filterMenu.appendChild(item);
+
+          const optAdd = document.createElement("option");
+          optAdd.value = campus.campus_id;
+          optAdd.textContent = campus.campus_name;
+          addSelect.appendChild(optAdd);
+
+          const optEdit = document.createElement("option");
+          optEdit.value = campus.campus_id;
+          optEdit.textContent = campus.campus_name;
+          editSelect.appendChild(optEdit);
+        });
+      }
+    } catch (error) {
+      console.error("Error loading campuses:", error);
+    }
+  };
+
+  const renderTable = () => {
     bookTableBody.innerHTML = "";
-
-    const headerRow = document.querySelector("thead tr");
-    if (headerRow) {
-      const firstHeader = headerRow.querySelector("th");
-      if (isMultiSelectMode) {
-        if (!firstHeader.classList.contains("multi-select-header")) {
-          const th = document.createElement("th");
-          th.className = "py-3 px-4 font-medium multi-select-header";
-          headerRow.insertBefore(th, firstHeader);
-        }
-      } else {
-        if (
-          firstHeader &&
-          firstHeader.classList.contains("multi-select-header")
-        ) {
-          firstHeader.remove();
-        }
-      }
-    }
-
-    if (!booksToRender || booksToRender.length === 0) {
-      const colspan = document.querySelector("thead tr").children.length;
-      bookTableBody.innerHTML = `
-            <tr data-placeholder="true">
-                <td colspan="${colspan}" class="py-10 text-center">
-                    <div class="flex flex-col items-center justify-center text-gray-500">
-                        <i class="ph ph-books text-5xl mb-3"></i>
-                        <p class="font-medium text-gray-700">No books found</p>
-                        <p class="text-sm text-gray-500">No books match your current filters.</p>
-                    </div>
-                </td>
-            </tr>
-            `;
+    if (books.length === 0) {
+      bookTableBody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-gray-500">No books found.</td></tr>`;
       return;
     }
 
-    let rowsHtml = "";
-    booksToRender.forEach((book) => {
-      const isSelected = selectedBooks.has(book.book_id);
-      let statusColor = "bg-gray-600";
-      if (book.availability === "available") statusColor = "bg-green-600";
-      else if (book.availability === "borrowed") statusColor = "bg-orange-500";
-      else if (book.availability === "damaged") statusColor = "bg-amber-500";
-      else if (book.availability === "lost") statusColor = "bg-red-600";
-
-
-      const title = book.title
-
-        ? String(book.title).replace(/</g, "&lt;")
-        : "N/A";
-      const author = book.author
-        ? String(book.author).replace(/</g, "&lt;")
-        : "N/A";
-      const accession = book.accession_number
-        ? String(book.accession_number).replace(/</g, "&lt;")
-        : "N/A";
-      const call = book.call_number
-        ? String(book.call_number).replace(/</g, "&lt;")
-        : "N/A";
-      const isbn = book.book_isbn
-        ? String(book.book_isbn).replace(/</g, "&lt;")
-        : "N/A";
-      const status = book.availability
-        ? String(book.availability).replace(/</g, "&lt;")
-        : "N/A";
-      const safeTitle = title.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-
-      let checkboxCell = "";
-      if (isMultiSelectMode) {
-        checkboxCell = `
-                    <td class="px-4 py-3">
-                        <input type="checkbox" class="book-checkbox accent-orange-500 pointer-events-none" data-book-id="${book.book_id}" ${isSelected ? "checked" : ""}>
-                    </td>
-                `;
-      }
-
-      let actionsCellHTML = `
-                <td class="py-3 px-4 text-center">
-                    <button onclick="openHistoryModal(${book.book_id})"
-                        class="border border-blue-300 text-blue-700 px-2 py-1 rounded hover:bg-blue-100" title="View Borrowing History">
-                        <i class='ph ph-eye pointer-events-none'></i>
-                    </button>
-                    <button onclick="editBook(${book.book_id})"
-                        class="border border-orange-300 text-orange-700 px-2 py-1 rounded hover:bg-orange-100">
-                        <i class='ph ph-pencil pointer-events-none'></i>
-                    </button>
-                    <button onclick="deleteBook(${book.book_id}, '${safeTitle}')"
-                        class="border border-orange-300 text-orange-700 px-2 py-1 rounded hover:bg-orange-100">
-                        <i class='ph ph-trash pointer-events-none'></i>
-                    </button>
-                </td>`;
-
-      if (isMultiSelectMode) {
-        actionsCellHTML = `<td class="py-3 px-4 text-center"></td>`;
-      }
-
-      rowsHtml += `
-            <tr data-book-id="${book.book_id}" class="transition-colors ${isMultiSelectMode ? "cursor-pointer" : ""} ${isSelected ? "bg-orange-100" : ""}">
-                ${checkboxCell}
+    books.forEach((book) => {
+      const isSelected = selectedBookIds.has(book.book_id);
+      const row = document.createElement("tr");
+      row.className = `hover:bg-orange-50/40 transition-colors ${isSelected ? "bg-orange-100" : ""} ${book.is_active == 0 ? "opacity-60 bg-gray-50" : ""}`;
+      row.innerHTML = `
+                <td class="py-3 px-4 ${isMultiSelectMode ? "" : "hidden"}">
+                    <input type="checkbox" class="accent-orange-500" ${isSelected ? "checked" : ""} onchange="toggleBookSelection(${book.book_id})">
+                </td>
                 <td class="py-3 px-4">
-                    <div class="max-w-[240px] ">
-                        <p class="font-medium text-gray-800 whitespace-normal break-words">${title}</p>
+                    <div class="flex items-center gap-2">
+                        ${book.is_active == 0 ? '<i class="ph ph-eye-slash text-gray-400" title="Inactive"></i>' : ""}
+                        <div>
+                            <p class="font-medium ${book.is_active == 0 ? "text-gray-500" : "text-gray-900"}">${truncateText(book.title, 35)}</p>
+                            <p class="text-xs text-gray-500 font-mono">${book.accession_number} | ${book.call_number}</p>
+                        </div>
                     </div>
                 </td>
-                <td class="py-3 px-4 truncate max-w-[240px] whitespace-normal break-words">${author}</td>
-                <td class="px-4 py-3">${accession}</td>
-                <td class="px-4 py-3">${call}</td>
-                <td class="px-4 py-3">${isbn}</td>
-                <td class="py-3 px-4">
-                    <span class="text-white text-xs px-3 py-1 rounded-full ${statusColor}">
-                        ${status}
+                <td class="py-3 px-4 text-center">
+                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-orange-700 bg-orange-50 border border-orange-200 px-3 py-1 rounded-full">
+                        <i class="ph ph-map-pin"></i>
+                        ${book.campus_name || "N/A"}
                     </span>
                 </td>
-                ${actionsCellHTML}
-            </tr>`;
+                <td class="py-3 px-4 text-gray-600">${book.author || "N/A"}</td>
+                <td class="py-3 px-4 text-center">
+                    <span onclick="toggleBookActive(${book.book_id}, ${book.is_active}, '${book.title.replace(/'/g, "\\'")}')" 
+                          class="px-3 py-1 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80 transition ${getStatusClass(book.availability, book.is_active)}">
+                        ${book.is_active == 1 ? book.availability.toUpperCase() : "INACTIVE"}
+                    </span>
+                </td>
+                <td class="py-3 px-4">
+                    <div class="flex items-center justify-center gap-2">
+                        <button onclick="viewHistory(${book.book_id})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition" title="View History">
+                            <i class="ph ph-eye text-lg"></i>
+                        </button>
+                        <button onclick="viewBook(${book.book_id})" class="p-2 text-orange-600 hover:bg-orange-50 rounded-full transition" title="View Details">
+                            <i class="ph ph-info text-lg"></i>
+                        </button>
+                        <button onclick="editBook(${book.book_id})" class="p-2 text-amber-600 hover:bg-amber-50 rounded-full transition" title="Edit Book">
+                            <i class="ph ph-note-pencil text-lg"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+      bookTableBody.appendChild(row);
     });
-    bookTableBody.innerHTML = rowsHtml;
   };
 
-  // ==========================
-  // PAGINATION RENDER
-  // ==========================
-  function renderPagination(totalPages, page) {
-    if (totalPages <= 1) {
-      paginationControls.className = "flex justify-center mt-8 hidden";
-      return;
+  const getStatusClass = (status, isActive = 1) => {
+    if (isActive == 0) return "bg-gray-200 text-gray-700";
+    switch (status.toLowerCase()) {
+      case "available":
+        return "bg-emerald-100 text-emerald-700";
+      case "borrowed":
+        return "bg-blue-100 text-blue-700";
+      case "damaged":
+        return "bg-amber-100 text-amber-700";
+      case "lost":
+        return "bg-rose-100 text-rose-700";
+      default:
+        return "bg-gray-100 text-gray-700";
     }
+  };
 
-    paginationList.innerHTML = "";
+  window.toggleBookActive = async (id, currentStatus, title) => {
+    const newStatus = currentStatus == 1 ? 0 : 1;
+    const actionText = newStatus == 1 ? "reactivate" : "deactivate";
+    const confirmBtnText = newStatus == 1 ? "Yes, Reactivate" : "Yes, Deactivate";
 
-    const createPageLink = (
-      type,
-      text,
-      pageNum,
-      isDisabled = false,
-      isActive = false,
-    ) => {
-      const li = document.createElement("li");
-      const a = document.createElement("a");
-      a.href = "#";
-      a.setAttribute("data-page", String(pageNum));
-      let baseClasses = `flex items-center justify-center min-w-[32px] h-9 text-sm font-medium transition-all duration-200`;
-      if (type === "prev" || type === "next") {
-        a.innerHTML = text;
-        baseClasses += ` text-gray-700 hover:text-orange-600 px-3`;
-        if (isDisabled)
-          baseClasses += ` opacity-50 cursor-not-allowed pointer-events-none`;
-      } else if (type === "ellipsis") {
-        a.textContent = text;
-        baseClasses += ` text-gray-400 cursor-default px-2`;
-      } else {
-        a.textContent = text;
-        if (isActive) {
-          baseClasses += ` text-white bg-orange-600 rounded-full shadow-sm px-3`;
-        } else {
-          baseClasses += ` text-gray-700 hover:text-orange-600 hover:bg-orange-100 rounded-full px-3`;
-        }
-      }
-      a.className = baseClasses;
-      li.appendChild(a);
-      paginationList.appendChild(li);
-    };
-
-    paginationControls.className = `flex items-center justify-center bg-white border border-gray-200 rounded-full shadow-md px-4 py-2 mt-6 w-fit mx-auto gap-3`;
-
-    createPageLink(
-      "prev",
-      `<i class="flex ph ph-caret-left text-lg"></i> Previous`,
-      page - 1,
-      page === 1,
+    const isConfirmed = await showConfirmationModal(
+      `Confirm ${actionText.charAt(0).toUpperCase() + actionText.slice(1)}`,
+      `Are you sure you want to ${actionText} **"${title}"**?`,
+      confirmBtnText,
     );
-    const window = 2;
-    let pagesToShow = new Set([1, totalPages, page]);
-    for (let i = 1; i <= window; i++) {
-      if (page - i > 0) pagesToShow.add(page - i);
-      if (page + i <= totalPages) pagesToShow.add(page + i);
-    }
-    const sortedPages = [...pagesToShow].sort((a, b) => a - b);
-    let lastPage = 0;
-    for (const p of sortedPages) {
-      if (p > lastPage + 1) createPageLink("ellipsis", "…", "...", true);
-      createPageLink("number", p, p, false, p === page);
-      lastPage = p;
-    }
-    createPageLink(
-      "next",
-      `Next <i class="flex ph ph-caret-right text-lg"></i>`,
-      page + 1,
-      page === totalPages,
+
+    if (!isConfirmed) return;
+
+    showLoadingModal(
+      `${actionText.charAt(0).toUpperCase() + actionText.slice(1)}ing book...`,
+      "Please wait.",
     );
-  }
-
-  paginationList.addEventListener("click", async (e) => {
-    e.preventDefault();
-    if (isLoading) return;
-    const target = e.target.closest("a[data-page]");
-    if (!target) return;
-    const pageStr = target.dataset.page;
-    if (pageStr === "...") return;
-    const pageNum = parseInt(pageStr, 10);
-    if (!isNaN(pageNum) && pageNum !== currentPage) {
-      if (isMultiSelectMode && selectedBooks.size > 0) {
-        const isConfirmed = await showConfirmationModal(
-          "Clear Selection?",
-          "Navigating to another page will clear your current selection. Do you want to continue?",
-          "Yes, Continue",
-        );
-        if (isConfirmed) {
-          selectedBooks.clear();
-          updateMultiSelectButtons();
-          loadBooks(pageNum);
-        }
-      } else {
-        loadBooks(pageNum);
-      }
-    }
-  });
-
-  // ==========================
-  // COUNT UPDATE FUNCTION
-  // ==========================
-  function updateBookCounts(booksLength, totalCountNum, page, perPage) {
-    if (resultsIndicator) {
-      if (totalCountNum === 0) {
-        resultsIndicator.innerHTML = `Showing <span id="bookCount" class="font-medium text-gray-800">0</span> of <span id="bookTotal" class="font-medium text-gray-800">0</span> books`;
-      } else {
-        const startItem = (page - 1) * perPage + 1;
-        const endItem = (page - 1) * perPage + booksLength;
-        resultsIndicator.innerHTML = `Showing <span id="bookCount" class="font-medium text-gray-800">${startItem}-${endItem}</span> of <span id="bookTotal" class="font-medium text-gray-800">${totalCountNum.toLocaleString()}</span> books`;
-      }
-    }
-  }
-
-  // ==========================
-  // ACTIONS (ADD, EDIT, DELETE)
-  // ==========================
-  addBookForm?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const formData = new FormData(addBookForm);
-    if (
-      !formData.get("accession_number") ||
-      !formData.get("call_number") ||
-      !formData.get("title") ||
-      !formData.get("author")
-    ) {
-      showErrorToast(
-        "Missing Information",
-        "Please fill in all required fields (*).",
-      );
-      return;
-    }
-
-    showLoadingModal("Adding Book...", "Saving new record to catalog.");
-    const startTime = Date.now();
 
     try {
-      const res = await fetch(`api/admin/booksmanagement/store`, {
-        method: "POST",
-        body: formData,
-      });
-      const result = await res.json();
+      const endpoint =
+        newStatus == 1
+          ? `api/admin/booksmanagement/reactivate/${id}`
+          : `api/admin/booksmanagement/delete/${id}`;
 
-      const elapsed = Date.now() - startTime;
-      const minModalDisplay = 300;
-      if (elapsed < minModalDisplay)
-        await new Promise((r) => setTimeout(r, minModalDisplay - elapsed));
+      const response = await fetch(endpoint, { method: "POST" });
+      const data = await response.json();
       Swal.close();
 
-      if (result.success) {
+      if (data.success) {
         showSuccessToast(
-          "Success!",
-          result.message || "Book added successfully!",
+          "Success",
+          `Book ${actionText}d successfully!`,
         );
-        closeModal(addBookModal);
-        addBookForm.reset();
-        previewContainer.classList.add("hidden");
-        uploadText.textContent = "Upload Image";
-        loadBooks(1, false);
+        fetchBooks();
       } else {
-        showErrorToast("Error", result.message || "Failed to add book.");
+        showErrorToast("Error", data.message);
       }
-    } catch (err) {
+    } catch (error) {
       Swal.close();
-      console.error("Add book error:", err);
-      showErrorToast("Error", "An error occurred while adding the book.");
+      console.error(`Error ${actionText}ing book:`, error);
+      showErrorToast("Error", `Failed to ${actionText} book.`);
     }
-  });
+  };
 
-  window.editBook = async (bookId) => {
-    if (!bookId) return;
-    currentEditingBookId = bookId;
+  const updateResultsIndicator = () => {
+    const start = (currentPage - 1) * limit + 1;
+    const end = Math.min(currentPage * limit, totalCount);
+    resultsIndicator.innerHTML =
+      totalCount > 0
+        ? `Showing <span class="text-gray-900 font-bold">${start}-${end}</span> of <span class="text-gray-900 font-bold">${totalCount}</span> books`
+        : "No books to display";
+  };
 
-    showLoadingModal("Loading Book Data...", "Preparing form for editing.");
+  const renderPagination = () => {
+    const paginationList = document.getElementById("paginationList");
+    paginationList.innerHTML = "";
+    const totalPages = Math.ceil(totalCount / limit);
+    if (totalPages <= 1) return;
+
+    paginationList.innerHTML += `
+            <li>
+                <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? "disabled" : ""} 
+                    class="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-orange-50 text-gray-600 disabled:opacity-50 transition">
+                    <i class="ph ph-caret-left"></i> Previous
+                </button>
+            </li>
+        `;
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (
+        i === 1 ||
+        i === totalPages ||
+        (i >= currentPage - 1 && i <= currentPage + 1)
+      ) {
+        paginationList.innerHTML += `
+                    <li>
+                        <button onclick="changePage(${i})" 
+                            class="w-9 h-9 flex items-center justify-center rounded-full transition ${currentPage === i ? "bg-orange-600 text-white shadow-md" : "hover:bg-orange-50 text-gray-600"}">
+                            ${i}
+                        </button>
+                    </li>
+                `;
+      } else if (i === currentPage - 2 || i === currentPage + 2) {
+        paginationList.innerHTML += `<li><span class="px-2 text-gray-400">...</span></li>`;
+      }
+    }
+
+    paginationList.innerHTML += `
+            <li>
+                <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? "disabled" : ""} 
+                    class="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-orange-50 text-gray-600 disabled:opacity-50 transition">
+                    Next <i class="ph ph-caret-right"></i>
+                </button>
+            </li>
+        `;
+  };
+
+  window.changePage = (page) => {
+    if (page < 1 || page > Math.ceil(totalCount / limit)) return;
+    currentPage = page;
+    fetchBooks();
+  };
+
+  window.selectSort = (el, val) => {
+    currentSort = val;
+    sortDropdownValue.textContent = el.textContent;
+    currentPage = 1;
+    fetchBooks();
+    sortDropdownMenu.classList.add("hidden");
+  };
+
+  window.selectStatus = (el, val) => {
+    currentStatus = val;
+    statusDropdownValue.textContent = el.textContent;
+    currentPage = 1;
+    fetchBooks();
+    statusDropdownMenu.classList.add("hidden");
+  };
+
+  window.selectCampus = (el, id, name) => {
+    currentCampusId = id;
+    campusDropdownValue.textContent = name;
+    currentPage = 1;
+    fetchBooks();
+    campusDropdownMenu.classList.add("hidden");
+  };
+
+  window.toggleBookSelection = (id) => {
+    if (selectedBookIds.has(id)) {
+      selectedBookIds.delete(id);
+    } else {
+      selectedBookIds.add(id);
+    }
+    selectionCount.textContent = selectedBookIds.size;
+    renderTable();
+  };
+
+  window.viewHistory = async (id) => {
+    const historyTableBody = document.getElementById("historyTableBody");
+    const historyEmptyState = document.getElementById("historyEmptyState");
+    const historyTableContainer = document.getElementById(
+      "historyTableContainer",
+    );
+
+    historyTableBody.innerHTML = "";
+    historyEmptyState.classList.add("hidden");
+    historyTableContainer.classList.remove("hidden");
 
     try {
-      const res = await fetch(`api/admin/booksmanagement/get/${bookId}`);
-      if (!res.ok) throw new Error("Failed to fetch book details.");
-      const data = await res.json();
+      const response = await fetch(
+        `api/admin/booksmanagement/history/${id}`,
+      );
+      const data = await response.json();
 
-      await new Promise((r) => setTimeout(r, 300));
-      Swal.close();
+      if (data.success && data.history.length > 0) {
+        data.history.forEach((row) => {
+          const tr = document.createElement("tr");
+          tr.className = "hover:bg-orange-50 transition-colors";
+          const fullName = `${row.first_name || ""} ${row.last_name || ""}`.trim() || "N/A";
+          const idRole = `${row.identifier || "N/A"} / <span class="capitalize">${row.role || "N/A"}</span>`;
+          
+          tr.innerHTML = `
+                        <td class="px-4 py-3 text-sm text-gray-700 font-medium">${fullName}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${idRole}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${row.borrowed_at || "N/A"}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">${row.returned_at || '<span class="text-orange-600 font-semibold italic text-[11px]">Pending</span>'}</td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${row.status === "returned" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}">
+                                ${row.status}
+                            </span>
+                        </td>
+                    `;
+          historyTableBody.appendChild(tr);
+        });
+        openModal(historyModal);
+      } else {
+        historyEmptyState.classList.remove("hidden");
+        historyTableContainer.classList.add("hidden");
+        openModal(historyModal);
+      }
+    } catch (error) {
+      console.error("Error fetching borrowing history:", error);
+    }
+  };
 
-      if (data.success && data.book) {
+  window.viewBook = async (id) => {
+    try {
+      const response = await fetch(
+        `api/admin/booksmanagement/details/${id}`,
+      );
+      const data = await response.json();
+      if (data.success) {
         const book = data.book;
-        document.getElementById("edit_book_id").value = book.book_id || "";
+        document.getElementById("viewModalTitle").textContent = book.title;
+        document.getElementById("viewModalAuthor").textContent =
+          `by ${book.author || "Unknown"}`;
+        document.getElementById("viewModalStatus").textContent =
+          book.availability;
+        document.getElementById("viewModalCampus").textContent =
+          book.campus_name || "N/A";
+        document.getElementById("viewModalAccessionNumber").textContent =
+          book.accession_number;
+        document.getElementById("viewModalCallNumber").textContent =
+          book.call_number;
+        document.getElementById("viewModalIsbn").textContent =
+          book.book_isbn || "N/A";
+        document.getElementById("viewModalSubject").textContent =
+          book.subject || "N/A";
+        document.getElementById("viewModalPlace").textContent =
+          book.book_place || "N/A";
+        document.getElementById("viewModalPublisher").textContent =
+          book.book_publisher || "N/A";
+        document.getElementById("viewModalYear").textContent =
+          book.year || "N/A";
+        document.getElementById("viewModalEdition").textContent =
+          book.book_edition || "N/A";
+        document.getElementById("viewModalSupplementary").textContent =
+          book.book_supplementary || "N/A";
+        document.getElementById("viewModalDescription").textContent =
+          book.description || "No description provided.";
+
+        const img = document.getElementById("viewModalImg");
+        if (book.cover) {
+          img.src = book.cover;
+          img.classList.remove("hidden");
+        } else {
+          img.classList.add("hidden");
+        }
+
+        openModal(viewBookModal);
+      }
+    } catch (error) {
+      console.error("Error viewing book:", error);
+    }
+  };
+
+  window.editBook = async (id) => {
+    try {
+      const response = await fetch(
+        `api/admin/booksmanagement/details/${id}`,
+      );
+      const data = await response.json();
+      if (data.success) {
+        const book = data.book;
+        document.getElementById("edit_book_id").value = book.book_id;
         document.getElementById("edit_accession_number").value =
-          book.accession_number || "";
-        document.getElementById("edit_call_number").value =
-          book.call_number || "";
-        document.getElementById("edit_title").value = book.title || "";
-        document.getElementById("edit_author").value = book.author || "";
+          book.accession_number;
+        document.getElementById("edit_call_number").value = book.call_number;
+        document.getElementById("edit_title").value = book.title;
+        document.getElementById("edit_author").value = book.author;
+        document.getElementById("edit_availability").value = book.availability;
+        document.getElementById("edit_campus_id").value = book.campus_id || "";
+        document.getElementById("edit_borrowing_duration_override").value =
+          book.borrowing_duration_override || "";
         document.getElementById("edit_book_isbn").value = book.book_isbn || "";
         document.getElementById("edit_book_place").value =
           book.book_place || "";
@@ -840,404 +614,307 @@ window.addEventListener("DOMContentLoaded", () => {
         document.getElementById("edit_subject").value = book.subject || "";
         document.getElementById("edit_description").value =
           book.description || "";
-        document.getElementById("edit_availability").value = book.availability || "available";
-        editUploadText.textContent = "Change Image";
-        editInput.value = "";
-
-        // Reset remove image state
-        editRemoveImageInput.value = "0";
 
         if (book.cover) {
-          editPreviewImage.src = book.cover;
-          editPreviewContainer.classList.remove("hidden");
-          removeImageBtn.classList.remove("hidden");
+          document.getElementById("editPreviewImage").src = book.cover;
+          document
+            .getElementById("editPreviewContainer")
+            .classList.remove("hidden");
+          document.getElementById("removeImageBtn").classList.remove("hidden");
+          document.getElementById("editUploadText").textContent =
+            "Change Image";
         } else {
-          editPreviewContainer.classList.add("hidden");
-          editPreviewImage.src = "";
-          removeImageBtn.classList.add("hidden");
+          document
+            .getElementById("editPreviewContainer")
+            .classList.add("hidden");
+          document.getElementById("removeImageBtn").classList.add("hidden");
+          document.getElementById("editUploadText").textContent =
+            "Upload Image";
         }
+
         openModal(editBookModal);
-      } else {
-        showErrorToast("Error", data.message || "Could not find book details.");
       }
-    } catch (err) {
-      Swal.close();
-      console.error("Edit book fetch error:", err);
-      showErrorToast("Error", "Error fetching book data.");
+    } catch (error) {
+      console.error("Error loading book for edit:", error);
     }
   };
 
-  removeImageBtn?.addEventListener("click", () => {
-    editRemoveImageInput.value = "1";
-    editPreviewContainer.classList.add("hidden");
-    editPreviewImage.src = "";
-    removeImageBtn.classList.add("hidden");
-    editUploadText.textContent = "Upload Image";
-    editInput.value = "";
+  bulkImportBtn.addEventListener("click", () => {
+    openModal(importModal);
+    bulkImportForm.reset();
+    if (uploadText)
+      uploadText.textContent = "Drop CSV file here or click to browse";
+    if (uploadInstruction) uploadInstruction.style.display = "";
   });
 
-  editBookForm?.addEventListener("submit", async (e) => {
+  [closeImportModal, cancelImport].forEach((btn) =>
+    btn.addEventListener("click", () => closeModal(importModal)),
+  );
+
+  importModal.addEventListener("click", (e) => {
+    if (e.target === importModal) closeModal(importModal);
+  });
+
+  bulkImportForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (!currentEditingBookId) return;
-    const formData = new FormData(editBookForm);
-    if (
-      !formData.get("accession_number") ||
-      !formData.get("call_number") ||
-      !formData.get("title") ||
-      !formData.get("author")
-    ) {
-      showErrorToast(
-        "Missing Information",
-        "Please fill in all required fields (*).",
-      );
+    const formData = new FormData(bulkImportForm);
+    const fileInput = document.getElementById("csvFile");
+    const file = fileInput.files[0];
+
+    if (!file) {
+      Swal.fire("Error", "Please select a CSV file to upload.", "warning");
       return;
     }
 
-    showLoadingModal("Saving Changes...", "Updating book record.");
-    const startTime = Date.now();
-
+    showLoadingModal("Importing Books...", "Please wait.");
     try {
-      const res = await fetch(
-        `api/admin/booksmanagement/update/${currentEditingBookId}`,
+      const response = await fetch(
+        "api/admin/booksmanagement/bulkImport",
         {
           method: "POST",
           body: formData,
         },
       );
-      const result = await res.json();
+      const data = await response.json();
 
-      const elapsed = Date.now() - startTime;
-      const minModalDisplay = 300;
-      if (elapsed < minModalDisplay)
-        await new Promise((r) => setTimeout(r, minModalDisplay - elapsed));
-      Swal.close();
-
-      if (result.success) {
-        showSuccessToast(
-          "Success!",
-          result.message || "Book updated successfully!",
-        );
-        closeModal(editBookModal);
-        loadBooks(currentPage, false);
+      if (data.success) {
+        showSuccessToast("Import Successful!", `Imported ${data.imported} books.`);
+        closeModal(importModal);
+        fetchBooks();
       } else {
-        showErrorToast("Error", result.message || "Failed to update book.");
+        showErrorToast("Import Failed", data.message);
       }
-    } catch (err) {
-      Swal.close();
-      console.error("Update book error:", err);
-      showErrorToast("Error", "An error occurred while updating the book.");
+    } catch (error) {
+      console.error("Import error:", error);
+      showErrorToast("Import Failed", "An error occurred.");
     }
   });
 
-  window.deleteBook = async (bookId, title) => {
-    if (!bookId) return;
+  csvFile.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (uploadText) uploadText.textContent = file.name;
+      if (uploadInstruction) uploadInstruction.style.display = "none";
+      bulkImportForm.requestSubmit();
+    }
+  });
 
-    const isConfirmed = await showConfirmationModal(
-      "Confirm Deletion",
-      `Are you sure you want to delete the book: **${title}**? This action cannot be undone.`,
-      "Yes, Delete It!",
-    );
+  bookSearchInput.addEventListener("input", () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      currentPage = 1;
+      fetchBooks();
+    }, 500);
+  });
 
-    if (!isConfirmed) return;
-
-    showLoadingModal(
-      "Deleting Book...",
-      "Removing book record from the system.",
-    );
-    const startTime = Date.now();
-
-    try {
-      const res = await fetch(`api/admin/booksmanagement/delete/${bookId}`, {
-        method: "POST",
+  [sortDropdownBtn, statusDropdownBtn, campusDropdownBtn].forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const menu = btn.nextElementSibling;
+      document.querySelectorAll(".absolute.z-20").forEach((m) => {
+        if (m !== menu) m.classList.add("hidden");
       });
-      const result = await res.json();
-
-      const elapsed = Date.now() - startTime;
-      const minModalDisplay = 500;
-      if (elapsed < minModalDisplay) {
-        await new Promise((r) => setTimeout(r, minModalDisplay - elapsed));
-      }
-      Swal.close();
-
-      if (result.success) {
-        showSuccessToast(
-          "Deleted!",
-          result.message || "Book deleted successfully.",
-        );
-        loadBooks(currentPage, false);
-      } else {
-        showErrorToast("Error", result.message || "Failed to delete the book.");
-      }
-    } catch (err) {
-      Swal.close();
-      console.error("Delete book error:", err);
-      showErrorToast("Error", "An error occurred during deletion.");
-    }
-  };
-
-  bookTableBody.addEventListener("click", (e) => {
-    const row = e.target.closest("tr");
-    if (!row || !row.dataset.bookId) return;
-
-    const bookId = parseInt(row.dataset.bookId, 10);
-    if (!isMultiSelectMode) return;
-
-    if (selectedBooks.has(bookId)) {
-      selectedBooks.delete(bookId);
-    } else {
-      selectedBooks.add(bookId);
-    }
-    renderBooks(books);
-    updateMultiSelectButtons();
+      menu.classList.toggle("hidden");
+    });
   });
 
-  function updateMultiSelectButtons() {
-    const hasSelection = selectedBooks.size > 0;
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".absolute.z-20").forEach((m) => m.classList.add("hidden"));
+  });
 
-    if (isMultiSelectMode) {
-      multiSelectBtn.classList.add("hidden");
-      multiSelectActions.classList.remove("hidden");
-      multiSelectActions.classList.add("inline-flex");
-    } else {
-      multiSelectBtn.classList.remove("hidden");
-      multiSelectActions.classList.add("hidden");
-      multiSelectActions.classList.remove("inline-flex");
+  openAddBookBtn.addEventListener("click", () => openModal(addBookModal));
+  [closeAddBookModal, cancelAddBook].forEach((btn) =>
+    btn.addEventListener("click", () => {
+      closeModal(addBookModal);
+      addBookForm.reset();
+      document.getElementById("previewContainer").classList.add("hidden");
+    }),
+  );
+
+  [closeEditBookModal, cancelEditBook].forEach((btn) =>
+    btn.addEventListener("click", () => {
+      closeModal(editBookModal);
+      editBookForm.reset();
+    }),
+  );
+
+  [closeViewModal, closeViewModalBtn].forEach((btn) =>
+    btn.addEventListener("click", () => closeModal(viewBookModal)),
+  );
+
+  [closeHistoryModal, closeHistoryBtn].forEach((btn) =>
+    btn.addEventListener("click", () => closeModal(historyModal)),
+  );
+
+  addBookForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(addBookForm);
+    try {
+      const response = await fetch("api/admin/booksmanagement/add", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      if (data.success) {
+        showSuccessToast("Book added successfully!");
+        closeModal(addBookModal);
+        addBookForm.reset();
+        document.getElementById("previewContainer").classList.add("hidden");
+        fetchBooks();
+      } else {
+        Swal.fire("Error", data.message, "error");
+      }
+    } catch (error) {
+      console.error("Error adding book:", error);
     }
+  });
 
-    multiDeleteBtn.classList.toggle("hidden", !hasSelection);
-    if (selectionCount) selectionCount.textContent = selectedBooks.size;
-
-    const allVisibleBookIds = books.map((b) => b.book_id);
-    const allSelectedOnPage =
-      allVisibleBookIds.length > 0 &&
-      allVisibleBookIds.every((id) => selectedBooks.has(id));
-
-    if (allSelectedOnPage) {
-      selectAllBtn.innerHTML = `<i class="ph ph-check-square-offset text-base"></i> Deselect All`;
-    } else {
-      selectAllBtn.innerHTML = `<i class="ph ph-check-square-offset text-base"></i> Select All`;
+  editBookForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const bookId = document.getElementById("edit_book_id").value;
+    const formData = new FormData(editBookForm);
+    try {
+      const response = await fetch(
+        `api/admin/booksmanagement/update/${bookId}`,
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
+      const data = await response.json();
+      if (data.success) {
+        showSuccessToast("Book updated successfully!");
+        closeModal(editBookModal);
+        fetchBooks();
+      } else {
+        Swal.fire("Error", data.message, "error");
+      }
+    } catch (error) {
+      console.error("Error updating book:", error);
     }
-  }
+  });
 
   multiSelectBtn.addEventListener("click", () => {
     isMultiSelectMode = true;
-    updateMultiSelectButtons();
-    renderBooks(books);
+    document.getElementById("multi-select-header").classList.remove("hidden");
+    multiSelectBtn.classList.add("hidden");
+    multiSelectActions.classList.remove("hidden");
+    selectionCount.textContent = selectedBookIds.size;
+    renderTable();
   });
 
   cancelSelectionBtn.addEventListener("click", () => {
     isMultiSelectMode = false;
-    selectedBooks.clear();
-    updateMultiSelectButtons();
-    renderBooks(books);
+    selectedBookIds.clear();
+    document.getElementById("multi-select-header").classList.add("hidden");
+    multiSelectBtn.classList.remove("hidden");
+    multiSelectActions.classList.add("hidden");
+    selectionCount.textContent = "0";
+    renderTable();
   });
 
   selectAllBtn.addEventListener("click", () => {
-    const allVisibleBookIds = books.map((b) => b.book_id);
-    const allSelectedOnPage =
-      allVisibleBookIds.length > 0 &&
-      allVisibleBookIds.every((id) => selectedBooks.has(id));
-
-    if (allSelectedOnPage) {
-      allVisibleBookIds.forEach((id) => selectedBooks.delete(id));
+    if (selectedBookIds.size === books.length) {
+      selectedBookIds.clear();
     } else {
-      allVisibleBookIds.forEach((id) => selectedBooks.add(id));
+      books.forEach((b) => selectedBookIds.add(b.book_id));
     }
-    renderBooks(books);
-    updateMultiSelectButtons();
+    selectionCount.textContent = selectedBookIds.size;
+    renderTable();
   });
 
   multiDeleteBtn.addEventListener("click", async () => {
-    const bookIds = [...selectedBooks];
-    if (bookIds.length === 0) {
-      return showErrorToast(
-        "No Books Selected",
-        "Please select books to delete.",
-      );
-    }
+    const count = selectedBookIds.size;
+    if (count === 0) return;
 
-    const isConfirmed = await showConfirmationModal(
-      `Delete ${bookIds.length} Books?`,
-      `Are you sure you want to permanently delete the selected ${bookIds.length} book(s)? This action cannot be undone.`,
-      "Yes, Delete All",
+    const result = await showConfirmationModal(
+      "Bulk Deactivate",
+      `Are you sure you want to deactivate ${count} books?`,
+      "Yes, Deactivate Them!"
     );
-
-    if (!isConfirmed) return;
-
-    showLoadingModal(
-      "Deleting Books...",
-      `Processing ${bookIds.length} book(s).`,
-    );
+    if (!result) return;
 
     try {
-      const res = await fetch("api/admin/booksmanagement/deleteMultiple", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ book_ids: bookIds }),
-      });
-
-      const data = await res.json();
+      showLoadingModal("Processing Request...", "Please wait.");
+      const response = await fetch(
+        "api/admin/booksmanagement/deleteMultiple",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            book_ids: Array.from(selectedBookIds)
+          }),
+        },
+      );
+      const data = await response.json();
       Swal.close();
 
       if (data.success) {
-        showSuccessToast("Deletion Successful", data.message);
+        showSuccessToast(`Successfully deactivated ${data.deleted_count} book(s)!`);
+        selectedBookIds.clear();
+        cancelSelectionBtn.click();
+        fetchBooks();
       } else {
-        let errorMessage = data.message;
-        if (data.errors && data.errors.length > 0) {
-          errorMessage += ` ${data.errors.join(" ")}`;
-        }
-        showErrorToast("Deletion Failed", errorMessage);
+        showErrorToast("Error", data.message);
       }
-
-      isMultiSelectMode = false;
-      selectedBooks.clear();
-      updateMultiSelectButtons();
-      loadBooks(1, false);
-    } catch (err) {
+    } catch (error) {
       Swal.close();
-      console.error("Multi-delete error:", err);
-      showErrorToast(
-        "Network Error",
-        "An error occurred while connecting to the server.",
-      );
+      console.error("Error bulk deleting books:", error);
+      showErrorToast("Error", "A server error occurred.");
     }
   });
 
-  // ==========================
-  // INIT
-  // ==========================
-  loadBooks(currentPage);
-
-  // ==========================
-  // HISTORY MODAL LOGIC
-  // ==========================
-  window.openHistoryModal = async (bookId) => {
-    if (!bookId) return;
-
-    showLoadingModal("Loading History...", "Retrieving borrowing records.");
-
-    try {
-      const res = await fetch(`api/admin/booksmanagement/history/${bookId}`);
-      if (!res.ok) throw new Error("Failed to fetch history.");
-      const data = await res.json();
-
-      Swal.close();
-
-      if (data.success && Array.isArray(data.history)) {
-        renderHistory(data.history);
-        openModal(historyModal);
-      } else {
-        showErrorToast("Error", data.message || "Could not retrieve history.");
-      }
-    } catch (err) {
-      Swal.close();
-      console.error("History fetch error:", err);
-      showErrorToast("Error", "An error occurred while fetching history.");
+  // Image Previews
+  const setupPreview = (inputId, previewImgId, containerId, textElementId) => {
+    const input = document.getElementById(inputId);
+    if (input) {
+      input.addEventListener("change", () => {
+        const file = input.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            document.getElementById(previewImgId).src = e.target.result;
+            document.getElementById(containerId).classList.remove("hidden");
+            if (textElementId) document.getElementById(textElementId).textContent = "Change Image";
+          };
+          reader.readAsDataURL(file);
+        }
+      });
     }
   };
 
-  function renderHistory(history) {
-    historyTableBody.innerHTML = "";
-
-    if (history.length === 0) {
-      historyTableContainer.classList.add("hidden");
-      historyEmptyState.classList.remove("hidden");
-      return;
-    }
-
-    historyTableContainer.classList.remove("hidden");
-    historyEmptyState.classList.add("hidden");
-
-    history.forEach((h) => {
-      const fullName = `${h.first_name} ${h.last_name}`;
-
-      // Format Borrowed Date
-      const bDateObj = h.borrowed_at ? new Date(h.borrowed_at) : null;
-      const bDateStr = bDateObj
-        ? bDateObj.toLocaleDateString(undefined, {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          })
-        : "N/A";
-      const bTimeStr = bDateObj
-        ? bDateObj.toLocaleTimeString(undefined, {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          })
-        : "";
-      const fullBorrowedDateTime = bDateObj
-        ? `
-                <div class="flex flex-col">
-                    <span class="text-gray-800 font-bold text-[15px]">${bDateStr}</span>
-                    <span class="text-[12px] text-gray-500 font-medium mt-0.5">${bTimeStr}</span>
-                </div>
-            `
-        : "N/A";
-
-      // Format Returned Date
-      const rDateObj = h.returned_at ? new Date(h.returned_at) : null;
-      const rDateStr = rDateObj
-        ? rDateObj.toLocaleDateString(undefined, {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          })
-        : "N/A";
-      const rTimeStr = rDateObj
-        ? rDateObj.toLocaleTimeString(undefined, {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: true,
-          })
-        : "";
-
-      let fullReturnedDateTime = "";
-      if ((h.status === "returned" || h.status === "damaged" || h.status === "lost") && rDateObj) {
-        const colorClass = h.status === "returned" ? "text-green-700" : h.status === "damaged" ? "text-amber-700" : "text-red-700";
-        const subColorClass = h.status === "returned" ? "text-green-600" : h.status === "damaged" ? "text-amber-600" : "text-red-600";
-        fullReturnedDateTime = `
-                    <div class="flex flex-col">
-                        <span class="${colorClass} font-bold text-[15px]">${rDateStr}</span>
-                        <span class="text-[12px] ${subColorClass} font-medium mt-0.5">${rTimeStr}</span>
-                    </div>
-                `;
-      } else {
-        fullReturnedDateTime = `<span class="text-gray-400 italic text-[13px]">In Circulation</span>`;
+  setupPreview("book_image", "previewImage", "previewContainer", "uploadText");
+  
+  const editInput = document.getElementById("edit_book_image");
+  if (editInput) {
+    editInput.addEventListener("change", () => {
+      const file = editInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          document.getElementById("editPreviewImage").src = e.target.result;
+          document.getElementById("editPreviewContainer").classList.remove("hidden");
+          document.getElementById("removeImageBtn").classList.remove("hidden");
+          document.getElementById("editUploadText").textContent = "Change Image";
+          document.getElementById("edit_remove_image").value = "0";
+        };
+        reader.readAsDataURL(file);
       }
-
-      let statusClass = "bg-gray-100 text-gray-700 border-gray-200";
-      if (h.status === "returned") statusClass = "bg-green-100 text-green-700 border-green-200";
-      else if (h.status === "borrowed" || h.status === "overdue") statusClass = "bg-orange-100 text-orange-700 border-orange-200";
-      else if (h.status === "damaged") statusClass = "bg-amber-100 text-amber-700 border-amber-200";
-      else if (h.status === "lost") statusClass = "bg-red-100 text-red-700 border-red-200";
-
-      const row = `
-                <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="py-5 px-6 font-bold text-gray-900 text-[16px]">${fullName}</td>
-                    <td class="py-5 px-6">
-                        <div class="flex flex-col">
-                            <span class="text-gray-800 font-mono text-[18px] font-black tracking-tight">${h.identifier}</span>
-                            <span class="text-[11px] uppercase text-gray-500 font-bold tracking-widest">${h.role}</span>
-                        </div>
-                    </td>
-                    <td class="py-5 px-6">${fullBorrowedDateTime}</td>
-                    <td class="py-5 px-6">${fullReturnedDateTime}</td>
-                    <td class="py-5 px-6 text-center">
-                        <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase border-2 ${statusClass}">
-                            ${h.status}
-                        </span>
-                    </td>
-                </tr>
-            `;
-      historyTableBody.insertAdjacentHTML("beforeend", row);
     });
   }
 
-  closeHistoryModal?.addEventListener("click", () => closeModal(historyModal));
-  closeHistoryBtn?.addEventListener("click", () => closeModal(historyModal));
-  historyModal?.addEventListener("click", (e) => {
-    if (e.target === historyModal) closeModal(historyModal);
-  });
+  const removeImageBtn = document.getElementById("removeImageBtn");
+  if (removeImageBtn) {
+    removeImageBtn.addEventListener("click", () => {
+      document.getElementById("editPreviewImage").src = "";
+      document.getElementById("editPreviewContainer").classList.add("hidden");
+      document.getElementById("removeImageBtn").classList.add("hidden");
+      document.getElementById("editUploadText").textContent = "Upload Image";
+      document.getElementById("edit_remove_image").value = "1";
+      if (editInput) editInput.value = "";
+    });
+  }
+
+  loadCampuses();
+  fetchBooks();
 });

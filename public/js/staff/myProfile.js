@@ -212,14 +212,32 @@ document.addEventListener("DOMContentLoaded", () => {
   const profileStaffId = document.getElementById("profileFacultyId"); // Staff ID (from original Staff code)
   const uploadLabel = document.getElementById("uploadLabel");
 
+  const genderSelect = document.getElementById("gender");
+  const genderOtherInput = document.getElementById("genderOther");
+
+  // Gender Logic: Toggle 'Other' input visibility
+  if (genderSelect) {
+    genderSelect.addEventListener("change", function () {
+      if (this.value === "Other") {
+        genderOtherInput.classList.remove("hidden");
+        genderOtherInput.disabled = false;
+        genderOtherInput.focus();
+      } else {
+        genderOtherInput.classList.add("hidden");
+        genderOtherInput.value = "";
+        genderOtherInput.disabled = true;
+      }
+    });
+  }
+
   // Note: We remove student-specific elements (e.g., regFormUpload, profileStudentId, yearLevel, section, course, profileLockedInfo)
 
   const allInputs = profileForm.querySelectorAll(
     'input[type="text"], input[type="email"], input[type="tel"], input[type="number"]',
   );
-  // Ensure 'facultyId' remains read-only as per original Staff code structure
+  // Ensure 'facultyId' and 'campus' remain read-only
   const editableInputs = Array.from(allInputs).filter(
-    (input) => input.id !== "facultyId",
+    (input) => input.id !== "facultyId" && input.id !== "campus",
   );
 
   const MAX_FILE_SIZE = 1 * 1024 * 1024;
@@ -276,6 +294,39 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("contact").value = profile.contact || "";
         document.getElementById("facultyId").value = profile.employee_id || ""; // Staff ID Input
 
+        // Campus Name Display
+        const campusInput = document.getElementById("campus");
+        if (campusInput) {
+            campusInput.value = profile.campus_name || "N/A";
+            if (!isEditing) {
+                campusInput.disabled = true;
+            }
+        }
+
+        // Gender Logic
+        if (genderSelect) {
+          const standardOptions = ["Male", "Female", "LGBTQIA+", "Prefer not to say", "Other"];
+          let genderValue = profile.gender || "";
+
+          if (standardOptions.includes(genderValue)) {
+            genderSelect.value = genderValue;
+            genderOtherInput.classList.add("hidden");
+            genderOtherInput.value = "";
+          } else if (genderValue) {
+            genderSelect.value = "Other";
+            genderOtherInput.value = genderValue;
+            genderOtherInput.classList.remove("hidden");
+          } else {
+            genderSelect.value = "";
+            genderOtherInput.classList.add("hidden");
+          }
+
+          if (!isEditing) {
+            genderSelect.disabled = true;
+            genderOtherInput.disabled = true;
+          }
+        }
+
         if (data.profile.profile_picture) {
           const cleanPath = data.profile.profile_picture.replace(/^\//, "");
           const finalUrl = window.STORAGE_URL + '/' + cleanPath;
@@ -328,6 +379,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (shouldEdit) {
       editableInputs.forEach((input) => {
+        // Skip genderOtherInput if gender is not 'Other'
+        if (input.id === 'genderOther' && genderSelect && genderSelect.value !== 'Other') return;
+
         input.disabled = false;
         input.classList.remove("bg-gray-50", "border-gray-200");
         // Tailwind classes for editing mode
@@ -338,6 +392,14 @@ document.addEventListener("DOMContentLoaded", () => {
           "focus:ring-orange-500",
         );
       });
+
+      // Gender Select Styling
+      if (genderSelect) {
+        genderSelect.disabled = false;
+        genderSelect.classList.remove("bg-gray-50", "border-gray-200");
+        genderSelect.classList.add("bg-white", "border-gray-300", "focus:border-orange-500", "focus:ring-orange-500");
+      }
+
       formActions.classList.remove("hidden");
       editProfileBtn.classList.add("hidden");
       uploadLabel.classList.remove("hidden");
@@ -355,6 +417,17 @@ document.addEventListener("DOMContentLoaded", () => {
           "focus:ring-orange-500",
         );
       });
+
+      if (genderSelect) {
+        genderSelect.disabled = true;
+        genderSelect.classList.add("bg-gray-50", "border-gray-200");
+        genderSelect.classList.remove("bg-white", "border-gray-300", "focus:border-orange-500", "focus:ring-orange-500");
+      }
+      if (genderOtherInput) {
+        genderOtherInput.disabled = true;
+        genderOtherInput.classList.add("bg-gray-50", "border-gray-200");
+        genderOtherInput.classList.remove("bg-white", "border-gray-300");
+      }
 
       formActions.classList.add("hidden");
       editProfileBtn.classList.remove("hidden");

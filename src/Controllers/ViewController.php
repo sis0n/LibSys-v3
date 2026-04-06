@@ -4,14 +4,32 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Repositories\UserPermissionModuleRepository;
+use App\Repositories\LibraryPolicyRepository;
 
 class ViewController extends Controller
 {
   private $userPermissionsRepo;
+  private $policyRepo;
 
   public function __construct()
   {
+    parent::__construct();
     $this->userPermissionsRepo = new UserPermissionModuleRepository();
+    $this->policyRepo = new LibraryPolicyRepository();
+  }
+
+  private function getViewRoleFolder(string $role): string
+  {
+    $roleMap = [
+        'admin' => 'Admin',
+        'superadmin' => 'Superadmin',
+        'student' => 'Student',
+        'faculty' => 'Faculty',
+        'librarian' => 'Librarian',
+        'staff' => 'staff',
+        'campus_admin' => 'campus_admin'
+    ];
+    return $roleMap[$role] ?? $role;
   }
 
   public function handleDashboard()
@@ -29,18 +47,23 @@ class ViewController extends Controller
     $current_page = null;
     $title = "Dashboard";
 
+    $viewFolder = $this->getViewRoleFolder($role);
+
     switch ($role) {
       case 'student':
       case 'faculty':
       case 'staff':
       case 'superadmin':
-        $view_path = $role . '/dashboard';
+        $view_path = $viewFolder . '/dashboard';
         $current_page = 'dashboard';
         break;
 
+      case 'campus_admin':
       case 'admin':
       case 'librarian':
         $privilege_to_page = [
+          'user management' => 'userManagement',
+          'student promotion' => 'studentPromotion',
           'book management' => 'bookManagement',
           'equipment management' => 'equipmentManagement',
           'qr scanner' => 'qrScanner',
@@ -49,19 +72,35 @@ class ViewController extends Controller
           'attendance logs' => 'attendanceLogs',
           'reports' => 'topVisitor',
           'transaction history' => 'transactionHistory',
-          'restore books' => 'restoreBooks',
-          'restore equipment' => 'restoreEquipment',
-          'user management' => 'userManagement',
-          'restore users' => 'restoreUser'
         ];
+
+        if ($role === 'campus_admin') {
+            $view_path = $viewFolder . '/bookManagement';
+            $current_page = 'bookManagement';
+            $title = 'Book Management';
+            break;
+        }
 
         foreach ($privilege_to_page as $privilege => $pageName) {
           if (in_array($privilege, $normalizedPermissions)) {
-            $view_path = $role . '/' . $pageName;
+            $view_path = $viewFolder . '/' . $pageName;
             $current_page = $pageName;
             $title = ucwords(preg_replace('/(?<!^)[A-Z]/', ' $0', $pageName));
             break;
           }
+        }
+
+        // Fallback for Admin/Librarian if no specific permission page matched
+        if (!$view_path) {
+            if ($role === 'admin') {
+                $view_path = $viewFolder . '/userManagement';
+                $current_page = 'userManagement';
+                $title = 'User Management';
+            } else {
+                $view_path = $viewFolder . '/bookManagement';
+                $current_page = 'bookManagement';
+                $title = 'Book Management';
+            }
         }
         break;
     }
@@ -101,7 +140,10 @@ class ViewController extends Controller
       'restoreUser' => 'restore users',
       'userManagement' => 'user management',
       'libraryPolicies' => 'superadmin',
-      'overdue' => 'superadmin'
+      'overdue' => 'overdue tracking',
+      'campusManagement' => 'superadmin',
+      'auditLogs' => 'superadmin',
+      'bulkDeleteQueue' => 'bulk delete queue'
     ];
 
     $universalPages = [
@@ -112,18 +154,29 @@ class ViewController extends Controller
       'qrBorrowingTicket',
       'borrowingHistory',
       'myAttendance',
-      'dashboard',
       'attendance'
-
     ];
+
+    if ($action === 'dashboard' && ($role === 'admin' || $role === 'librarian' || $role === 'campus_admin')) {
+        $this->handleDashboard();
+        return;
+    }
 
     if (array_key_exists($action, $protectedModules)) {
 
-      if ($role === 'superadmin') {
+      if ($role === 'superadmin' || $role === 'campus_admin') {
+        if ($role === 'campus_admin') {
+          // Restricted modules for Campus Admin based on RBAC_POLICY.md
+          $restrictedForCampusAdmin = ['campusManagement', 'backup', 'restoreUser', 'auditLogs', 'libraryPolicies'];
+          if (in_array($action, $restrictedForCampusAdmin)) {
+            $this->view("errors/403", ["title" => "Forbidden"], false);
+            exit;
+          }
+        }
       } else if ($role === 'admin' || $role === 'librarian') {
         $permissionName = $protectedModules[$action];
 
-        if (!$this->userPermissionsRepo->hasAccess($userId, $permissionName)) {
+        if ($permissionName !== 'universal' && !$this->userPermissionsRepo->hasAccess($userId, $permissionName)) {
           $this->view("errors/403", ["title" => "Forbidden"], false);
           exit;
         }
@@ -137,11 +190,25 @@ class ViewController extends Controller
       exit;
     }
 
-    $viewPath = $role . '/' . $action;
+    $viewFolder = $this->getViewRoleFolder($role);
+    $viewPath = $viewFolder . '/' . $action;
     $data = [
       "title" => ucfirst($action),
       "currentPage" => $action
     ];
+
+    // Inject campuses data for management pages that need it
+    if (in_array($action, ['bookManagement', 'equipmentManagement', 'userManagement', 'libraryPolicies', 'bulkDeleteQueue'])) {
+      $campusRepo = new \App\Repositories\CampusRepository();
+      $allCampuses = $campusRepo->getAllCampuses();
+      $data['campuses'] = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);
+    }
+
+    if ($action === 'libraryPolicies') {
+        $data['selectedCampusId'] = isset($_GET['campus_id']) ? (int)$_GET['campus_id'] : 1;
+        $data['policies'] = $this->policyRepo->getPoliciesByCampus($data['selectedCampusId']);
+        $data['isViewOnly'] = false;
+    }
 
     $this->view($viewPath, $data);
   }

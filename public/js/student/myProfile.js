@@ -145,7 +145,6 @@ const showFinalModal = (isSuccess, title, message) => {
   });
 };
 
-// --- CORE CONFIRMATION FUNCTION (Template from Screenshot) ---
 async function showConfirmationModal(title, text, confirmText = "Confirm") {
   if (typeof Swal == "undefined") return confirm(title);
   const result = await Swal.fire({
@@ -169,15 +168,12 @@ async function showConfirmationModal(title, text, confirmText = "Confirm") {
     cancelButtonText: "Cancel",
 
     customClass: {
-      // Modal/Popup Design: White BG, Orange Border, Shadow (Matching the screenshot)
       popup:
         "!rounded-xl !shadow-lg !p-6 !bg-white !border-2 !border-orange-400 shadow-[0_0_15px_#ffb34780]",
 
-      // Confirm Button (Orange, Large, Bold)
       confirmButton:
         "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700 !mx-2 !font-semibold !text-base",
 
-      // Cancel Button (Gray, Large, Bold)
       cancelButton:
         "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300 !mx-2 !font-semibold !text-base",
 
@@ -186,7 +182,6 @@ async function showConfirmationModal(title, text, confirmText = "Confirm") {
   });
   return result.isConfirmed;
 }
-// ----------------------------------------------------
 
 document.addEventListener("DOMContentLoaded", () => {
   const uploadInput = document.getElementById("uploadProfile");
@@ -216,6 +211,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const uploadLabel = document.getElementById("uploadLabel");
   const profileLockedInfo = document.getElementById("profileLockedInfo");
 
+  const genderSelect = document.getElementById("gender");
+  const genderOtherInput = document.getElementById("genderOther");
+
+  if (genderSelect) {
+    genderSelect.addEventListener("change", function () {
+      if (this.value === "Other") {
+        genderOtherInput.classList.remove("hidden");
+        genderOtherInput.disabled = false;
+        genderOtherInput.focus();
+      } else {
+        genderOtherInput.classList.add("hidden");
+        genderOtherInput.value = "";
+        genderOtherInput.disabled = true;
+      }
+    });
+  }
+
   const courseSelect = document.getElementById("course");
   const allInputs = profileForm.querySelectorAll(
     'input[type="text"], input[type="email"], input[type="tel"], input[type="number"], select',
@@ -228,7 +240,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let originalProfileData = {};
   let isEditing = false;
 
-  // ==========================================================
 
   async function loadCourseOptions(currentCourseId = null) {
     if (!courseSelect) return;
@@ -236,14 +247,12 @@ document.addEventListener("DOMContentLoaded", () => {
     courseSelect.innerHTML = '<option value="">Loading Courses...</option>';
     courseSelect.disabled = true;
 
-    // 🟠 START LOADING FOR COURSE OPTIONS
     showLoadingModal("Loading course options...", "Fetching data.");
 
     try {
       const res = await fetch("api/data/getAllCourses");
       const data = await res.json();
 
-      // 🟠 CLOSE LOADING (SUCCESS PATH)
       if (typeof Swal != "undefined") Swal.close();
 
       courseSelect.innerHTML = "";
@@ -265,7 +274,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       if (!isEditing) courseSelect.disabled = true;
     } catch (err) {
-      // 🟠 CLOSE LOADING (ERROR PATH)
       if (typeof Swal != "undefined") Swal.close();
       console.error("Error fetching course options:", err);
       courseSelect.innerHTML = `<option value="${currentCourseId || ""}">Error loading courses</option>`;
@@ -281,7 +289,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadProfile() {
-    // 🟠 START LOADING FOR PROFILE
     showLoadingModal(
       "Loading profile data...",
       "Retrieving your latest information.",
@@ -295,11 +302,9 @@ document.addEventListener("DOMContentLoaded", () => {
           errData?.message || `Failed to fetch profile. Status: ${res.status}`,
         );
       }
-      // Forced delay to ensure loading modal is visible
       await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 seconds delay bago close
       Swal.close();
 
-      // 🟠 CLOSE LOADING (SUCCESS PATH)
       if (typeof Swal != "undefined") Swal.close();
 
       const data = await res.json();
@@ -331,6 +336,41 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("section").value = profile.section || "";
         document.getElementById("email").value = profile.email || "";
         document.getElementById("contact").value = profile.contact || "";
+
+        // Campus name
+        const campusNameInput = document.getElementById("campusName");
+        if (campusNameInput) {
+            campusNameInput.value = profile.campus_name || "N/A";
+            if (!isEditing) {
+                campusNameInput.disabled = true;
+            }
+        }
+
+        if (genderSelect) {
+          const standardOptions = ["Male", "Female", "LGBTQIA+", "Prefer not to say", "Other"];
+          let genderValue = profile.gender || "";
+
+          // If the value is standard, select it.
+          if (standardOptions.includes(genderValue)) {
+            genderSelect.value = genderValue;
+            genderOtherInput.classList.add("hidden");
+            genderOtherInput.value = "";
+          } 
+          else if (genderValue) {
+            genderSelect.value = "Other";
+            genderOtherInput.value = genderValue;
+            genderOtherInput.classList.remove("hidden");
+          } 
+          else {
+             genderSelect.value = "";
+             genderOtherInput.classList.add("hidden");
+          }
+           
+           if (!isEditing) {
+             genderSelect.disabled = true;
+             genderOtherInput.disabled = true;
+           }
+        }
 
         const currentCourseId = String(profile.course_id) || "";
         const courseDisplayName = profile.course_code
@@ -380,7 +420,6 @@ document.addEventListener("DOMContentLoaded", () => {
           profileLockedInfo.classList.remove("hidden");
         }
 
-        // --- Verification Badge Logic ---
         const verificationBadge = document.getElementById("verificationBadge");
         if (verificationBadge) {
           if (profile.profile_updated == 1 && profile.is_qualified) {
@@ -391,12 +430,10 @@ document.addEventListener("DOMContentLoaded", () => {
             verificationBadge.classList.remove("inline-flex");
           }
         }
-        // --- End of Logic ---
       } else {
         throw new Error(data.message || "Could not parse profile data.");
       }
     } catch (err) {
-      // 🟠 CLOSE LOADING (ERROR PATH)
       if (typeof Swal != "undefined") Swal.close();
       console.error("Load profile error:", err);
       showProfileToast(
@@ -416,6 +453,8 @@ document.addEventListener("DOMContentLoaded", () => {
       loadCourseOptions(originalProfileData.course_id);
 
       editableInputs.forEach((input) => {
+        if (input.id === 'genderOther' && genderSelect && genderSelect.value !== 'Other') return;
+
         input.disabled = false;
         input.classList.remove("bg-gray-50", "border-gray-200");
         input.classList.add(
@@ -425,26 +464,42 @@ document.addEventListener("DOMContentLoaded", () => {
           "focus:ring-orange-500",
         );
       });
-      formActions.classList.remove("hidden");
-      editProfileBtn.classList.add("hidden");
+
+      if (genderSelect) {
+        genderSelect.disabled = false;
+        genderSelect.classList.remove("bg-gray-50", "border-gray-200");
+        genderSelect.classList.add("bg-white", "border-gray-300", "focus:border-orange-500", "focus:ring-orange-500");
+      }
+
+      // Ensure campus input is disabled and styled like User ID
+      const campusNameInput = document.getElementById("campusName");
+      if (campusNameInput) {
+          campusNameInput.disabled = true;
+          // Explicitly set styles for disabled state to match User ID field
+          campusNameInput.classList.remove("bg-white", "border-gray-300", "focus:border-orange-500", "focus:ring-orange-500"); // Remove editing styles
+          campusNameInput.classList.add("bg-gray-100", "border-gray-300"); // Apply disabled styles
+      }
+
+      formActions.classList.remove("hidden"); // Show Save/Cancel
+      editProfileBtn.classList.add("hidden"); // Hide Edit button when editing starts
       uploadLabel.classList.remove("hidden");
       uploadBtn.classList.remove("hidden");
       regFormUpload.disabled = false;
-      viewRegForm.classList.remove("hidden"); // Always show view, then hide if no form
+      viewRegForm.classList.remove("hidden");
 
       if (originalProfileData.registration_form) {
         if (removeRegForm) removeRegForm.classList.remove("hidden");
         uploadBtn.classList.add("hidden");
-        // Construct URL for existing registration form
         const cleanRegFormPath = originalProfileData.registration_form.replace(/^\//, "");
         viewRegForm.href = window.STORAGE_URL + '/' + cleanRegFormPath;
       } else {
         viewRegForm.classList.add("hidden");
         if (removeRegForm) removeRegForm.classList.add("hidden");
-        uploadBtn.classList.remove("hidden"); // Show upload button if no existing form in edit mode
+        uploadBtn.classList.remove("hidden");
       }
-    } else {
-      loadProfile();
+
+    } else { // !shouldEdit
+      loadProfile(); // Re-load profile to set initial states correctly, including editProfileBtn visibility
 
       editableInputs.forEach((input) => {
         input.disabled = true;
@@ -457,22 +512,25 @@ document.addEventListener("DOMContentLoaded", () => {
         );
       });
 
-      formActions.classList.add("hidden");
+      if (genderSelect) {
+        genderSelect.disabled = true;
+        genderSelect.classList.add("bg-gray-50", "border-gray-200");
+        genderSelect.classList.remove("bg-white", "border-gray-300", "focus:border-orange-500", "focus:ring-orange-500");
+      }
+      if (genderOtherInput) {
+        genderOtherInput.disabled = true;
+        genderOtherInput.classList.add("bg-gray-50", "border-gray-200");
+        genderOtherInput.classList.remove("bg-white", "border-gray-300");
+      }
+
+      formActions.classList.add("hidden"); // Hide Save/Cancel
       regFormUpload.disabled = true;
       if (removeRegForm) removeRegForm.classList.add("hidden");
 
-      if (originalProfileData.profile_updated == 1) {
-        editProfileBtn.classList.add("hidden");
-        uploadLabel.classList.add("hidden");
-        uploadBtn.classList.add("hidden");
-        profileLockedInfo.classList.remove("hidden");
-      } else {
-        editProfileBtn.classList.remove("hidden");
-        uploadLabel.classList.add("hidden");
-        uploadBtn.classList.add("hidden");
-      }
+      // Rely on loadProfile() for editProfileBtn visibility when not editing.
+      // The redundant visibility logic for editProfileBtn in this else block is removed.
 
-      if (originalProfileData.registration_form) {
+      if (originalProfileData.registration_form) { // Handles viewRegForm visibility
         viewRegForm.classList.remove("hidden");
       }
     }

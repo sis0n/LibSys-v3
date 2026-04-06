@@ -2,397 +2,157 @@
 
 namespace App\Controllers;
 
-use App\Repositories\BookManagementRepository;
 use App\Core\Controller;
+use App\Services\BookService;
+use App\Services\StorageService;
+use Exception;
 
 class BookManagementController extends Controller
 {
-    private $bookRepo;
-    private $auditRepo;
+    private BookService $bookService;
+    private StorageService $storageService;
 
     public function __construct()
     {
-        $this->bookRepo = new BookManagementRepository();
-        $this->auditRepo = new \App\Repositories\AuditLogRepository();
-    }
-
-    private function json($data, $statusCode = 200)
-    {
-        http_response_code($statusCode);
-        header('Content-Type: application/json');
-        echo json_encode($data);
-        exit;
-    }
-
-    /**
-     * BRIDGE: Nag-uupload ng file sa Laravel Backend via Universal API
-     */
-    private function uploadToBackendAPI($file, $folder)
-    {
-        if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
-            return null;
-        }
-
-        $apiUrl = str_replace('/storage', '/api/upload-file', STORAGE_URL);
-        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-
-        // Gagamit ng Random Unique ID para sa security at privacy
-        $uniqueId = uniqid();
-        $fileName = "book_{$uniqueId}.{$extension}";
-
-        $fileData = base64_encode(file_get_contents($file['tmp_name']));
-
-        try {
-            $ch = curl_init($apiUrl);
-            $postData = json_encode([
-                'filename' => $fileName,
-                'folder' => $folder,
-                'file' => $fileData
-            ]);
-
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_POST, true);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Content-Type: application/json',
-                'Accept: application/json'
-            ]);
-
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if ($httpCode === 200) {
-                return "uploads/" . trim($folder, '/') . "/" . $fileName;
-            }
-            return null;
-        } catch (\Exception $e) {
-            error_log("API Upload Error: " . $e->getMessage());
-            return null;
-        }
-    }
-
-    private function validateImageUpload($file)
-    {
-        $maxSize = 2 * 1024 * 1024;
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        if ($file['error'] !== UPLOAD_ERR_OK) return "Upload error.";
-        if ($file['size'] > $maxSize) return "Image must be less than 2MB.";
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
-        if (!in_array($mime, $allowedTypes)) return "Invalid image type. Only JPG, PNG, GIF, WEBP allowed.";
-        return true;
-    }
-
-    private function handleImageUpload($file)
-    {
-        $validation = $this->validateImageUpload($file);
-        if ($validation !== true) {
-            return null;
-        }
-
-        return $this->uploadToBackendAPI($file, "book_covers");
+        parent::__construct();
+        $this->bookService = new BookService();
+        $this->storageService = new StorageService();
     }
 
     public function fetch()
     {
+        header('Content-Type: application/json');
         try {
-            $search   = $_GET['search'] ?? '';
-            $status   = $_GET['status'] ?? 'All Status';
-            $sort     = $_GET['sort'] ?? 'default';
-            $limit    = (int)($_GET['limit'] ?? 30);
-            $offset   = (int)($_GET['offset'] ?? 0);
-
-            $books = $this->bookRepo->getPaginatedBooks($limit, $offset, $search, $status, $sort);
-            $totalCount = $this->bookRepo->countPaginatedBooks($search, $status);
-
-            $this->json(['success' => true, 'books' => $books, 'totalCount' => $totalCount]);
-        } catch (\Exception $e) {
-            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+            $campusFilter = $this->getCampusFilter();
+            $result = $this->bookService->getPaginatedBooks($_GET, $campusFilter);
+            echo json_encode(['success' => true, 'books' => $result['books'], 'totalCount' => $result['totalCount']]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 
     public function getDetails($id)
     {
+        header('Content-Type: application/json');
         try {
-            $book = $this->bookRepo->findBookById($id);
-            if (!$book) {
-                return $this->json(['success' => false, 'message' => 'Book not found.'], 404);
-            }
-
-            // Transform path para isama ang STORAGE_URL
-            if (!empty($book['cover'])) {
-                $book['cover'] = STORAGE_URL . '/' . ltrim($book['cover'], '/');
-            }
-
-            $this->json(['success' => true, 'book' => $book]);
-        } catch (\Exception $e) {
-            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+            $book = $this->bookService->getBookDetails((int)$id);
+            echo json_encode(['success' => true, 'book' => $book]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()], 404);
         }
     }
 
     public function store()
     {
-        $data = $_POST;
-        if (empty($data['title']) || empty($data['author']) || empty($data['accession_number']) || empty($data['call_number'])) {
-            return $this->json(['success' => false, 'message' => 'Required fields are missing.'], 400);
-        }
-        if (isset($_FILES['book_image']) && $_FILES['book_image']['error'] == 0) {
-            $imagePath = $this->handleImageUpload($_FILES['book_image']);
-            if ($imagePath) {
-                $data['cover'] = $imagePath;
-            } else {
-                return $this->json(['success' => false, 'message' => 'Error uploading file.'], 500);
-            }
-        }
+        header('Content-Type: application/json');
         try {
-            $success = $this->bookRepo->createBook($data);
-            if ($success) {
-                $this->auditRepo->log($_SESSION['user_id'], 'CREATE', 'BOOKS', $data['accession_number'], "Added new book: {$data['title']}");
-                $this->json(['success' => true, 'message' => 'Book added successfully!']);
-            } else {
-                $this->json(['success' => false, 'message' => 'Database error.'], 500);
+            $data = $_POST;
+            $adminId = $_SESSION['user_id'] ?? null;
+            if (!$adminId) throw new Exception('Authentication required.');
+
+            $campusIdFilter = $this->getCampusFilter();
+
+            if (isset($_FILES['book_image']) && $_FILES['book_image']['error'] == 0) {
+                $this->storageService->validateImage($_FILES['book_image']);
+                $data['cover'] = $this->storageService->saveFile($_FILES['book_image'], "book_covers", "book");
             }
-        } catch (\Exception $e) {
-            if (str_contains($e->getMessage(), 'Duplicate entry')) {
-                return $this->json(['success' => false, 'message' => 'Accession number or ISBN might already exist.'], 409);
-            }
-            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+
+            $this->bookService->createBook($data, $adminId, $campusIdFilter);
+            echo json_encode(['success' => true, 'message' => 'Book added successfully!']);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 
     public function update($id)
     {
-        $data = $_POST;
-        if (empty($data['title']) || empty($data['author']) || empty($data['accession_number']) || empty($data['call_number'])) {
-            return $this->json(['success' => false, 'message' => 'Required fields are missing.'], 400);
-        }
-
-        $currentUserId = $_SESSION['user_id'] ?? null;
-        if ($currentUserId === null) {
-            return $this->json(['success' => false, 'message' => 'Authentication required.'], 401);
-        }
-
-        if (isset($_FILES['book_image']) && $_FILES['book_image']['error'] == 0) {
-            $imagePath = $this->handleImageUpload($_FILES['book_image']);
-            if ($imagePath) {
-                $data['cover'] = $imagePath;
-            } else {
-                return $this->json(['success' => false, 'message' => 'Error uploading new file.'], 500);
-            }
-        } elseif (isset($data['remove_image']) && $data['remove_image'] == "1") {
-            $data['cover'] = null;
-        }
-
+        header('Content-Type: application/json');
         try {
-            $book = $this->bookRepo->findBookById($id);
-            if (!$book) {
-                return $this->json(['success' => false, 'message' => 'Book not found.'], 404);
+            $data = $_POST;
+            $adminId = $_SESSION['user_id'] ?? null;
+            if (!$adminId) throw new Exception('Authentication required.');
+
+            $campusIdFilter = $this->getCampusFilter();
+
+            if (isset($_FILES['book_image']) && $_FILES['book_image']['error'] == 0) {
+                $this->storageService->validateImage($_FILES['book_image']);
+                $data['cover'] = $this->storageService->saveFile($_FILES['book_image'], "book_covers", "book");
+            } elseif (isset($data['remove_image']) && $data['remove_image'] == "1") {
+                $data['cover'] = null;
             }
 
-            if (!isset($data['availability'])) {
-                $data['availability'] = $book['availability'];
-            }
+            $success = $this->bookService->updateBook((int)$id, $data, $adminId, $campusIdFilter);
+            echo json_encode(['success' => true, 'message' => $success ? 'Book updated successfully!' : 'No changes made.']);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
 
-            $success = $this->bookRepo->updateBook($id, $data, $currentUserId);
-
-            if ($success) {
-                $this->auditRepo->log($currentUserId, 'UPDATE', 'BOOKS', $data['accession_number'], "Updated book: {$data['title']}");
-                $this->json(['success' => true, 'message' => 'Book updated successfully!']);
-            } else {
-                $this->json(['success' => false, 'message' => 'Failed to update or no changes made.'], 500);
-            }
-        } catch (\Exception $e) {
-            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+    public function reactivate($id)
+    {
+        header('Content-Type: application/json');
+        try {
+            $adminId = $_SESSION['user_id'] ?? null;
+            $campusIdFilter = $this->getCampusFilter();
+            $this->bookService->reactivateBook((int)$id, $adminId, $campusIdFilter);
+            echo json_encode(['success' => true, 'message' => 'Book reactivated successfully!']);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 
     public function destroy($id)
     {
-        $bookId = (int)$id;
-        $deletedByUserId = $_SESSION['user_id'] ?? null;
-
-        if ($deletedByUserId === null) {
-            return $this->json(['success' => false, 'message' => 'Authentication required.'], 401);
-        }
-
+        header('Content-Type: application/json');
         try {
-            $book = $this->bookRepo->findBookById($bookId);
-
-            if (!$book) {
-                return $this->json(['success' => false, 'message' => 'Book not found.'], 404);
-            }
-
-            if ($book['availability'] === 'borrowed') {
-                return $this->json([
-                    'success' => false,
-                    'message' => 'Cannot delete book. It is currently borrowed.'
-                ], 409);
-            }
-
-            $result = $this->bookRepo->deleteBook($bookId, $deletedByUserId);
-
-            if ($result['success']) {
-                $this->auditRepo->log($deletedByUserId, 'DELETE', 'BOOKS', $book['accession_number'], "Deleted book: {$book['title']}");
-            }
-
-            $status = $result['success'] ? 200 : 400;
-
-            if ($result['message'] === 'Book not found.') $status = 404;
-            if ($result['message'] === 'Book already deleted.') $status = 409;
-
-            return $this->json($result, $status);
-        } catch (\PDOException $e) {
-            return $this->json([
-                'success' => false,
-                'message' => 'Internal server error.'
-            ], 500);
-        } catch (\Exception $e) {
-            return $this->json([
-                'success' => false,
-                'message' => $e->getMessage()
-            ], 500);
+            $adminId = $_SESSION['user_id'] ?? null;
+            $campusIdFilter = $this->getCampusFilter();
+            $this->bookService->deactivateBook((int)$id, $adminId, $campusIdFilter);
+            echo json_encode(['success' => true, 'message' => 'Book deactivated successfully!']);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
     }
 
-    // Updated
     public function deleteMultiple()
     {
-        $data = json_decode(file_get_contents("php://input"), true);
-        $bookIds = $data['book_ids'] ?? [];
+        header('Content-Type: application/json');
+        try {
+            $data = json_decode(file_get_contents("php://input"), true);
+            $adminId = $_SESSION['user_id'] ?? null;
+            if (!$adminId) throw new Exception('Authentication required.');
 
-        $deletedByUserId = $_SESSION['user_id'] ?? null;
-        if ($deletedByUserId === null) {
-            return $this->json(['success' => false, 'message' => 'Authentication required.'], 401);
+            $result = $this->bookService->deleteMultiple($data['book_ids'] ?? [], $adminId);
+            echo json_encode(array_merge(['success' => true], $result));
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
-
-        if (empty($bookIds) || !is_array($bookIds)) {
-            return $this->json(['success' => false, 'message' => 'No book IDs provided.'], 400);
-        }
-
-        $deletedCount = 0;
-        $errors = [];
-
-        foreach ($bookIds as $bookId) {
-            $bookId = (int)$bookId;
-            $book = $this->bookRepo->findBookById($bookId);
-
-            if (!$book) {
-                $errors[] = "Book with ID $bookId not found.";
-                continue;
-            }
-
-            if ($book['availability'] === 'borrowed') {
-                $errors[] = "Cannot delete '{$book['title']}': It is currently borrowed.";
-                continue;
-            }
-
-            try {
-                $result = $this->bookRepo->deleteBook($bookId, $deletedByUserId);
-                if ($result['success']) {
-                    $deletedCount++;
-                } else {
-                    $errors[] = "Failed to delete '{$book['title']}': " . ($result['message'] ?? 'Unknown error');
-                }
-            } catch (\Exception $e) {
-                $errors[] = "Error deleting '{$book['title']}': " . $e->getMessage();
-            }
-        }
-
-        $response = [
-            'success' => $deletedCount > 0,
-            'message' => "Successfully deleted $deletedCount book(s).",
-            'deleted_count' => $deletedCount,
-            'errors' => $errors
-        ];
-
-        if ($deletedCount === 0 && !empty($errors)) {
-            $response['success'] = false;
-            $response['message'] = "No books were deleted. See errors for details.";
-        } else if ($deletedCount > 0 && !empty($errors)) {
-            $response['message'] = "Partially completed: Deleted $deletedCount book(s) with some errors.";
-        }
-
-        return $this->json($response);
     }
-    // end
 
     public function bulkImport()
     {
         header('Content-Type: application/json');
-        $imported = 0;
-        $errors = [];
-        $batchSize = 500;
-        $booksToInsert = [];
+        try {
+            if (!isset($_FILES['csv_file'])) throw new Exception('No file uploaded.');
 
-        $file = $_FILES['csv_file']['tmp_name'];
-        $bookRepo = new \App\Repositories\BookManagementRepository();
-
-        if (($handle = fopen($file, 'r')) !== false) {
-            fgetcsv($handle); // Skip header
-            $rowNumber = 2;
-
-            while (($row = fgetcsv($handle)) !== false) {
-                $accessionNumber = trim($row[0] ?? '');
-                if (!$accessionNumber) {
-                    $errors[] = "Row $rowNumber: Missing accession_number.";
-                    $rowNumber++;
-                    continue;
-                }
-
-                $booksToInsert[] = [
-                    'accession_number' => $accessionNumber,
-                    'call_number' => trim($row[1] ?? '') ?: null,
-                    'title' => trim($row[2] ?? '') ?: null,
-                    'author' => trim($row[3] ?? '') ?: null,
-                    'book_place' => trim($row[4] ?? '') ?: null,
-                    'book_publisher' => trim($row[5] ?? '') ?: null,
-                    'year' => trim($row[6] ?? '') ?: null,
-                    'book_edition' => trim($row[7] ?? '') ?: null,
-                    'description' => trim($row[8] ?? '') ?: null,
-                    'book_isbn' => trim($row[9] ?? '') ?: null,
-                    'book_supplementary' => trim($row[10] ?? '') ?: null,
-                    'subject' => trim($row[11] ?? '') ?: null,
-                    'availability' => 'available',
-                ];
-
-                if (count($booksToInsert) >= $batchSize) {
-                    try {
-                        $bookRepo->bulkCreateBooks($booksToInsert);
-                        $imported += count($booksToInsert);
-                        $booksToInsert = []; // Reset ang collection
-                    } catch (\Exception $e) {
-                        $errors[] = "Batch error near row $rowNumber: " . $e->getMessage();
-                    }
-                }
-                $rowNumber++;
-            }
-
-            if (!empty($booksToInsert)) {
-                try {
-                    $bookRepo->bulkCreateBooks($booksToInsert);
-                    $imported += count($booksToInsert);
-                } catch (\Exception $e) {
-                    $errors[] = "Final batch error: " . $e->getMessage();
-                }
-            }
-            fclose($handle);
+            $adminId = $_SESSION['user_id'] ?? null;
+            $campusIdFilter = $this->getCampusFilter();
+            
+            $result = $this->bookService->bulkImport($_FILES['csv_file']['tmp_name'], $adminId, $campusIdFilter);
+            echo json_encode(array_merge(['success' => true], $result));
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
-
-        echo json_encode(['success' => true, 'imported' => $imported, 'errors' => $errors]);
     }
 
-    public function getBorrowingHistory($id)
+    public function getBookBorrowingHistory($id)
     {
+        header('Content-Type: application/json');
         try {
-            $history = $this->bookRepo->getBookBorrowingHistory((int)$id);
-            $this->json(['success' => true, 'history' => $history]);
-        } catch (\Exception $e) {
-            $this->json(['success' => false, 'message' => $e->getMessage()], 500);
+            $history = $this->bookService->getBookBorrowingHistory((int)$id);
+            echo json_encode(['success' => true, 'history' => $history]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 }

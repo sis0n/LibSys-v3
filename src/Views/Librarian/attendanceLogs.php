@@ -3,7 +3,8 @@
 use App\Repositories\AttendanceRepository;
 
 $attendanceRepo = new AttendanceRepository();
-$logs = $attendanceRepo->getAllLogs();
+$campusId = $_SESSION['user_data']['campus_id'] ?? null;
+$logs = $attendanceRepo->getAllLogs($campusId);
 
 date_default_timezone_set('Asia/Manila');
 

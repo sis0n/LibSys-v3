@@ -24,10 +24,13 @@ class StudentProfileRepository
             u.middle_name,
             u.last_name,
             u.suffix,
+            u.gender,
             u.email,
             u.profile_picture,
             u.role,
             u.is_active,
+            u.campus_id,
+            c.campus_name,
             s.student_id,
             s.student_number,
             s.course_id, 
@@ -37,11 +40,12 @@ class StudentProfileRepository
             s.registration_form,
             s.profile_updated,
             s.can_edit_profile,
-            c.course_code,
-            c.course_title
+            co.course_code,
+            co.course_title
         FROM users u
         LEFT JOIN students s ON u.user_id = s.user_id
-        LEFT JOIN courses c ON s.course_id = c.course_id
+        LEFT JOIN courses co ON s.course_id = co.course_id
+        LEFT JOIN campuses c ON u.campus_id = c.campus_id
         WHERE u.user_id = :userId AND u.deleted_at IS NULL
     ");
     $stmt->execute([':userId' => $userId]);
@@ -52,7 +56,6 @@ class StudentProfileRepository
             $result['course_full_name'] = $result['course_code'] . ' - ' . $result['course_title'];
         }
 
-        // --- BORROWING QUALIFICATION CHECK ---
         $requiredFields = [
             'first_name', 'last_name', 'email', 'profile_picture',
             'course_id', 'year_level', 'section', 'contact', 'registration_form'
@@ -66,7 +69,6 @@ class StudentProfileRepository
             }
         }
         $result['is_qualified'] = $isQualified;
-        // --- END OF CHECK ---
     }
 
     return $result ?: null;
@@ -81,6 +83,7 @@ class StudentProfileRepository
       'course_id',
       'year_level',
       'section',
+      'campus',
       'contact',
       'profile_updated',
       'can_edit_profile',

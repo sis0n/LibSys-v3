@@ -3,121 +3,115 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
-use App\Repositories\CartRepository;
+use App\Services\CartService;
+use Exception;
 
 class CartController extends Controller
 {
-  private CartRepository $cartRepo;
+    private CartService $cartService;
 
-  public function __construct()
-  {
-    $this->cartRepo = new CartRepository();
-  }
-
-  private function showErrorPage(int $status, string $message = "")
-  {
-    http_response_code($status);
-    $this->view("errors/{$status}", ["message" => $message]);
-    exit;
-  }
-
-  public function index()
-  {
-    $userId = $this->ensureStudent();
-    if (!$userId) $this->showErrorPage(401, "Unauthorized");
-
-    $cartItems = $this->cartRepo->getCartByUser($userId);
-    $this->view("student/cart", [
-      "cartItems" => $cartItems,
-      "title" => "My Cart"
-    ]);
-  }
-
-  public function add($bookId)
-  {
-    $userId = $this->ensureStudent();
-    if (!$userId) $this->showErrorPage(401, "Not logged in");
-
-    $success = $this->cartRepo->addToCart($userId, $bookId);
-
-    header('Content-Type: application/json');
-    echo json_encode([
-      "success" => $success,
-      "cart_count" => $this->cartRepo->countCartItems($userId)
-    ]);
-  }
-
-  public function remove($cartId)
-  {
-    $userId = $this->ensureStudent();
-    if (!$userId) $this->showErrorPage(401, "Not logged in");
-
-    $this->cartRepo->removeFromCart((int)$cartId, $userId);
-
-    header('Content-Type: application/json');
-    echo json_encode(["success" => true]);
-  }
-
-  public function clearCart()
-  {
-    $userId = $this->ensureStudent();
-    if (!$userId) $this->showErrorPage(401, "Not logged in");
-
-    $this->cartRepo->clearCart($userId);
-
-    header('Content-Type: application/json');
-    echo json_encode(["success" => true]);
-  }
-
-  public function getCartJson()
-  {
-    $userId = $this->ensureStudent();
-    if (!$userId) $this->showErrorPage(401, "Not logged in");
-
-    $cartItems = $this->cartRepo->getCartByUser($userId);
-
-    header('Content-Type: application/json');
-    echo json_encode($cartItems);
-  }
-
-  public function checkout()
-  {
-    $userId = $this->ensureStudent();
-    if (!$userId) $this->showErrorPage(401, "Not logged in");
-
-    $data = json_decode(file_get_contents("php://input"), true);
-    $cartIds = $data['cart_ids'] ?? [];
-
-    if (empty($cartIds)) {
-      header('Content-Type: application/json');
-      echo json_encode(["success" => false, "message" => "No items selected"]);
-      return;
+    public function __construct()
+    {
+        parent::__construct();
+        $this->cartService = new CartService();
     }
 
-    $ticketId = uniqid("TICKET-");
-
-    foreach ($cartIds as $cid) {
-      $this->cartRepo->removeFromCart((int)$cid, $userId);
+    private function ensureAuthenticated()
+    {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        if (!isset($_SESSION['user_id'])) {
+            header('Location: ' . \BASE_URL . '/login');
+            exit;
+        }
+        return [
+            'user_id' => $_SESSION['user_id'],
+            'role' => $_SESSION['role'] ?? 'guest'
+        ];
     }
 
-    header('Content-Type: application/json');
-    echo json_encode([
-      "success" => true,
-      "ticket_id" => $ticketId
-    ]);
-  }
+    public function index()
+    {
+        $auth = $this->ensureAuthenticated();
+        $cartItems = $this->cartService->getUserCart($auth['user_id']);
+        
+        $role = $auth['role'];
+        $viewFolder = ucfirst($role);
+        if ($role === 'staff') $viewFolder = 'staff';
+        
+        if (!($role === 'student' || $role === 'faculty' || $role === 'staff')) {
+            header('Location: ' . \BASE_URL . '/dashboard');
+            exit;
+        }
 
-  private function ensureStudent()
-  {
-    if (session_status() === PHP_SESSION_NONE) {
-      session_start();
+        $this->view("$viewFolder/myCart", [
+            "cartItems" => $cartItems,
+            "title" => "My Cart"
+        ]);
     }
 
-    if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'student') {
-      header('Location: ' . BASE_URL .'/login');
-      exit;
+    public function add($bookId)
+    {
+        header('Content-Type: application/json');
+        try {
+            $auth = $this->ensureAuthenticated();
+            $result = $this->cartService->addToCart($auth['user_id'], (int)$bookId);
+            echo json_encode($result);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
     }
 
-    return $_SESSION['user_id'];
-  }
+    public function remove($cartId)
+    {
+        header('Content-Type: application/json');
+        try {
+            $auth = $this->ensureAuthenticated();
+            $this->cartService->removeFromCart((int)$cartId, $auth['user_id']);
+            echo json_encode(["success" => true]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function clearCart()
+    {
+        header('Content-Type: application/json');
+        try {
+            $auth = $this->ensureAuthenticated();
+            $this->cartService->clearCart($auth['user_id']);
+            echo json_encode(["success" => true]);
+        } catch (Exception $e) {
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function getCartJson()
+    {
+        header('Content-Type: application/json');
+        try {
+            $auth = $this->ensureAuthenticated();
+            $cartItems = $this->cartService->getUserCart($auth['user_id']);
+            echo json_encode($cartItems);
+        } catch (Exception $e) {
+            echo json_encode(['error' => $e->getMessage()]);
+        }
+    }
+
+    public function checkout()
+    {
+        header('Content-Type: application/json');
+        try {
+            $auth = $this->ensureAuthenticated();
+            $data = json_decode(file_get_contents("php://input"), true);
+            
+            $ticketId = $this->cartService->checkout($auth['user_id'], $data['cart_ids'] ?? [], $auth['role']);
+            
+            echo json_encode([
+                "success" => true,
+                "ticket_id" => $ticketId
+            ]);
+        } catch (Exception $e) {
+            echo json_encode(["success" => false, "message" => $e->getMessage()]);
+        }
+    }
 }
