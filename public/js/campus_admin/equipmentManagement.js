@@ -99,19 +99,20 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- Core Functions ---
 
     function getStatusBadge(isActive) {
-        const base = "px-2 py-1 text-[10px] rounded-md font-bold uppercase tracking-wider transition-all";
-        return isActive 
-            ? `<span class="bg-green-500 text-white hover:bg-green-600 ${base}">Active</span>` 
-            : `<span class="bg-gray-300 text-gray-700 hover:bg-gray-400 ${base}">Inactive</span>`;
+        const base = "px-3 py-1 text-xs rounded-full font-semibold transition-all";
+        return isActive
+            ? `<span class="bg-emerald-100 text-emerald-700 ${base}">Active</span>`
+            : `<span class="bg-rose-100 text-rose-700 ${base}">Inactive</span>`;
     }
 
     function getConditionClass(status) {
         switch(status.toLowerCase()) {
-            case 'available': return 'bg-green-100 text-green-700 border-green-200';
-            case 'borrowed':  return 'bg-orange-100 text-orange-700 border-orange-200';
-            case 'damaged':   return 'bg-red-100 text-red-700 border-red-200';
-            case 'maintenance': return 'bg-blue-100 text-blue-700 border-blue-200';
-            default: return 'bg-gray-100 text-gray-700 border-gray-200';
+            case 'available': return 'bg-emerald-100 text-emerald-700';
+            case 'borrowed':  return 'bg-blue-100 text-blue-700';
+            case 'damaged':   return 'bg-rose-100 text-rose-700';
+            case 'lost':      return 'bg-rose-100 text-rose-700';
+            case 'maintenance': return 'bg-amber-100 text-amber-700';
+            default: return 'bg-gray-100 text-gray-700';
         }
     }
 
@@ -162,7 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const headerRow = document.querySelector("thead tr");
         if (isMultiSelectMode && !headerRow.querySelector(".selection-header")) {
             const th = document.createElement("th");
-            th.className = "py-3 px-4 font-medium text-left selection-header";
+            th.className = "py-3 px-4 font-semibold text-left selection-header";
             th.innerHTML = '<i class="ph ph-check-square"></i>';
             headerRow.prepend(th);
         } else if (!isMultiSelectMode && headerRow.querySelector(".selection-header")) {
@@ -172,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
         equipments.forEach(eq => {
             const isSelected = selectedEqIds.has(eq.equipment_id);
             const row = document.createElement("tr");
-            row.className = `hover:bg-orange-50/50 transition-colors ${isSelected ? 'bg-orange-100' : ''} ${!eq.is_active ? 'bg-gray-50/50 opacity-70' : ''}`;
+            row.className = `hover:bg-orange-50/40 transition-colors ${isSelected ? 'bg-orange-100' : ''} ${!eq.is_active ? 'bg-gray-50/50 opacity-70' : ''}`;
             
             let rowHtml = "";
             if (isMultiSelectMode) {
@@ -185,10 +186,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
             rowHtml += `
                 <td class="px-6 py-4 font-medium text-gray-800">${eq.equipment_name}</td>
-                <td class="px-6 py-4 text-gray-600 font-medium">${eq.campus_name || 'N/A'}</td>
+                <td class="px-6 py-4">
+                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-orange-700 bg-orange-50 border border-orange-200 px-3 py-1 rounded-full">
+                        <i class="ph ph-map-pin"></i>
+                        ${eq.campus_name || 'N/A'}
+                    </span>
+                </td>
                 <td class="px-6 py-4 text-gray-600 font-mono text-xs">${eq.asset_tag || 'N/A'}</td>
                 <td class="px-6 py-4">
-                    <span class="w-fit px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getConditionClass(eq.status)}">
+                    <span class="w-fit px-3 py-1 rounded-full text-xs font-semibold ${getConditionClass(eq.status)}">
                         ${eq.status.toUpperCase()}
                     </span>
                 </td>

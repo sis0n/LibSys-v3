@@ -1,11 +1,10 @@
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h2 class="text-2xl font-bold mb-4">Campus Management</h2>
-        <p class="text-gray-700">Add, edit, and manage library campus locations.</p>
+        <h2 class="text-2xl font-bold tracking-wider text-gray-900 uppercase">Campus List</h2>
     </div>
     <div class="flex gap-2 text-sm">
         <button
-            class="px-4 py-2 bg-orange-500 text-white font-medium rounded-lg border hover:bg-orange-600 gap-2 inline-flex items-center"
+            class="px-4 py-2 bg-orange-500 text-white font-medium rounded-full border hover:bg-orange-600 gap-2 inline-flex items-center shadow-sm"
             id="addCampusBtn">
             <i class="ph ph-plus"></i>
             Add Campus
@@ -13,18 +12,12 @@
     </div>
 </div>
 
-<div class="bg-[var(--color-card)] border border-orange-200 rounded-xl shadow-sm p-6 mt-6">
-    <div class="flex items-center justify-between mb-4">
-        <div>
-            <h3 class="text-lg font-semibold text-gray-800">Campus List</h3>
-            <p class="text-sm text-gray-600">All registered campuses in the system</p>
-        </div>
-        <div class="flex items-center gap-2 text-sm">
-            <div class="relative">
-                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2"></i>
-                <input type="text" id="campusSearchInput" placeholder="Search"
-                    class="bg-orange-50 border border-orange-200 rounded-lg pl-9 pr-3 py-2 outline-none transition text-sm">
-            </div>
+<div class="mt-6">
+    <div class="flex flex-wrap items-center gap-3 text-sm mb-4">
+        <div class="relative w-[380px]">
+            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-orange-500"></i>
+            <input type="text" id="campusSearchInput" placeholder="Search by campus name or code..."
+                class="bg-white border border-gray-200 rounded-full pl-10 pr-4 py-2.5 outline-none transition text-sm w-full shadow-sm focus:ring-2 focus:ring-orange-200">
         </div>
     </div>
 
@@ -57,16 +50,16 @@
         </div>
     </div>
 
-    <div class="overflow-x-auto rounded-lg border border-orange-200">
-        <table class="w-full text-sm border-collapse">
-            <thead class="bg-orange-50 text-gray-700 border border-orange-100">
+    <div class="overflow-x-auto rounded-2xl border border-orange-200 bg-white shadow-sm">
+        <table class="w-full text-sm border-collapse text-gray-700">
+            <thead class="bg-orange-100 text-orange-700 uppercase text-xs tracking-wider border-b border-orange-200">
                 <tr>
-                    <th class="text-left px-4 py-3 font-medium w-16">#</th>
-                    <th class="text-left px-4 py-3 font-medium">Campus Name</th>
-                    <th class="text-left px-4 py-3 font-medium">Campus Code</th>
-                    <th class="text-left px-4 py-3 font-medium">Status</th>
-                    <th class="text-left px-4 py-3 font-medium">Date Created</th>
-                    <th class="text-left px-4 py-3 font-medium">Actions</th>
+                    <th class="text-left px-4 py-4 font-semibold w-16">#</th>
+                    <th class="text-left px-4 py-4 font-semibold">Campus Name</th>
+                    <th class="text-left px-4 py-4 font-semibold">Campus Code</th>
+                    <th class="text-left px-4 py-4 font-semibold">Status</th>
+                    <th class="text-left px-4 py-4 font-semibold">Date Created</th>
+                    <th class="text-left px-4 py-4 font-semibold">Actions</th>
                 </tr>
             </thead>
             <tbody id="campusTableBody" class="divide-y divide-orange-100">

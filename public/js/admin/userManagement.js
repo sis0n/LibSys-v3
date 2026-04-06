@@ -821,8 +821,8 @@ window.addEventListener("DOMContentLoaded", () => {
             const firstHeader = headerRow.querySelector('th');
             if (isMultiSelectMode) {
                 if (!firstHeader.classList.contains('multi-select-header')) {
-                    const th = document.createElement('th');
-                    th.className = 'px-4 py-3 font-medium multi-select-header';
+                const th = document.createElement('th');
+                th.className = 'px-4 py-4 font-semibold multi-select-header';
                     headerRow.insertBefore(th, firstHeader);
                 }
             } else {
@@ -847,7 +847,7 @@ window.addEventListener("DOMContentLoaded", () => {
             //Updated edited this code : row.className = user.status === "Inactive" ? "bg-gray-50 text-gray-500" : "bg-white";
             const isSelected = selectedUsers.has(user.user_id);
 
-            row.className = `transition-colors ${isSelected ? "bg-orange-100" : (user.status === "Inactive" ? "bg-gray-50 text-gray-500" : "bg-white")}`;
+        row.className = `transition-colors hover:bg-orange-50/40 ${isSelected ? "bg-orange-100" : (user.status === "Inactive" ? "bg-gray-50 text-gray-500" : "bg-white")}`;
             if (isMultiSelectMode) {
                 row.classList.add("cursor-pointer");
                 row.dataset.userId = user.user_id;
@@ -864,22 +864,22 @@ window.addEventListener("DOMContentLoaded", () => {
             }
             //end
 
-            let actions = `
-                <button class="editUserBtn flex items-center gap-1 border border-orange-200 text-gray-600 px-2 py-1.5 rounded-md text-xs font-medium hover:bg-orange-50 transition">
-                    <i class="ph ph-note-pencil text-base"></i><span>Edit</span>
-                </button>
-                <button class="deleteUserBtn flex items-center gap-1 bg-red-600 text-white px-2 py-1.5 rounded-md text-xs font-medium hover:bg-red-700 transition">
-                    <i class="ph ph-trash text-base"></i><span>Delete</span>
+        let actions = `
+            <button class="editUserBtn text-orange-600 hover:bg-orange-50 rounded-full p-2 transition" title="Edit">
+                <i class="ph ph-note-pencil text-lg"></i>
+            </button>
+            <button class="deleteUserBtn text-red-600 hover:bg-red-50 rounded-full p-2 transition" title="Delete">
+                <i class="ph ph-trash text-lg"></i>
+            </button>
+        `;
+
+        if (user.role.toLowerCase() === 'student') {
+            actions += `
+                <button class="allow-edit-btn text-blue-600 hover:bg-blue-50 rounded-full p-2 transition" title="Allow Edit" data-id="${user.user_id}">
+                    <i class="ph ph-check-circle text-lg"></i>
                 </button>
             `;
-
-            if (user.role.toLowerCase() === 'student') {
-                actions += `
-                    <button class="allow-edit-btn flex items-center gap-1 border border-blue-500 text-blue-600 px-2 py-1.5 rounded-md text-xs font-medium hover:bg-blue-50 transition" data-id="${user.user_id}">
-                        Allow Edit
-                    </button>
-                `;
-            }
+        }
             // Updated
             let actionsCellHTML = `<td class="px-4 py-3 actions-cell"><div class="flex items-center gap-2">${actions}</div></td>`;
             if (isMultiSelectMode) {
@@ -1356,36 +1356,38 @@ window.addEventListener("DOMContentLoaded", () => {
     if (toggleConfirmPass) toggleConfirmPass.addEventListener('click', () => togglePassword('confirmPassword', toggleConfirmPass));
 
     function getRoleBadge(role) {
-        if (!role) return '<span class="bg-gray-300 text-gray-800 px-2 py-1 text-xs rounded-md font-medium">N/A</span>';
+        if (!role) return '<span class="bg-gray-100 text-gray-700 px-3 py-1 text-xs rounded-full font-medium">N/A</span>';
         
-        const base = "px-2 py-1 text-xs rounded-md font-medium inline-block";
+        const base = "px-3 py-1 text-xs rounded-full font-medium inline-flex items-center";
         const normalizedRole = role.toLowerCase().trim();
         const displayRole = normalizedRole.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
         
         switch (normalizedRole) {
             case "student":
-                return `<span class="bg-green-500 text-white ${base}">${displayRole}</span>`;
+                return `<span class="bg-purple-100 text-purple-700 ${base}">${displayRole}</span>`;
             case "librarian":
-                return `<span class="bg-amber-500 text-white ${base}">${displayRole}</span>`;
+                return `<span class="bg-amber-100 text-amber-700 ${base}">${displayRole}</span>`;
             case "admin":
-                return `<span class="bg-orange-600 text-white ${base}">${displayRole}</span>`;
+                return `<span class="bg-blue-100 text-blue-700 ${base}">${displayRole}</span>`;
             case "campus_admin":
             case "campus admin":
-                return `<span class="bg-blue-600 text-white ${base}">${displayRole}</span>`;
+                return `<span class="bg-indigo-100 text-indigo-700 ${base}">${displayRole}</span>`;
             case "faculty":
-                return `<span class="bg-emerald-600 text-white ${base}">${displayRole}</span>`;
+                return `<span class="bg-sky-100 text-sky-700 ${base}">${displayRole}</span>`;
             case "staff":
-                return `<span class="bg-teal-600 text-white ${base}">${displayRole}</span>`;
+                return `<span class="bg-teal-100 text-teal-700 ${base}">${displayRole}</span>`;
             case "superadmin":
-                return `<span class="bg-purple-600 text-white ${base}">${displayRole}</span>`;
+                return `<span class="bg-violet-100 text-violet-700 ${base}">${displayRole}</span>`;
             default:
-                return `<span class="bg-gray-300 text-gray-800 ${base}">${displayRole}</span>`;
+                return `<span class="bg-gray-100 text-gray-700 ${base}">${displayRole}</span>`;
         }
     }
 
     function getStatusBadge(status) {
-        const base = "px-2 py-1 text-xs rounded-md font-medium";
-        return status.toLowerCase() === "active" ? `<span class="bg-green-500 text-white ${base}">Active</span>` : `<span class="bg-gray-300 text-gray-700 ${base}">Inactive</span>`;
+        const base = "px-3 py-1 text-xs rounded-full font-medium";
+        return status.toLowerCase() === "active"
+            ? `<span class="bg-emerald-100 text-emerald-700 ${base}">Active</span>`
+            : `<span class="bg-rose-100 text-rose-700 ${base}">Inactive</span>`;
     }
 
     loadUsers(currentPage);

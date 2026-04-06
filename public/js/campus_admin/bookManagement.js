@@ -286,7 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
     books.forEach((book) => {
       const isSelected = selectedBookIds.has(book.book_id);
       const row = document.createElement("tr");
-      row.className = `hover:bg-orange-50 transition-colors ${isSelected ? "bg-orange-100" : ""} ${book.is_active == 0 ? "opacity-60 bg-gray-50" : ""}`;
+      row.className = `hover:bg-orange-50/40 transition-colors ${isSelected ? "bg-orange-100" : ""} ${book.is_active == 0 ? "opacity-60 bg-gray-50" : ""}`;
       row.innerHTML = `
                 <td class="py-3 px-4 ${isMultiSelectMode ? "" : "hidden"}">
                     <input type="checkbox" class="accent-orange-500" ${isSelected ? "checked" : ""} onchange="toggleBookSelection(${book.book_id})">
@@ -301,26 +301,27 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                 </td>
                 <td class="py-3 px-4 text-center">
-                    <span class="text-xs font-semibold text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
+                    <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-orange-700 bg-orange-50 border border-orange-200 px-3 py-1 rounded-full">
+                        <i class="ph ph-map-pin"></i>
                         ${book.campus_name || "N/A"}
                     </span>
                 </td>
                 <td class="py-3 px-4 text-gray-600">${book.author || "N/A"}</td>
                 <td class="py-3 px-4 text-center">
                     <span onclick="toggleBookActive(${book.book_id}, ${book.is_active}, '${book.title.replace(/'/g, "\\'")}')" 
-                          class="px-2 py-1 rounded-full text-[10px] font-bold cursor-pointer hover:opacity-80 transition ${getStatusClass(book.availability, book.is_active)}">
+                          class="px-3 py-1 rounded-full text-xs font-semibold cursor-pointer hover:opacity-80 transition ${getStatusClass(book.availability, book.is_active)}">
                         ${book.is_active == 1 ? book.availability.toUpperCase() : "INACTIVE"}
                     </span>
                 </td>
                 <td class="py-3 px-4">
                     <div class="flex items-center justify-center gap-2">
-                        <button onclick="viewHistory(${book.book_id})" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition" title="View History">
+                        <button onclick="viewHistory(${book.book_id})" class="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition" title="View History">
                             <i class="ph ph-eye text-lg"></i>
                         </button>
-                        <button onclick="viewBook(${book.book_id})" class="p-1.5 text-orange-600 hover:bg-orange-50 rounded-md transition" title="View Details">
+                        <button onclick="viewBook(${book.book_id})" class="p-2 text-orange-600 hover:bg-orange-50 rounded-full transition" title="View Details">
                             <i class="ph ph-info text-lg"></i>
                         </button>
-                        <button onclick="editBook(${book.book_id})" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded-md transition" title="Edit Book">
+                        <button onclick="editBook(${book.book_id})" class="p-2 text-amber-600 hover:bg-amber-50 rounded-full transition" title="Edit Book">
                             <i class="ph ph-note-pencil text-lg"></i>
                         </button>
                     </div>
@@ -331,16 +332,16 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const getStatusClass = (status, isActive = 1) => {
-    if (isActive == 0) return "bg-gray-300 text-gray-700";
+    if (isActive == 0) return "bg-gray-200 text-gray-700";
     switch (status.toLowerCase()) {
       case "available":
-        return "bg-green-100 text-green-700";
+        return "bg-emerald-100 text-emerald-700";
       case "borrowed":
         return "bg-blue-100 text-blue-700";
       case "damaged":
-        return "bg-yellow-100 text-yellow-700";
+        return "bg-amber-100 text-amber-700";
       case "lost":
-        return "bg-red-100 text-red-700";
+        return "bg-rose-100 text-rose-700";
       default:
         return "bg-gray-100 text-gray-700";
     }

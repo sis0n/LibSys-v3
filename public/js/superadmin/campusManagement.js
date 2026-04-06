@@ -134,7 +134,7 @@ document.addEventListener("DOMContentLoaded", function () {
             if (isMultiSelectMode) {
                 if (!firstHeader.classList.contains('multi-select-header')) {
                     const th = document.createElement('th');
-                    th.className = 'px-4 py-3 font-medium multi-select-header';
+                    th.className = 'px-4 py-4 font-semibold multi-select-header';
                     headerRow.insertBefore(th, firstHeader);
                 }
             } else {
@@ -155,7 +155,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const isSelected = selectedCampuses.has(campus.campus_id);
             const status = campus.is_active == 1 ? 'Active' : 'Inactive';
             const row = document.createElement("tr");
-            row.className = `transition-colors ${isSelected ? "bg-orange-100" : (status === 'Inactive' ? "bg-gray-50 text-gray-500" : "hover:bg-orange-50/30")} group`;
+            row.className = `transition-colors hover:bg-orange-50/40 ${isSelected ? "bg-orange-100" : (status === 'Inactive' ? "bg-gray-50 text-gray-500" : "bg-white")} group`;
             if (isMultiSelectMode) {
                 row.classList.add("cursor-pointer");
                 row.dataset.campusId = campus.campus_id;
@@ -174,8 +174,8 @@ document.addEventListener("DOMContentLoaded", function () {
                 <td class="px-4 py-3">
                     <div class="flex items-center gap-2">
                         <button onclick="editCampus(${campus.campus_id}, '${campus.campus_name.replace(/'/g, "\\'")}', '${campus.campus_code}')" 
-                            class="flex items-center gap-1 border border-orange-200 text-gray-600 px-2 py-1.5 rounded-md text-xs font-medium hover:bg-orange-50 transition" title="Edit">
-                            <i class="ph ph-note-pencil text-base"></i><span>Edit</span>
+                            class="p-2 rounded-full text-orange-600 hover:bg-orange-50 transition" title="Edit">
+                            <i class="ph ph-note-pencil text-lg"></i>
                         </button>
                     </div>
                 </td>
@@ -204,8 +204,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function getStatusBadge(status) {
-        const base = "px-2 py-1 text-xs rounded-md font-medium";
-        return status.toLowerCase() === "active" ? `<span class="bg-green-500 text-white ${base}">Active</span>` : `<span class="bg-gray-300 text-gray-700 ${base}">Inactive</span>`;
+        const base = "px-3 py-1 text-xs rounded-full font-medium";
+        return status.toLowerCase() === "active"
+            ? `<span class="bg-emerald-100 text-emerald-700 ${base}">Active</span>`
+            : `<span class="bg-rose-100 text-rose-700 ${base}">Inactive</span>`;
     }
 
     function formatDate(dateString) {

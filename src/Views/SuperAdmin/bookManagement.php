@@ -1,11 +1,10 @@
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h2 class="text-2xl font-bold mb-4">Book Management</h2>
-        <p class="text-gray-700">Manage library books across all campuses, availability, and inventory.</p>
+        <h2 class="text-2xl font-bold tracking-wider text-gray-900 uppercase">Book Management</h2>
     </div>
     <div class="flex gap-2 text-sm">
         <button
-            class="inline-flex items-center bg-white font-medium border border-orange-200 justify-center px-4 py-2 rounded-lg hover:bg-gray-100 px-4 gap-2 shadow-sm transition-all"
+            class="inline-flex items-center bg-white font-medium border border-orange-200 justify-center px-4 py-2 rounded-full hover:bg-orange-50 gap-2 shadow-sm transition-all"
             id="bulkImportBtn">
             <i class="ph ph-upload-simple"></i>
             Bulk Import
@@ -42,7 +41,7 @@
             </div>
         </div>
         <button
-            class="px-4 py-2 bg-orange-500 text-white font-medium rounded-lg border hover:bg-orange-600 gap-2 inline-flex items-center shadow-sm"
+            class="px-4 py-2 bg-orange-500 text-white font-medium rounded-full border hover:bg-orange-600 gap-2 inline-flex items-center shadow-sm"
             id="openAddBookBtn">
             <i class="ph ph-plus"></i>
             Add New Book
@@ -152,71 +151,65 @@
     </div>
 </div>
 
-<div class="bg-[var(--color-card)] border border-orange-200 rounded-xl shadow-sm p-6 mt-6">
-    <div class="flex items-center justify-between mb-4">
-        <div>
-            <h3 class="text-lg font-semibold text-gray-800">Book Catalog</h3>
-            <p class="text-sm text-gray-600">Registered Books across all campuses</p>
+<div class="mt-6">
+    <div class="flex flex-wrap items-center gap-3 text-sm mb-4">
+        <div class="relative w-[300px]">
+            <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-orange-500"></i>
+            <input type="text" id="bookSearchInput" placeholder="Search by title, author, or ISBN..."
+                class="bg-white border border-gray-200 rounded-full pl-10 pr-4 py-2.5 outline-none transition text-sm w-full shadow-sm focus:ring-2 focus:ring-orange-200">
         </div>
-        <div class="flex items-center text-sm">
-            <div class="relative w-[300px]">
-                <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                <input type="text" id="bookSearchInput" placeholder="Search by title, author, isbn..."
-                    class="bg-orange-50 border border-orange-200 rounded-lg pl-9 pr-3 py-2 outline-none transition text-sm w-full focus:ring-1 focus:ring-orange-300 shadow-sm">
+        
+        <div class="relative inline-block text-left">
+            <button id="campusDropdownBtn"
+                class="border border-gray-200 bg-white rounded-full px-4 py-2.5 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition shadow-sm">
+                <span class="flex items-center gap-2 text-gray-700">
+                    <i class="ph ph-buildings text-gray-500"></i>
+                    <span id="campusDropdownValue">All Campuses</span>
+                </span>
+                <i class="ph ph-caret-down text-xs"></i>
+            </button>
+            <div id="campusDropdownMenu"
+                class="absolute mt-2 w-full bg-white border border-orange-200 rounded-xl shadow-md hidden z-20">
+                <div class="campus-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectCampus(this, 0, 'All Campuses')">All Campuses</div>
+                <!-- Campuses will be loaded here via JS -->
             </div>
-            
-            <div class="relative inline-block text-left ml-3">
-                <button id="campusDropdownBtn"
-                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition shadow-sm">
-                    <span class="flex items-center gap-2 text-gray-700">
-                        <i class="ph ph-buildings text-gray-500"></i>
-                        <span id="campusDropdownValue">All Campuses</span>
-                    </span>
-                    <i class="ph ph-caret-down text-xs"></i>
-                </button>
-                <div id="campusDropdownMenu"
-                    class="absolute mt-1 w-full bg-white border border-orange-200 rounded-lg shadow-md hidden z-20">
-                    <div class="campus-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectCampus(this, 0, 'All Campuses')">All Campuses</div>
-                    <!-- Campuses will be loaded here via JS -->
-                </div>
-            </div>
+        </div>
 
-            <div class="relative inline-block text-left ml-3">
-                <button id="sortDropdownBtn"
-                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition shadow-sm">
-                    <span class="flex items-center gap-2 text-gray-700">
-                        <i class="ph ph-sort-ascending text-gray-500"></i>
-                        <span id="sortDropdownValue">Default Order</span>
-                    </span>
-                    <i class="ph ph-caret-down text-xs"></i>
-                </button>
-                <div id="sortDropdownMenu"
-                    class="absolute mt-1 w-full bg-white border border-orange-200 rounded-lg shadow-md hidden z-20">
-                    <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'default')">Default Order</div>
-                    <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'title_asc')">Title (A-Z)</div>
-                    <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'title_desc')">Title (Z-A)</div>
-                    <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'year_desc')">Year (newest)</div>
-                    <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'year_asc')">Year (oldest)</div>
-                </div>
+        <div class="relative inline-block text-left">
+            <button id="sortDropdownBtn"
+                class="border border-gray-200 bg-white rounded-full px-4 py-2.5 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition shadow-sm">
+                <span class="flex items-center gap-2 text-gray-700">
+                    <i class="ph ph-sort-ascending text-gray-500"></i>
+                    <span id="sortDropdownValue">Default Order</span>
+                </span>
+                <i class="ph ph-caret-down text-xs"></i>
+            </button>
+            <div id="sortDropdownMenu"
+                class="absolute mt-2 w-full bg-white border border-orange-200 rounded-xl shadow-md hidden z-20">
+                <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'default')">Default Order</div>
+                <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'title_asc')">Title (A-Z)</div>
+                <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'title_desc')">Title (Z-A)</div>
+                <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'year_desc')">Year (newest)</div>
+                <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'year_asc')">Year (oldest)</div>
             </div>
-            <div class="relative inline-block text-left ml-3">
-                <button id="statusDropdownBtn"
-                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-36 hover:bg-orange-50 transition shadow-sm">
-                    <span>
-                        <i class="ph ph-check-circle text-gray-500"></i>
-                        <span id="statusDropdownValue">All Status</span>
-                    </span>
-                    <i class="ph ph-caret-down text-xs"></i>
-                </button>
-                <div id="statusDropdownMenu"
-                    class="absolute mt-1 w-full bg-white border border-orange-200 rounded-lg shadow-md hidden z-20">
-                    <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'All Status')">All Status</div>
-                    <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Available')">Available</div>
-                    <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Borrowed')">Borrowed</div>
-                    <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Damaged')">Damaged</div>
-                    <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Lost')">Lost</div>
-                    <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Inactive')">Inactive</div>
-                </div>
+        </div>
+        <div class="relative inline-block text-left">
+            <button id="statusDropdownBtn"
+                class="border border-gray-200 bg-white rounded-full px-4 py-2.5 text-sm text-gray-700 flex items-center justify-between gap-2 w-36 hover:bg-orange-50 transition shadow-sm">
+                <span>
+                    <i class="ph ph-check-circle text-gray-500"></i>
+                    <span id="statusDropdownValue">All Status</span>
+                </span>
+                <i class="ph ph-caret-down text-xs"></i>
+            </button>
+            <div id="statusDropdownMenu"
+                class="absolute mt-2 w-full bg-white border border-orange-200 rounded-xl shadow-md hidden z-20">
+                <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'All Status')">All Status</div>
+                <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Available')">Available</div>
+                <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Borrowed')">Borrowed</div>
+                <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Damaged')">Damaged</div>
+                <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Lost')">Lost</div>
+                <div class="status-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectStatus(this, 'Inactive')">Inactive</div>
             </div>
         </div>
     </div>
@@ -253,16 +246,16 @@
         </div>
     </div>
 
-    <div class="overflow-hidden border border-orange-200 rounded-lg shadow-sm bg-white">
+    <div class="overflow-hidden border border-orange-200 rounded-2xl bg-white shadow-sm">
         <table class="min-w-full text-sm text-gray-700">
-            <thead class="bg-orange-100 text-left text-gray-800 sticky top-0 z-0 border-b border-orange-200">
+            <thead class="bg-orange-100 text-orange-700 uppercase text-xs tracking-wider sticky top-0 z-0 border-b border-orange-200">
                 <tr>
-                    <th id="multi-select-header" class="py-3 px-4 font-medium hidden w-10"></th>
-                    <th class="py-3 px-4 font-medium">Book Title</th>
-                    <th class="py-3 px-4 font-medium text-center">Campus</th>
-                    <th class="py-3 px-4 font-medium">Author</th>
-                    <th class="py-3 px-4 font-medium text-center">Status</th>
-                    <th class="py-3 px-4 font-medium text-center">Actions</th>
+                    <th id="multi-select-header" class="py-3 px-4 font-semibold hidden w-10"></th>
+                    <th class="py-3 px-4 font-semibold">Book Title</th>
+                    <th class="py-3 px-4 font-semibold text-center">Campus</th>
+                    <th class="py-3 px-4 font-semibold">Author</th>
+                    <th class="py-3 px-4 font-semibold text-center">Status</th>
+                    <th class="py-3 px-4 font-semibold text-center">Actions</th>
                 </tr>
             </thead>
             <tbody id="bookTableBody" class="divide-y divide-orange-100 bg-white">
