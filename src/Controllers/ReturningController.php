@@ -21,32 +21,29 @@ class ReturningController extends Controller
 
     public function getOverdue()
     {
-        header('Content-Type: application/json');
         try {
             $campusId = $this->getCampusFilter();
             $data = $this->returningService->getOverdueItems($campusId);
-            echo json_encode(['success' => true, 'data' => $data]);
+            return $this->jsonResponse(['data' => $data]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()], 500);
+            return $this->errorResponse($e->getMessage(), 500);
         }
     }
 
     public function getRecentReturnsJson()
     {
-        header('Content-Type: application/json');
         try {
             $limit = (int)($_GET['limit'] ?? 10);
             $campusId = $this->getCampusFilter();
             $list = $this->returningService->getRecentReturns($limit, $campusId);
-            echo json_encode(['success' => true, 'list' => $list]);
+            return $this->jsonResponse(['list' => $list]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()], 500);
+            return $this->errorResponse($e->getMessage(), 500);
         }
     }
 
     public function checkBookStatus()
     {
-        header('Content-Type: application/json');
         try {
             $data = $this->getPostData();
             $identifier = $data['accession_number'] ?? null;
@@ -55,15 +52,14 @@ class ReturningController extends Controller
             $currentCampusId = $_SESSION['user_data']['campus_id'] ?? null;
             $result = $this->returningService->findItemForReturn($identifier, $currentCampusId);
             
-            echo json_encode(['success' => true, 'data' => $result]);
+            return $this->jsonResponse(['data' => $result]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function returnBook()
     {
-        header('Content-Type: application/json');
         try {
             $data = $this->getPostData();
             $itemId = $data['borrowing_id'] ?? null;
@@ -75,15 +71,14 @@ class ReturningController extends Controller
             if (!$librarianId) throw new Exception('Unauthorized.');
 
             $result = $this->returningService->processReturn((int)$itemId, $condition, $librarianCampusId, $librarianId);
-            echo json_encode($result);
+            return $this->jsonResponse($result);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function extendDueDate()
     {
-        header('Content-Type: application/json');
         try {
             $data = $this->getPostData();
             $itemId = $data['borrowing_id'] ?? null;
@@ -92,15 +87,14 @@ class ReturningController extends Controller
             if (!$itemId || !$daysToExtend) throw new Exception('Required fields missing.');
 
             $newDueDate = $this->returningService->extendDueDate((int)$itemId, (int)$daysToExtend);
-            echo json_encode(['success' => true, 'message' => 'Due date extended successfully!', 'new_due_date' => $newDueDate]);
+            return $this->jsonResponse(['message' => 'Due date extended successfully!', 'new_due_date' => $newDueDate]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function sendOverdueEmail()
     {
-        header('Content-Type: application/json');
         try {
             $data = json_decode(file_get_contents('php://input'), true);
             
@@ -112,12 +106,12 @@ class ReturningController extends Controller
             );
 
             if ($sent) {
-                echo json_encode(['success' => true, 'message' => 'Email sent successfully.']);
+                return $this->jsonResponse(['message' => 'Email sent successfully.']);
             } else {
                 throw new Exception('Failed to send email.');
             }
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()], 500);
+            return $this->errorResponse($e->getMessage(), 500);
         }
     }
 }

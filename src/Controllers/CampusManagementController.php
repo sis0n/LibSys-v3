@@ -33,35 +33,30 @@ class CampusManagementController extends Controller
 
     public function fetch()
     {
-        header('Content-Type: application/json');
         try {
             $campuses = $this->campusService->getAllCampuses();
-            echo json_encode(['success' => true, 'campuses' => $campuses]);
+            $this->jsonResponse(['campuses' => $campuses]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            $this->errorResponse($e->getMessage());
         }
-        exit;
     }
 
     public function store()
     {
-        header('Content-Type: application/json');
         try {
             $result = $this->campusService->createCampus(
                 $_POST['campus_name'] ?? '', 
                 $_POST['campus_code'] ?? '', 
                 $_SESSION['user_id']
             );
-            echo json_encode($result);
+            $this->jsonResponse($result);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            $this->errorResponse($e->getMessage());
         }
-        exit;
     }
 
     public function update($id)
     {
-        header('Content-Type: application/json');
         try {
             $this->campusService->updateCampus(
                 (int)$id, 
@@ -69,33 +64,27 @@ class CampusManagementController extends Controller
                 $_POST['campus_code'] ?? '', 
                 $_SESSION['user_id']
             );
-            echo json_encode(['success' => true, 'message' => 'Campus updated successfully!']);
+            $this->jsonResponse(['message' => 'Campus updated successfully!']);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            $this->errorResponse($e->getMessage());
         }
-        exit;
     }
 
     public function toggleStatus($id)
     {
-        header('Content-Type: application/json');
         try {
             $newStatus = $this->campusService->toggleStatus((int)$id, $_SESSION['user_id']);
-            echo json_encode([
-                'success' => true, 
+            $this->jsonResponse([
                 'message' => "Campus status updated to $newStatus.",
                 'newStatus' => $newStatus
             ]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            $this->errorResponse($e->getMessage());
         }
-        exit;
     }
 
     public function destroy($id)
     {
-        header('Content-Type: application/json');
-        echo json_encode(['success' => false, 'message' => 'Direct deletion is no longer allowed. Use deactivation instead.']);
-        exit;
+        $this->errorResponse('Direct deletion is no longer allowed. Use deactivation instead.');
     }
 }

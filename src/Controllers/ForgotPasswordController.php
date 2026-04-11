@@ -50,27 +50,15 @@ class ForgotPasswordController extends Controller
     $this->view('auth/resetPassword', $viewData, false);
   }
 
-  protected function validateCsrf(): bool
-  {
-      $token = $_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
-      return !empty($token) && hash_equals($_SESSION['csrf_token'] ?? '', $token);
-  }
-
   public function sendOTP()
   {
-    header('Content-Type: application/json');
-
     if (!$this->validateCsrf()) {
-      http_response_code(403);
-      echo json_encode(['success' => false, 'message' => 'CSRF token validation failed.']);
-      return;
+      return $this->errorResponse('CSRF token validation failed.', 403);
     }
 
     $identifier = trim($_POST['identifier'] ?? '');
     if (empty($identifier)) {
-      http_response_code(400);
-      echo json_encode(['success' => false, 'message' => 'Please enter your username or student number.']);
-      return;
+      return $this->errorResponse('Please enter your username or student number.', 400);
     }
 
     $user = $this->userRepo->findByIdentifier($identifier);
@@ -89,7 +77,7 @@ class ForgotPasswordController extends Controller
         }
     }
 
-    echo json_encode(['success' => true, 'message' => 'If an account with that username exists, a code has been sent to the registered email.']);
+    return $this->jsonResponse(['message' => 'If an account with that username exists, a code has been sent to the registered email.']);
   }
 
   private function _sendCode(string $email, string $lastName): bool
@@ -118,39 +106,27 @@ class ForgotPasswordController extends Controller
 
   public function updatePassword()
   {
-    header('Content-Type: application/json');
-
     if (!$this->validateCsrf()) {
-      http_response_code(403);
-      echo json_encode(['success' => false, 'message' => 'CSRF token validation failed.']);
-      return;
+      return $this->errorResponse('CSRF token validation failed.', 403);
     }
 
     if (empty($_SESSION['reset_user_id']) || empty($_SESSION['otp_verified'])) {
-      http_response_code(403);
-      echo json_encode(['success' => false, 'message' => 'Session expired. Please start over.']);
-      return;
+      return $this->errorResponse('Session expired. Please start over.', 403);
     }
 
     $password = $_POST['password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
 
     if (empty($password) || empty($confirmPassword)) {
-      http_response_code(400);
-      echo json_encode(['success' => false, 'message' => 'Both passwords are required.']);
-      return;
+      return $this->errorResponse('Both passwords are required.', 400);
     }
 
     if ($password !== $confirmPassword) {
-      http_response_code(400);
-      echo json_encode(['success' => false, 'message' => 'Passwords do not match.']);
-      return;
+      return $this->errorResponse('Passwords do not match.', 400);
     }
 
     if (strlen($password) < 8) {
-      http_response_code(400);
-      echo json_encode(['success' => false, 'message' => 'Password must be at least 8 characters long.']);
-      return;
+      return $this->errorResponse('Password must be at least 8 characters long.', 400);
     }
 
     try {
@@ -165,15 +141,13 @@ class ForgotPasswordController extends Controller
         unset($_SESSION['reset_last_name']);
         unset($_SESSION['otp_verified']);
 
-        echo json_encode(['success' => true, 'message' => 'Password has been reset successfully.']);
+        return $this->jsonResponse(['message' => 'Password has been reset successfully.']);
       } else {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'Failed to update password.']);
+        return $this->errorResponse('Failed to update password.', 500);
       }
     } catch (\Throwable $e) {
       error_log("[ForgotPasswordController::updatePassword] " . $e->getMessage());
-      http_response_code(500);
-      echo json_encode(['success' => false, 'message' => 'An internal error occurred.']);
+      return $this->errorResponse('An internal error occurred.', 500);
     }
   }
 
@@ -197,68 +171,53 @@ class ForgotPasswordController extends Controller
 
   public function resendOTP()
   {
-    header('Content-Type: application/json');
-
     if (!$this->validateCsrf()) {
-      http_response_code(403);
-      echo json_encode(['success' => false, 'message' => 'CSRF token validation failed.']);
-      return;
+      return $this->errorResponse('CSRF token validation failed.', 403);
     }
 
     $email = $_SESSION['reset_email'] ?? null;
     $lastName = $_SESSION['reset_last_name'] ?? 'User';
 
     if (!$email) {
-      http_response_code(400);
-      echo json_encode(['success' => false, 'message' => 'Session expired. Please start over.']);
-      return;
+      return $this->errorResponse('Session expired. Please start over.', 400);
     }
 
     $this->_sendCode($email, $lastName);
 
-    echo json_encode(['success' => true, 'message' => 'A new code has been sent to your email.']);
+    return $this->jsonResponse(['message' => 'A new code has been sent to your email.']);
   }
 
   public function checkOTP()
   {
-    header('Content-Type: application/json');
-
     if (!$this->validateCsrf()) {
-      http_response_code(403);
-      echo json_encode(['success' => false, 'message' => 'CSRF token validation failed.']);
-      return;
+      return $this->errorResponse('CSRF token validation failed.', 403);
     }
 
     $email = $_SESSION['reset_email'] ?? null;
     $otp = trim($_POST['otp'] ?? '');
 
     if (!$email || empty($otp)) {
-      http_response_code(400);
-      echo json_encode(['success' => false, 'message' => 'Invalid request. Please try again.']);
-      return;
+      return $this->errorResponse('Invalid request. Please try again.', 400);
     }
 
     $token = $this->tokenRepo->findToken($otp);
 
     if (!$token) {
-      echo json_encode(['success' => false, 'message' => 'Invalid code. Please try again.']);
-      return;
+      return $this->errorResponse('Invalid code. Please try again.');
     }
 
     if (strtolower($token['email']) !== strtolower($email)) {
-      echo json_encode(['success' => false, 'message' => 'Invalid code. Code mismatch.']);
-      return;
+      return $this->errorResponse('Invalid code. Code mismatch.');
     }
 
     if (strtotime($token['expires_at']) < time()) {
-      echo json_encode(['success' => false, 'message' => 'This code has expired. Please resend.']);
-      return;
+      return $this->errorResponse('This code has expired. Please resend.');
     }
 
     $_SESSION['otp_verified'] = true;
 
     $this->tokenRepo->deleteToken($email);
 
-    echo json_encode(['success' => true]);
+    return $this->jsonResponse();
   }
 }

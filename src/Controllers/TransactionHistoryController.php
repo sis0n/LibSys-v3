@@ -18,21 +18,19 @@ class TransactionHistoryController extends Controller
 
     public function getTransactionsJson()
     {
-        header('Content-Type: application/json');
         try {
             $status = strtolower($_GET['status'] ?? 'all');
             $date   = $_GET['date'] ?? null;
             $campusId = $this->getCampusFilter();
 
             if ($status === 'pending') {
-                echo json_encode([]);
-                return;
+                return $this->jsonResponse([]);
             }
 
             $transactions = $this->historyService->getAdminTransactions($status, $date, $campusId);
-            echo json_encode($transactions);
+            return $this->jsonResponse($transactions);
         } catch (Exception $e) {
-            echo json_encode(['error' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 }

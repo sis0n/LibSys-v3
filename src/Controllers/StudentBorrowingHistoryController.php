@@ -18,7 +18,6 @@ class StudentBorrowingHistoryController extends Controller
 
     public function fetchPaginatedBorrowingHistory()
     {
-        header('Content-Type: application/json');
         try {
             $userId = $_SESSION['user_data']['user_id'] ?? null;
             if (!$userId) throw new Exception('Unauthorized', 401);
@@ -30,31 +29,27 @@ class StudentBorrowingHistoryController extends Controller
             $result = $this->historyService->getStudentHistory($userId, $limit, $offset);
             $totalPages = ceil($result['total'] / $limit);
 
-            echo json_encode([
-                'success' => true,
+            return $this->jsonResponse([
                 'borrowingHistory' => $result['history'],
                 'totalPages' => $totalPages,
                 'currentPage' => $page,
                 'totalRecords' => $result['total']
             ]);
         } catch (Exception $e) {
-            http_response_code($e->getCode() ?: 500);
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
         }
     }
 
     public function fetchStats()
     {
-        header('Content-Type: application/json');
         try {
             $userId = $_SESSION['user_data']['user_id'] ?? null;
             if (!$userId) throw new Exception('Unauthorized', 401);
 
             $stats = $this->historyService->getStudentStats($userId);
-            echo json_encode(['success' => true, 'stats' => $stats]);
+            return $this->jsonResponse(['stats' => $stats]);
         } catch (Exception $e) {
-            http_response_code($e->getCode() ?: 500);
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
         }
     }
 }

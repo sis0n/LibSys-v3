@@ -38,24 +38,19 @@ class AuthController extends Controller
 
     public function login()
     {
-        header('Content-Type: application/json');
-
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['status' => 'error', 'message' => 'Invalid request method.']);
-            return;
+            $this->errorResponse('Invalid request method.', 400, ['status' => 'error']);
         }
 
         if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-            echo json_encode(['status' => 'error', 'message' => 'Invalid CSRF token.']);
-            return;
+            $this->errorResponse('Invalid CSRF token.', 403, ['status' => 'error']);
         }
 
         $username = htmlspecialchars(trim($_POST['username'] ?? ''));
         $password = $_POST['password'] ?? '';
 
         if (empty($username) || empty($password)) {
-            echo json_encode(['status' => 'error', 'message' => 'Username and password are required.']);
-            return;
+            $this->errorResponse('Username and password are required.', 400, ['status' => 'error']);
         }
 
         try {
@@ -73,16 +68,15 @@ class AuthController extends Controller
             // Log the success via AuditLog directly or via Service if preferred
             (new \App\Services\AuditLogService())->log($_SESSION['user_id'], 'LOGIN', 'AUTH', null, 'User logged in successfully.');
 
-            echo json_encode([
+            $this->jsonResponse([
                 'status' => 'success',
                 'redirect' => $result['redirect']
             ]);
         } catch (\Exception $e) {
             $statusCode = $e->getCode() === 403 ? 403 : 200; // Keep 200 for normal error messages in AJAX
-            echo json_encode([
+            $this->errorResponse($e->getMessage(), $statusCode, [
                 'status' => 'error',
-                'error_type' => ($e->getCode() === 403) ? 'deactivated' : 'auth_failed',
-                'message' => $e->getMessage()
+                'error_type' => ($e->getCode() === 403) ? 'deactivated' : 'auth_failed'
             ]);
         }
     }
@@ -111,16 +105,12 @@ class AuthController extends Controller
 
     public function changePassword()
     {
-        header('Content-Type: application/json');
-
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            echo json_encode(['status' => 'error', 'message' => 'Invalid request method.']);
-            exit;
+            $this->errorResponse('Invalid request method.', 400, ['status' => 'error']);
         }
 
         if (empty($_SESSION['user_id'])) {
-            echo json_encode(['status' => 'error', 'message' => 'You must be logged in to change your password.']);
-            exit;
+            $this->errorResponse('You must be logged in to change your password.', 401, ['status' => 'error']);
         }
 
         try {
@@ -131,15 +121,12 @@ class AuthController extends Controller
                 $_POST['confirm_password'] ?? ''
             );
 
-            echo json_encode([
+            $this->jsonResponse([
                 'status' => 'success',
                 'message' => 'Your password has been successfully updated.'
             ]);
         } catch (\Exception $e) {
-            echo json_encode([
-                'status' => 'error',
-                'message' => $e->getMessage()
-            ]);
+            $this->errorResponse($e->getMessage(), 400, ['status' => 'error']);
         }
     }
 

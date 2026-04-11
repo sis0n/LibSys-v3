@@ -34,7 +34,6 @@ class StudentPromotionController extends Controller
 
     public function fetch()
     {
-        header('Content-Type: application/json');
         try {
             $campusId = $this->getCampusFilter();
             
@@ -52,60 +51,56 @@ class StudentPromotionController extends Controller
             $result = $this->promotionService->getStudentsForPromotion($filters, $limit, $offset);
             $stats = $this->promotionService->getPromotionStats((int)$filters['status'], $filters['campus_id'] ?: null);
 
-            echo json_encode([
-                'success' => true,
+            return $this->jsonResponse([
                 'students' => $result['students'],
                 'totalCount' => $result['totalCount'],
                 'totalPages' => $result['totalPages'],
                 'stats' => $stats
             ]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function promote()
     {
-        header('Content-Type: application/json');
         try {
             $data = $this->getJsonData();
             $adminId = $_SESSION['user_id'] ?? null;
             if (!$adminId) throw new Exception('Unauthorized.');
 
             $count = $this->promotionService->processBulkPromotion($data, $adminId);
-            echo json_encode(['success' => true, 'message' => "Successfully promoted $count students!"]);
+            return $this->jsonResponse(['message' => "Successfully promoted $count students!"]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function deactivate()
     {
-        header('Content-Type: application/json');
         try {
             $data = $this->getJsonData();
             $adminId = $_SESSION['user_id'] ?? null;
             if (!$adminId) throw new Exception('Unauthorized.');
 
             $count = $this->promotionService->processBulkDeactivation($data, $adminId);
-            echo json_encode(['success' => true, 'message' => "Successfully deactivated $count students!"]);
+            return $this->jsonResponse(['message' => "Successfully deactivated $count students!"]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function activate()
     {
-        header('Content-Type: application/json');
         try {
             $data = $this->getJsonData();
             $adminId = $_SESSION['user_id'] ?? null;
             if (!$adminId) throw new Exception('Unauthorized.');
 
             $count = $this->promotionService->processBulkActivation($data, $adminId);
-            echo json_encode(['success' => true, 'message' => "Successfully activated $count students!"]);
+            return $this->jsonResponse(['message' => "Successfully activated $count students!"]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 }

@@ -285,7 +285,7 @@
                     });
                 };
 
-                if (data.status === "success") {
+                if (data.success) {
                     showAlert(true);
                 } else {
                     showAlert(false);
@@ -384,7 +384,7 @@
                     });
                 };
 
-                if (data.status === "success") {
+                if (data.success) {
                     showAlert(true);
                 } else {
                     showAlert(false);

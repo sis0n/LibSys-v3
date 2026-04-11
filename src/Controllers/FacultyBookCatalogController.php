@@ -5,7 +5,6 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Repositories\BookCatalogRepository;
 use App\Repositories\CampusRepository;
-use PDO;
 
 class FacultyBookCatalogController extends Controller
 {
@@ -74,9 +73,7 @@ class FacultyBookCatalogController extends Controller
   public function store()
   {
     if (!isset($_SESSION['user_id'])) {
-      http_response_code(401);
-      echo json_encode(['error' => 'Unauthorized']);
-      exit;
+      return $this->errorResponse('Unauthorized', 401);
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -104,9 +101,7 @@ class FacultyBookCatalogController extends Controller
   {
 
     if (!isset($_SESSION['user_id'])) {
-      http_response_code(401);
-      echo json_encode(['error' => 'Unauthorized']);
-      exit;
+      return $this->errorResponse('Unauthorized', 401);
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -124,9 +119,7 @@ class FacultyBookCatalogController extends Controller
   public function destroy($id)
   {
     if (!isset($_SESSION['user_id'])) {
-      http_response_code(401);
-      echo json_encode(['error' => 'Unauthorized']);
-      exit;
+      return $this->errorResponse('Unauthorized', 401);
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -152,9 +145,7 @@ class FacultyBookCatalogController extends Controller
   public function fetch()
   {
     if (!isset($_SESSION['user_id'])) {
-      http_response_code(401);
-      echo json_encode(['error' => 'Unauthorized']);
-      exit;
+      return $this->errorResponse('Unauthorized', 401);
     }
 
     $search   = $_GET['search'] ?? '';
@@ -195,13 +186,10 @@ class FacultyBookCatalogController extends Controller
 
     $totalCount = $this->bookRepo->countPaginatedFiltered($search, $category, $status, $campusId);
 
-    $response = [
+    return $this->jsonResponse([
       'books' => $books,
       'totalCount' => $totalCount
-    ];
-
-    header('Content-Type: application/json');
-    echo json_encode($response);
+    ]);
   }
 
   public function getAvailableCount()
@@ -218,7 +206,6 @@ class FacultyBookCatalogController extends Controller
     }
 
     $count = $this->bookRepo->countAvailableBooks($campusId);
-    header('Content-Type: application/json');
-    echo json_encode(['available' => $count]);
+    return $this->jsonResponse(['available' => $count]);
   }
 }

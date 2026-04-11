@@ -25,12 +25,6 @@ class QRScannerController extends Controller
 
     public function scan()
     {
-        // Start buffering to catch any accidental output/warnings
-        if (ob_get_level()) ob_end_clean();
-        ob_start();
-        
-        header('Content-Type: application/json');
-        
         try {
             $data = $this->getPostData();
             $transactionCode = $data['transaction_code'] ?? null;
@@ -95,24 +89,15 @@ class QRScannerController extends Controller
                 'items' => $formattedItems
             ];
 
-            // Clear any buffered output/warnings before sending JSON
-            ob_end_clean();
-            echo json_encode(['success' => true, 'data' => $response]);
-            exit;
+            return $this->jsonResponse(['data' => $response]);
 
         } catch (Exception $e) {
-            if (ob_get_level()) ob_end_clean();
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
-            exit;
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function borrowTransaction()
     {
-        if (ob_get_level()) ob_end_clean();
-        ob_start();
-        header('Content-Type: application/json');
-
         try {
             $data = $this->getPostData();
             $transactionCode = $data['transaction_code'] ?? null;
@@ -124,27 +109,19 @@ class QRScannerController extends Controller
 
             $success = $this->qrService->borrowTransaction($transactionCode, (int)$librarianId);
             
-            ob_end_clean();
             if ($success) {
-                echo json_encode(['success' => true, 'message' => 'Transaction completed successfully!']);
+                return $this->jsonResponse(['message' => 'Transaction completed successfully!']);
             } else {
                 throw new Exception('Failed to process transaction.');
             }
-            exit;
 
         } catch (Exception $e) {
-            if (ob_get_level()) ob_end_clean();
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
-            exit;
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function history()
     {
-        if (ob_get_level()) ob_end_clean();
-        ob_start();
-        header('Content-Type: application/json');
-
         try {
             $search = $_GET['search'] ?? null;
             $status = $_GET['status'] ?? null;
@@ -163,15 +140,10 @@ class QRScannerController extends Controller
                 ];
             }, $transactions);
 
-            ob_end_clean();
-            echo json_encode($formatted);
-            exit;
+            return $this->jsonResponse($formatted);
 
         } catch (Exception $e) {
-            if (ob_get_level()) ob_end_clean();
-            http_response_code(500);
-            echo json_encode(['error' => $e->getMessage()]);
-            exit;
+            return $this->errorResponse($e->getMessage(), 500);
         }
     }
 }

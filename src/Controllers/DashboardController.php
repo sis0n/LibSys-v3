@@ -38,26 +38,24 @@ class DashboardController extends Controller
 
     public function getTrends()
     {
-        header('Content-Type: application/json');
         try {
             $period = $_GET['period'] ?? 'monthly';
             $campusId = $this->getCampusFilter();
             $trends = $this->dashboardService->getBorrowingTrends($period, $campusId);
-            echo json_encode(['success' => true, 'trends' => $trends]);
+            $this->jsonResponse(['trends' => $trends]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            $this->errorResponse($e->getMessage());
         }
     }
 
     public function getData()
     {
-        header('Content-Type: application/json');
         try {
             $campusId = $this->getCampusFilter();
             $data = $this->dashboardService->getDetailedData($campusId);
-            echo json_encode($data);
+            $this->jsonResponse($data);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            $this->errorResponse($e->getMessage());
         }
     }
 }

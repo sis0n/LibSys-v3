@@ -26,7 +26,6 @@ class OverdueController extends Controller
 
     public function getTableData()
     {
-        header('Content-Type: application/json');
         try {
             $filters = [
                 'search' => $_GET['search'] ?? '',
@@ -37,19 +36,17 @@ class OverdueController extends Controller
             $stats = $this->overdueService->getOverdueStats($campusId);
             $list = $this->overdueService->fetchOverdueList($filters, $campusId);
 
-            echo json_encode([
-                'success' => true,
+            return $this->jsonResponse([
                 'stats' => $stats,
                 'list' => $list
             ]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function sendReminder()
     {
-        header('Content-Type: application/json');
         try {
             $data = json_decode(file_get_contents("php://input"), true);
             $adminId = $_SESSION['user_id'] ?? null;
@@ -66,12 +63,12 @@ class OverdueController extends Controller
 
             if ($sent) {
                 $this->overdueService->logNotification($itemId, $userId, $email, $adminId);
-                echo json_encode(['success' => true, 'message' => 'Reminder sent successfully!']);
+                return $this->jsonResponse(['message' => 'Reminder sent successfully!']);
             } else {
                 throw new Exception('Failed to send email.');
             }
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 }

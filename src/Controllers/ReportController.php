@@ -10,112 +10,84 @@ class ReportController extends Controller
 {
     public function getCirculatedBooksReport()
     {
-        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-        header('Pragma: no-cache');
-        header('Expires: 0');
-        header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
             $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
             $data = $repository->getCirculatedBooksSummary($filter, $campusId);
-            echo json_encode(['success' => true, 'data' => $data]);
+            return $this->jsonResponse(['data' => $data]);
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Error fetching circulated books report: ' . $e->getMessage()]);
+            return $this->errorResponse('Error fetching circulated books report: ' . $e->getMessage(), 500);
         }
     }
 
     public function getCirculatedEquipmentsReport()
     {
-        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-        header('Pragma: no-cache');
-        header('Expires: 0');
-        header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
             $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
             $data = $repository->getCirculatedEquipmentsSummary($filter, $campusId);
-            echo json_encode(['success' => true, 'data' => $data]);
+            return $this->jsonResponse(['data' => $data]);
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Error fetching circulated equipments report: ' . $e->getMessage()]);
+            return $this->errorResponse('Error fetching circulated equipments report: ' . $e->getMessage(), 500);
         }
     }
 
     public function getTopVisitors()
     {
-        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-        header('Pragma: no-cache');
-        header('Expires: 0');
-        header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
             $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
             $data = $repository->getTopVisitorsFiltered($filter, $campusId);
-            echo json_encode(['success' => true, 'data' => $data]);
+            return $this->jsonResponse(['data' => $data]);
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Error fetching top visitors report: ' . $e->getMessage()]);
+            return $this->errorResponse('Error fetching top visitors report: ' . $e->getMessage(), 500);
         }
     }
 
     public function getTopBorrowers()
     {
-        header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
             $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
             $data = $repository->getTopBorrowers($filter, $campusId);
-            echo json_encode(['success' => true, 'data' => $data]);
+            return $this->jsonResponse(['data' => $data]);
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Error fetching top borrowers report: ' . $e->getMessage()]);
+            return $this->errorResponse('Error fetching top borrowers report: ' . $e->getMessage(), 500);
         }
     }
 
     public function getMostBorrowedBooks()
     {
-        header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
             $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
             $data = $repository->getMostBorrowedBooks($filter, $campusId);
-            echo json_encode(['success' => true, 'data' => $data]);
+            return $this->jsonResponse(['data' => $data]);
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Error fetching most borrowed books report: ' . $e->getMessage()]);
+            return $this->errorResponse('Error fetching most borrowed books report: ' . $e->getMessage(), 500);
         }
     }
 
     public function getLibraryVisitsByDepartment()
     {
-        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-        header('Pragma: no-cache');
-        header('Expires: 0');
-        header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
             $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
             $data = $repository->getLibraryVisitsByDepartment($filter, $campusId);
-            echo json_encode(['success' => true, 'data' => $data]);
+            return $this->jsonResponse(['data' => $data]);
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Error fetching library visits by department report: ' . $e->getMessage()]);
+            return $this->errorResponse('Error fetching library visits by department report: ' . $e->getMessage(), 500);
         }
     }
 
     public function getDeletedBooks()
     {
-        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-        header('Pragma: no-cache');
-        header('Expires: 0');
-        header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
             $campusId = $this->getCampusFilter();
@@ -157,34 +129,27 @@ class ReportController extends Controller
                 "count" => $totalCount
             ];
 
-            echo json_encode(['success' => true, 'data' => $reportData]);
+            return $this->jsonResponse(['data' => $reportData]);
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Error fetching deleted books report: ' . $e->getMessage()]);
+            return $this->errorResponse('Error fetching deleted books report: ' . $e->getMessage(), 500);
         }
     }
 
     public function getLostDamagedBooksReport()
     {
-        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
-        header('Pragma: no-cache');
-        header('Expires: 0');
-        header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
             $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
             $data = $repository->getLostDamagedBooksSummary($filter, $campusId);
-            echo json_encode(['success' => true, 'data' => $data]);
+            return $this->jsonResponse(['data' => $data]);
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Error fetching lost and damaged books report: ' . $e->getMessage()]);
+            return $this->errorResponse('Error fetching lost and damaged books report: ' . $e->getMessage(), 500);
         }
     }
 
     public function getActivityReport()
     {
-        header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
             $repository = new ReportRepository();
@@ -192,37 +157,29 @@ class ReportController extends Controller
             $data = $repository->getActivityReport($filter);
             $breakdown = $dashboardRepo->getVisitorBreakdown($filter);
             
-            echo json_encode([
-                'success' => true, 
+            return $this->jsonResponse([
                 'activityData' => $data,
                 'visitorBreakdown' => $breakdown
             ]);
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'message' => 'Error fetching activity report: ' . $e->getMessage()]);
+            return $this->errorResponse('Error fetching activity report: ' . $e->getMessage(), 500);
         }
     }
 
     public function getReportGraphData()
     {
-        header('Content-Type: application/json');
         try {
             $filter = $_GET['filter'] ?? 'month';
             $repository = new ReportRepository();
             $dashboardRepo = new \App\Repositories\DashboardRepository();
             $response = [
-                'success' => true,
                 'topVisitors' => $repository->getTopVisitors(),
                 'activityData' => $repository->getActivityReport($filter),
                 'visitorBreakdown' => $dashboardRepo->getVisitorBreakdown($filter),
             ];
-            echo json_encode($response);
+            return $this->jsonResponse($response);
         } catch (\Exception $e) {
-            http_response_code(500);
-            echo json_encode([
-                'success' => false,
-                'message' => 'Failed to load graph data: ' . $e->getMessage(),
-            ]);
+            return $this->errorResponse('Failed to load graph data: ' . $e->getMessage(), 500);
         }
     }
 }

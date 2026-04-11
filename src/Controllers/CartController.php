@@ -51,67 +51,61 @@ class CartController extends Controller
 
     public function add($bookId)
     {
-        header('Content-Type: application/json');
         try {
             $auth = $this->ensureAuthenticated();
             $result = $this->cartService->addToCart($auth['user_id'], (int)$bookId);
-            echo json_encode($result);
+            $this->jsonResponse($result);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            $this->errorResponse($e->getMessage());
         }
     }
 
     public function remove($cartId)
     {
-        header('Content-Type: application/json');
         try {
             $auth = $this->ensureAuthenticated();
             $this->cartService->removeFromCart((int)$cartId, $auth['user_id']);
-            echo json_encode(["success" => true]);
+            $this->jsonResponse();
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            $this->errorResponse($e->getMessage());
         }
     }
 
     public function clearCart()
     {
-        header('Content-Type: application/json');
         try {
             $auth = $this->ensureAuthenticated();
             $this->cartService->clearCart($auth['user_id']);
-            echo json_encode(["success" => true]);
+            $this->jsonResponse();
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            $this->errorResponse($e->getMessage());
         }
     }
 
     public function getCartJson()
     {
-        header('Content-Type: application/json');
         try {
             $auth = $this->ensureAuthenticated();
             $cartItems = $this->cartService->getUserCart($auth['user_id']);
-            echo json_encode($cartItems);
+            $this->jsonResponse(['items' => $cartItems]);
         } catch (Exception $e) {
-            echo json_encode(['error' => $e->getMessage()]);
+            $this->errorResponse($e->getMessage());
         }
     }
 
     public function checkout()
     {
-        header('Content-Type: application/json');
         try {
             $auth = $this->ensureAuthenticated();
-            $data = json_decode(file_get_contents("php://input"), true);
+            $data = $this->getJsonData();
             
             $ticketId = $this->cartService->checkout($auth['user_id'], $data['cart_ids'] ?? [], $auth['role']);
             
-            echo json_encode([
-                "success" => true,
+            $this->jsonResponse([
                 "ticket_id" => $ticketId
             ]);
         } catch (Exception $e) {
-            echo json_encode(["success" => false, "message" => $e->getMessage()]);
+            $this->errorResponse($e->getMessage());
         }
     }
 }

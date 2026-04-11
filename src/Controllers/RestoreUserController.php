@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Repositories\RestoreUserRepository;
+use Exception;
 
 class RestoreUserController extends Controller
 {
@@ -40,41 +41,32 @@ class RestoreUserController extends Controller
 
   public function getDeletedUsersJson()
   {
-    header('Content-Type: application/json');
     try {
       $users = $this->restoreUserRepo->getDeletedUsers();
-      echo json_encode(['success' => true, 'users' => $users]);
+      return $this->jsonResponse(['users' => $users]);
     } catch (\Throwable $e) {
       error_log("Error in getDeletedUsersJson: " . $e->getMessage());
-      http_response_code(500);
-      echo json_encode(['success' => false, 'message' => 'Failed to fetch deleted users.']);
+      return $this->errorResponse('Failed to fetch deleted users.', 500);
     }
   }
 
   public function restore()
   {
-    header('Content-Type: application/json');
     if (session_status() === PHP_SESSION_NONE) session_start();
 
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-      http_response_code(405);
-      echo json_encode(['success' => false, 'message' => 'Method Not Allowed']);
-      return;
+      return $this->errorResponse('Method Not Allowed', 405);
     }
 
     if (!$this->validateCsrf()) {
-      http_response_code(403);
-      echo json_encode(['success' => false, 'message' => 'CSRF token validation failed.']);
-      return;
+      return $this->errorResponse('CSRF token validation failed.', 403);
     }
 
     $input = json_decode(file_get_contents('php://input'), true);
     $userId = $input['user_id'] ?? null;
 
     if (!$userId) {
-      http_response_code(400);
-      echo json_encode(['success' => false, 'message' => 'User ID is required.']);
-      return;
+      return $this->errorResponse('User ID is required.', 400);
     }
 
     try {
@@ -84,41 +76,32 @@ class RestoreUserController extends Controller
         $adminId = $_SESSION['user_id'] ?? null;
         $userIdentifier = $user ? "{$user['first_name']} {$user['last_name']} (@{$user['username']})" : "ID: $userId";
         $this->auditRepo->log($adminId, 'RESTORE', 'USERS', $userId, "Restored user account: $userIdentifier");
-        echo json_encode(['success' => true, 'message' => 'User restored successfully.']);
+        return $this->jsonResponse(['message' => 'User restored successfully.']);
       } else {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Failed to restore user. User might not exist or already restored.']);
+        return $this->errorResponse('Failed to restore user. User might not exist or already restored.', 400);
       }
     } catch (\Throwable $e) {
       error_log("Error restoring user $userId: " . $e->getMessage());
-      http_response_code(500);
-      echo json_encode(['success' => false, 'message' => 'An internal error occurred during restoration.']);
+      return $this->errorResponse('An internal error occurred during restoration.', 500);
     }
   }
 
   public function archive($id)
   {
-    header('Content-Type: application/json');
     if (session_status() === PHP_SESSION_NONE) session_start();
 
     if (!$this->validateCsrf()) {
-      http_response_code(403);
-      echo json_encode(['success' => false, 'message' => 'CSRF token validation failed.']);
-      return;
+      return $this->errorResponse('CSRF token validation failed.', 403);
     }
 
     $userId = filter_var($id, FILTER_VALIDATE_INT);
     $librarianId = isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null;
 
     if (!$userId) {
-      http_response_code(400);
-      echo json_encode(['success' => false, 'message' => 'Invalid User ID provided in URL.']);
-      return;
+      return $this->errorResponse('Invalid User ID provided in URL.', 400);
     }
     if (!$librarianId) {
-      http_response_code(403);
-      echo json_encode(['success' => false, 'message' => 'Unauthorized action. Admin ID not found.']);
-      return;
+      return $this->errorResponse('Unauthorized action. Admin ID not found.', 403);
     }
 
     try {
@@ -127,20 +110,16 @@ class RestoreUserController extends Controller
       if ($result['success']) {
         $userIdentifier = $user ? "{$user['first_name']} {$user['last_name']} (@{$user['username']})" : "ID: $userId";
         $this->auditRepo->log($librarianId, 'ARCHIVE', 'USERS', $userId, "Permanently archived user account: $userIdentifier");
-        echo json_encode(['success' => true, 'message' => 'User data successfully archived.']);
+        return $this->jsonResponse(['message' => 'User data successfully archived.']);
       } else {
-          http_response_code(404);
-          echo json_encode([
-            'success' => false,
-            'message' => 'Failed to archive user. Check debug info.',
+          return $this->errorResponse('Failed to archive user. Check debug info.', 404, [
             'debug_reason' => $result['debug_reason'] ?? 'Unknown reason.',
             'debug_data' => $result['debug_data'] ?? null
           ]);
         }
     } catch (\Exception $e) {
-      http_response_code(500);
       error_log("Error archiving user $userId: " . $e->getMessage());
-      echo json_encode(['success' => false, 'message' => 'An internal error occurred during archiving.']);
+      return $this->errorResponse('An internal error occurred during archiving.', 500);
     }
   }
 }

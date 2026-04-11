@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Services\TicketService;
 use Exception;
+use Throwable;
 
 class TicketController extends Controller
 {
@@ -41,57 +42,36 @@ class TicketController extends Controller
 
     public function checkStatus()
     {
-        ob_start(); // Start buffering to catch any accidental output
-        
         try {
-            if (session_status() === PHP_SESSION_NONE) {
-                session_start();
-            }
-            
             $userId = $_SESSION['user_data']['user_id'] ?? null;
             $role = $_SESSION['role'] ?? 'guest';
             
             if (!$userId) {
-                ob_end_clean(); // Clear buffer before sending JSON
-                header('Content-Type: application/json');
-                http_response_code(401);
-                echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-                exit;
+                return $this->errorResponse('Unauthorized', 401);
             }
 
             $result = $this->ticketService->checkStatus((int)$userId, $role);
-            
-            ob_end_clean(); // Clear buffer before sending JSON
-            header('Content-Type: application/json');
-            echo json_encode(array_merge(['success' => true], $result));
+            return $this->jsonResponse($result);
         } catch (Exception $e) {
-            ob_end_clean();
-            header('Content-Type: application/json');
-            http_response_code(500);
-            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
-        } catch (\Error $e) {
-            ob_end_clean();
-            header('Content-Type: application/json');
-            http_response_code(500);
-            echo json_encode(['success' => false, 'error' => 'Fatal Error: ' . $e->getMessage()]);
+            return $this->errorResponse($e->getMessage(), 500);
+        } catch (Throwable $e) {
+            return $this->errorResponse('Fatal Error: ' . $e->getMessage(), 500);
         }
-        exit;
     }
 
     public function cancel()
     {
-        header('Content-Type: application/json');
         try {
             $data = $this->getPostData();
             $transactionId = $data['transaction_id'] ?? null;
-            $userId = $_SESSION['user_data']['user_id'] ?? null;
+            $userId = $_SESSION['user_id'] ?? $_SESSION['user_data']['user_id'] ?? null;
 
             if (!$transactionId || !$userId) throw new Exception('Missing information.');
 
             $this->ticketService->cancelTicket((int)$transactionId, (int)$userId);
-            echo json_encode(['success' => true, 'message' => 'Ticket cancelled successfully.']);
+            return $this->jsonResponse(['message' => 'Ticket cancelled successfully.']);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 }

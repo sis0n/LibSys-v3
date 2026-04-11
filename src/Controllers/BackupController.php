@@ -20,7 +20,7 @@ class BackupController extends Controller
         die("Forbidden: Access restricted to Superadmin only.");
     }
     $this->backupRepo = new BackupRepository();
-    $this->userRepo = new \App\Repositories\UserRepository();
+    $this->auditRepo = new \App\Repositories\AuditLogRepository();
   }
 
   private function getBackupDir(): string
@@ -32,7 +32,6 @@ class BackupController extends Controller
 
   public function initiateBackup()
   {
-    if (session_status() === PHP_SESSION_NONE) session_start();
     set_time_limit(0); // Prevent timeout for large backups
 
     $dbName = $_ENV['DB_DATABASE'] ?? 'Database';
@@ -42,8 +41,7 @@ class BackupController extends Controller
     // Use GZIP compression
     $zp = gzopen($path, 'w9');
     if (!$zp) {
-      http_response_code(500);
-      exit(json_encode(['success' => false, 'message' => "Failed to create compressed backup file."]));
+      $this->errorResponse("Failed to create compressed backup file.", 500);
     }
 
     try {
@@ -64,18 +62,16 @@ class BackupController extends Controller
       $this->backupRepo->logBackup($filename, 'SQL.GZ', $_SESSION['user_id'] ?? 'Admin', $size);
       $this->auditRepo->log($_SESSION['user_id'] ?? 0, 'BACKUP', 'SYSTEM', $filename, "Full database backup compressed ($size)");
 
-      echo json_encode(['success' => true, 'filename' => $filename, 'size' => $size]);
+      $this->jsonResponse(['filename' => $filename, 'size' => $size]);
     } catch (\Throwable $e) {
       if (isset($zp)) gzclose($zp);
       if (file_exists($path)) unlink($path);
-      http_response_code(500);
-      exit(json_encode(['success' => false, 'message' => $e->getMessage()]));
+      $this->errorResponse($e->getMessage(), 500);
     }
   }
 
   public function exportBothFormats(string $tableName)
   {
-    if (session_status() === PHP_SESSION_NONE) session_start();
     set_time_limit(0);
 
     $allowedTables = [
@@ -88,8 +84,7 @@ class BackupController extends Controller
       'user_permissions', 'user_module_permissions'
     ];
     if (!in_array($tableName, $allowedTables)) {
-      http_response_code(400);
-      exit(json_encode(['success' => false, 'message' => "Invalid table name."]));
+      $this->errorResponse("Invalid table name.", 400);
     }
 
     $baseName = strtolower($tableName);
@@ -99,8 +94,7 @@ class BackupController extends Controller
 
     $zip = new ZipArchive();
     if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-      http_response_code(500);
-      exit(json_encode(['success' => false, 'message' => "Failed to create ZIP file."]));
+      $this->errorResponse("Failed to create ZIP file.", 500);
     }
 
     try {
@@ -125,18 +119,15 @@ class BackupController extends Controller
       $this->backupRepo->logBackup($zipFilename, 'ZIP', $_SESSION['user_id'] ?? 'Admin');
       $this->auditRepo->log($_SESSION['user_id'] ?? 0, 'EXPORT', 'SYSTEM', $zipFilename, "Exported table: $tableName");
 
-      echo json_encode(['success' => true, 'filename' => $zipFilename]);
+      $this->jsonResponse(['filename' => $zipFilename]);
     } catch (\Throwable $e) {
       if (file_exists($zipPath)) unlink($zipPath);
-      http_response_code(500);
-      exit(json_encode(['success' => false, 'message' => "Error: " . $e->getMessage()]));
+      $this->errorResponse("Error: " . $e->getMessage(), 500);
     }
   }
 
   public function downloadBackup(string $filename)
   {
-    if (session_status() === PHP_SESSION_NONE) session_start();
-
     // Basic path traversal protection
     $filename = basename($filename);
     $filePath = $this->getBackupDir() . $filename;
@@ -163,66 +154,54 @@ class BackupController extends Controller
 
   public function listBackupLogs()
   {
-    if (session_status() === PHP_SESSION_NONE) session_start();
-    header('Content-Type: application/json');
-
     try {
       $logs = $this->backupRepo->getAllBackupLogs();
-      echo json_encode(['success' => true, 'logs' => $logs]);
+      $this->jsonResponse(['logs' => $logs]);
     } catch (\Throwable $e) {
-      http_response_code(500);
-      echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+      $this->errorResponse($e->getMessage(), 500);
     }
   }
 
   public function restoreBackup(string $filename)
   {
-    if (session_status() === PHP_SESSION_NONE) session_start();
     set_time_limit(0);
 
     $filename = basename($filename);
     $filePath = $this->getBackupDir() . $filename;
 
     if (!file_exists($filePath)) {
-      http_response_code(404);
-      exit(json_encode(['success' => false, 'message' => "Backup file not found."]));
+      $this->errorResponse("Backup file not found.", 404);
     }
 
     try {
       $this->backupRepo->restoreDatabase($filePath);
       $this->auditRepo->log($_SESSION['user_id'] ?? 0, 'RESTORE', 'SYSTEM', $filename, "Database restored from local backup: $filename");
-      echo json_encode(['success' => true, 'message' => "Database restored successfully!"]);
+      $this->jsonResponse(['message' => "Database restored successfully!"]);
     } catch (\Throwable $e) {
-      http_response_code(500);
-      exit(json_encode(['success' => false, 'message' => "Restore Error: " . $e->getMessage()]));
+      $this->errorResponse("Restore Error: " . $e->getMessage(), 500);
     }
   }
 
   public function deleteBackup(string $filename)
   {
-    if (session_status() === PHP_SESSION_NONE) session_start();
-    
     $filename = basename($filename);
     $filePath = $this->getBackupDir() . $filename;
 
     if (file_exists($filePath)) {
         unlink($filePath);
         $this->auditRepo->log($_SESSION['user_id'] ?? 0, 'DELETE_BACKUP', 'SYSTEM', $filename, "Backup file deleted: $filename");
-        echo json_encode(['success' => true, 'message' => "Backup file deleted."]);
+        $this->jsonResponse(['message' => "Backup file deleted."]);
     } else {
-        http_response_code(404);
-        echo json_encode(['success' => false, 'message' => "File not found."]);
+        $this->errorResponse("File not found.", 404);
     }
   }
 
   public function uploadAndRestore()
   {
-    if (session_status() === PHP_SESSION_NONE) session_start();
     set_time_limit(0);
 
     if (!isset($_FILES['backup_file'])) {
-      http_response_code(400);
-      exit(json_encode(['success' => false, 'message' => "No file uploaded."]));
+      $this->errorResponse("No file uploaded.", 400);
     }
 
     $file = $_FILES['backup_file'];
@@ -230,8 +209,7 @@ class BackupController extends Controller
     $isGzipped = str_ends_with(strtolower($file['name']), '.sql.gz');
 
     if ($ext !== 'sql' && !$isGzipped) {
-      http_response_code(400);
-      exit(json_encode(['success' => false, 'message' => "Invalid file type. Only .sql or .sql.gz allowed."]));
+      $this->errorResponse("Invalid file type. Only .sql or .sql.gz allowed.", 400);
     }
 
     $tempPath = $this->getBackupDir() . 'temp_restore_' . time() . '_' . basename($file['name']);
@@ -241,15 +219,13 @@ class BackupController extends Controller
         $this->backupRepo->restoreDatabase($tempPath);
         unlink($tempPath); // Delete temp file after restore
         $this->auditRepo->log($_SESSION['user_id'] ?? 0, 'RESTORE', 'SYSTEM', $file['name'], "Database restored from uploaded file.");
-        echo json_encode(['success' => true, 'message' => "Database restored successfully from uploaded file!"]);
+        $this->jsonResponse(['message' => "Database restored successfully from uploaded file!"]);
       } catch (\Throwable $e) {
         if (file_exists($tempPath)) unlink($tempPath);
-        http_response_code(500);
-        exit(json_encode(['success' => false, 'message' => "Restore Error: " . $e->getMessage()]));
+        $this->errorResponse("Restore Error: " . $e->getMessage(), 500);
       }
     } else {
-      http_response_code(500);
-      exit(json_encode(['success' => false, 'message' => "Failed to save uploaded file."]));
+      $this->errorResponse("Failed to save uploaded file.", 500);
     }
   }
 }

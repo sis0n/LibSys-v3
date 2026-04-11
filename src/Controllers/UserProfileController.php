@@ -18,7 +18,6 @@ class UserProfileController extends Controller
 
     public function getProfile()
     {
-        header('Content-Type: application/json');
         try {
             $userId = $_SESSION['user_id'] ?? $_SESSION['user_data']['user_id'] ?? null;
             $role = $_SESSION['role'] ?? 'guest';
@@ -26,16 +25,14 @@ class UserProfileController extends Controller
             if (!$userId) throw new Exception('Unauthorized', 401);
 
             $profile = $this->profileService->getProfile((int)$userId, $role);
-            echo json_encode(['success' => true, 'profile' => $profile]);
+            return $this->jsonResponse(['profile' => $profile]);
         } catch (Exception $e) {
-            http_response_code($e->getCode() ?: 500);
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
         }
     }
 
     public function updateProfile()
     {
-        header('Content-Type: application/json');
         try {
             $userId = $_SESSION['user_id'] ?? $_SESSION['user_data']['user_id'] ?? null;
             $role = $_SESSION['role'] ?? 'guest';
@@ -44,9 +41,9 @@ class UserProfileController extends Controller
 
             $contentType = $_SERVER["CONTENT_TYPE"] ?? '';
             if (strpos($contentType, "application/json") !== false) {
-                $data = json_decode(file_get_contents("php://input"), true);
+                $data = $this->getJsonData();
             } else {
-                $data = $_POST;
+                $data = $this->getPostData();
             }
 
             $result = $this->profileService->updateProfile((int)$userId, $role, $data, $_FILES);
@@ -61,10 +58,9 @@ class UserProfileController extends Controller
             }
             $_SESSION['fullname'] = $result['fullname'];
 
-            echo json_encode(['success' => true, 'message' => 'Profile updated successfully!']);
+            return $this->jsonResponse(['message' => 'Profile updated successfully!']);
         } catch (Exception $e) {
-            http_response_code($e->getCode() ?: 500);
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
         }
     }
 }

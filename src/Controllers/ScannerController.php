@@ -27,7 +27,6 @@ class ScannerController extends Controller
 
     public function attendance()
     {
-        header('Content-Type: application/json');
         try {
             $qrValue = $_POST['qrCodeValue'] ?? null;
             if ($qrValue) {
@@ -76,7 +75,7 @@ class ScannerController extends Controller
 
             $fullName = implode(' ', array_filter([$user['first_name'], $user['middle_name'], $user['last_name']]));
 
-            echo json_encode([
+            return $this->jsonResponse([
                 "status" => "success",
                 "full_name" => $fullName,
                 "student_number" => $user['student_number'],
@@ -88,16 +87,12 @@ class ScannerController extends Controller
                 "time" => $now->format('g:i A')
             ]);
         } catch (\Exception $e) {
-            echo json_encode([
-                "status" => "error",
-                "message" => $e->getMessage()
-            ]);
+            return $this->errorResponse($e->getMessage(), 400, ["status" => "error"]);
         }
     }
 
     public function manual()
     {
-        header('Content-Type: application/json');
         try {
             $studentNumber = $_POST['studentNumber'] ?? null;
             if ($studentNumber) {
@@ -147,7 +142,7 @@ class ScannerController extends Controller
 
             $fullName = implode(' ', array_filter([$user['first_name'], $user['middle_name'], $user['last_name']]));
 
-            echo json_encode([
+            return $this->jsonResponse([
                 "status" => "success",
                 "full_name" => $fullName,
                 "student_number" => $user['student_number'],
@@ -159,10 +154,7 @@ class ScannerController extends Controller
                 "time" => $now->format('g:i A')
             ]);
         } catch (\Exception $e) {
-            echo json_encode([
-                "status" => "error",
-                "message" => $e->getMessage()
-            ]);
+            return $this->errorResponse($e->getMessage(), 400, ["status" => "error"]);
         }
     }
 }

@@ -33,63 +33,55 @@ class UserManagementController extends Controller
 
     public function fetchPaginatedUsers()
     {
-        header('Content-Type: application/json');
         try {
             $campusId = $this->getCampusFilter();
             $result = $this->userService->getPaginatedUsers($_GET, $_SESSION['user_id'] ?? null, $campusId);
-            echo json_encode(['success' => true, 'users' => $result['users'], 'totalCount' => $result['totalCount']]);
+            return $this->jsonResponse(['users' => $result['users'], 'totalCount' => $result['totalCount']]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
-        exit;
     }
 
     public function getUserById($id)
     {
-        header('Content-Type: application/json');
         try {
             $details = $this->userService->getUserDetails((int)$id);
-            echo json_encode($details);
+            return $this->jsonResponse($details);
         } catch (Exception $e) {
-            http_response_code(404);
-            echo json_encode(['error' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage(), 404);
         }
     }
 
     public function search()
     {
-        header('Content-Type: application/json');
         try {
             $query = $_GET['q'] ?? '';
             $users = $this->userService->searchUsers($query);
-            echo json_encode(['success' => true, 'users' => $users]);
+            return $this->jsonResponse(['users' => $users]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function addUser()
     {
-        header('Content-Type: application/json');
         try {
             $data = json_decode(file_get_contents("php://input"), true);
             $campusIdFilter = $this->getCampusFilter();
             
             $userId = $this->userService->addUser($data, $_SESSION['user_id'], $campusIdFilter);
             
-            echo json_encode([
-                'success' => true,
+            return $this->jsonResponse([
                 'message' => 'User added successfully.',
                 'user_id' => $userId,
-            ]);
+            ], 201);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function deleteUser($id)
     {
-        header('Content-Type: application/json');
         try {
             $adminId = $_SESSION['user_id'] ?? null;
             if (!$adminId) throw new Exception('Unauthorized');
@@ -97,15 +89,14 @@ class UserManagementController extends Controller
             $campusIdFilter = $this->getCampusFilter();
             $this->userService->deleteUser((int)$id, $adminId, $campusIdFilter);
 
-            echo json_encode(['success' => true, 'message' => 'User deleted successfully.']);
+            return $this->jsonResponse(['message' => 'User deleted successfully.']);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function deleteMultipleUsers()
     {
-        header('Content-Type: application/json');
         try {
             $data = json_decode(file_get_contents("php://input"), true);
             $adminId = $_SESSION['user_id'] ?? null;
@@ -120,34 +111,31 @@ class UserManagementController extends Controller
                 $adminRole
             );
 
-            echo json_encode(array_merge(['success' => true], $result));
+            return $this->jsonResponse($result);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function toggleStatus($id)
     {
-        header('Content-Type: application/json');
         try {
             $adminId = $_SESSION['user_id'] ?? null;
             $campusIdFilter = $this->getCampusFilter();
             
             $newStatus = $this->userService->toggleStatus((int)$id, $adminId, $campusIdFilter);
 
-            echo json_encode([
-                'success' => true,
+            return $this->jsonResponse([
                 'message' => 'User status updated successfully.',
                 'newStatus' => $newStatus
             ]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function updateUser($id)
     {
-        header('Content-Type: application/json');
         try {
             $data = json_decode(file_get_contents("php://input"), true);
             $adminId = $_SESSION['user_id'] ?? null;
@@ -155,38 +143,37 @@ class UserManagementController extends Controller
 
             $this->userService->updateUser((int)$id, $data, $adminId, $campusIdFilter);
 
-            echo json_encode(['success' => true, 'message' => 'User updated successfully.']);
+            return $this->jsonResponse(['message' => 'User updated successfully.']);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function allowEdit($id)
     {
-        header('Content-Type: application/json');
         try {
             $updated = $this->userService->setEditAccess((int)$id, true);
-            echo json_encode([
-                'success' => $updated,
-                'message' => $updated ? 'Student can now edit their profile again.' : 'Failed to grant edit access.'
-            ]);
+            if ($updated) {
+                return $this->jsonResponse(['message' => 'Student can now edit their profile again.']);
+            } else {
+                return $this->errorResponse('Failed to grant edit access.');
+            }
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 
     public function bulkImport()
     {
-        header('Content-Type: application/json');
         try {
             if (!isset($_FILES['csv_file'])) throw new Exception('No file uploaded.');
 
             $adminId = $_SESSION['user_id'] ?? null;
             $result = $this->userService->bulkImport($_FILES['csv_file']['tmp_name'], $adminId);
 
-            echo json_encode(array_merge(['success' => true], $result));
+            return $this->jsonResponse($result);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            return $this->errorResponse($e->getMessage());
         }
     }
 }

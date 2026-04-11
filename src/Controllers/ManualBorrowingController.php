@@ -18,45 +18,45 @@ class ManualBorrowingController extends Controller
 
     public function getEquipments(): void
     {
-        header('Content-Type: application/json');
         try {
             $campusId = $this->getCampusFilter();
             $equipments = $this->borrowingService->getAvailableEquipments($campusId);
-            echo json_encode($equipments);
+            $this->jsonResponse($equipments);
         } catch (Exception $e) {
-            echo json_encode(['error' => 'Failed to fetch equipments'], 500);
+            $this->errorResponse('Failed to fetch equipments', 500);
         }
     }
 
     public function getCollaterals(): void
     {
-        header('Content-Type: application/json');
         try {
             $collaterals = $this->borrowingService->getCollaterals();
-            echo json_encode($collaterals);
+            $this->jsonResponse($collaterals);
         } catch (Exception $e) {
-            echo json_encode(['error' => 'Failed to fetch collaterals'], 500);
+            $this->errorResponse('Failed to fetch collaterals', 500);
         }
     }
 
     public function checkUser(): void
     {
-        header('Content-Type: application/json');
-        $input_user_id = $_POST['input_user_id'] ?? null;
-        if (!$input_user_id) {
-            echo json_encode(['success' => false, 'message' => 'No input_user_id provided']);
-            return;
-        }
+        try {
+            $input_user_id = $_POST['input_user_id'] ?? null;
+            if (!$input_user_id) {
+                $this->errorResponse('No input_user_id provided', 400);
+                return;
+            }
 
-        $campusId = $this->getCampusFilter();
-        $result = $this->borrowingService->checkUser($input_user_id, $campusId);
-        
-        echo json_encode(array_merge(['success' => true], $result));
+            $campusId = $this->getCampusFilter();
+            $result = $this->borrowingService->checkUser($input_user_id, $campusId);
+            
+            $this->jsonResponse($result);
+        } catch (Exception $e) {
+            $this->errorResponse($e->getMessage());
+        }
     }
 
     public function create(): void
     {
-        header('Content-Type: application/json');
         try {
             $data = $_POST;
             $campusId = $this->getCampusFilter();
@@ -65,9 +65,9 @@ class ManualBorrowingController extends Controller
             if (!$librarianId) throw new Exception('Librarian authentication required.');
 
             $result = $this->borrowingService->processManualBorrow($data, $campusId, $librarianId);
-            echo json_encode($result);
+            $this->jsonResponse($result);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            $this->errorResponse($e->getMessage());
         }
     }
 }

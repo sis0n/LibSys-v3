@@ -31,7 +31,6 @@ class AuditLogController extends Controller
 
     public function fetch()
     {
-        header('Content-Type: application/json');
         try {
             $limit = (int)($_GET['limit'] ?? 10);
             $offset = (int)($_GET['offset'] ?? 0);
@@ -40,14 +39,12 @@ class AuditLogController extends Controller
 
             $logs = $this->auditService->getLogs($limit, $offset, $search, $campusId);
             $totalCount = $this->auditService->countLogs($search, $campusId);
-            
-            echo json_encode([
-                'success' => true,
+
+            $this->jsonResponse([
                 'logs' => $logs,
                 'totalCount' => $totalCount
             ]);
         } catch (Exception $e) {
-            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            $this->errorResponse($e->getMessage());
         }
-    }
-}
+    }}

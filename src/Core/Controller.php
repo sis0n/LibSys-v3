@@ -158,6 +158,38 @@ class Controller
         exit;
     }
 
+    /**
+     * Standard JSON success response (Flat Structure).
+     * 
+     * @param array $data The data to return.
+     * @param int $statusCode HTTP status code (default 200).
+     */
+    protected function jsonResponse(array $data = [], int $statusCode = 200)
+    {
+        $response = array_merge([
+            'success' => true,
+            'message' => ''
+        ], $data);
+
+        return $this->json($response, $statusCode);
+    }
+
+    /**
+     * Standard JSON error response (Flat Structure).
+     * 
+     * @param string $message The error message.
+     * @param int $statusCode HTTP status code (default 400).
+     * @param mixed $errors Optional detailed errors.
+     */
+    protected function errorResponse(string $message, int $statusCode = 400, $errors = null)
+    {
+        return $this->json([
+            'success' => false,
+            'message' => $message,
+            'errors'  => $errors
+        ], $statusCode);
+    }
+
     protected function saveFileLocally($file, $subFolder, $prefix = 'profile')
     {
         if (!isset($file) || $file['error'] !== UPLOAD_ERR_OK) {
