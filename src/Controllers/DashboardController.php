@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\RoleHelper;
 use App\Services\DashboardService;
 use Exception;
 
@@ -18,16 +19,20 @@ class DashboardController extends Controller
 
     public function index()
     {
-        $role = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? 'guest'));
+        $role = RoleHelper::compareNormalize($_SESSION['role'] ?? 'guest');
         
         $campusId = $this->getCampusFilter();
         $stats = $this->dashboardService->getStatistics($campusId);
 
         $viewPath = "Superadmin/dashboard";
-        if ($role === 'student' || $role === 'faculty' || $role === 'staff') {
+        if (RoleHelper::isBorrower($role)) {
             $viewPath = ucfirst($role) . "/dashboard";
-        } elseif ($role === 'campus_admin') {
+        } elseif (RoleHelper::isCampusAdmin($role)) {
             $viewPath = "campus_admin/dashboard";
+        } elseif (RoleHelper::isAdmin($role)) {
+            $viewPath = "Admin/dashboard";
+        } elseif (RoleHelper::isLibrarian($role)) {
+            $viewPath = "Librarian/dashboard";
         }
 
         $this->view($viewPath, [

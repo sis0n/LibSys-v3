@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\RoleHelper;
 use App\Services\AuditLogService;
 use Exception;
 
@@ -14,7 +15,7 @@ class AuditLogController extends Controller
     {
         parent::__construct();
         // RBAC: Only Superadmin can view audit logs
-        if (($_SESSION['role'] ?? '') !== 'superadmin') {
+        if (!RoleHelper::isSuperadmin($_SESSION['role'] ?? '')) {
             http_response_code(403);
             die("Forbidden");
         }

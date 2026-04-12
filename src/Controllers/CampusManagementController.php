@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\RoleHelper;
 use App\Services\CampusService;
 use Exception;
 
@@ -14,8 +15,7 @@ class CampusManagementController extends Controller
     {
         parent::__construct();
         // RBAC: Only Superadmin can manage campuses
-        $role = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
-        if ($role !== 'superadmin') {
+        if (!RoleHelper::isSuperadmin($_SESSION['role'] ?? '')) {
             http_response_code(403);
             die("Forbidden: Access denied. Only Superadmin can manage campuses.");
         }

@@ -7,6 +7,7 @@ use App\Repositories\StudentProfileRepository;
 use App\Repositories\FacultyProfileRepository;
 use App\Repositories\StaffProfileRepository;
 use App\Repositories\CampusRepository;
+use App\Core\RoleHelper;
 use Exception;
 
 class UserProfileService
@@ -25,7 +26,7 @@ class UserProfileService
      */
     public function getProfile(int $userId, string $role): array
     {
-        $role = strtolower(str_replace([' ', '-'], '_', $role));
+        $role = RoleHelper::compareNormalize($role);
         $repo = $this->getRoleRepo($role);
 
         if ($repo) {
@@ -50,7 +51,7 @@ class UserProfileService
      */
     public function updateProfile(int $userId, string $role, array $data, ?array $files = []): array
     {
-        $role = strtolower(str_replace([' ', '-'], '_', $role));
+        $role = RoleHelper::compareNormalize($role);
         $repo = $this->getRoleRepo($role);
 
         if ($repo) {
@@ -62,7 +63,7 @@ class UserProfileService
         if (!$currentProfile) throw new Exception('Profile not found.');
 
         // Student lock check
-        if ($role === 'student' && ($currentProfile['profile_updated'] ?? 0) == 1 && ($currentProfile['can_edit_profile'] ?? 0) == 0) {
+        if ($role === RoleHelper::STUDENT && ($currentProfile['profile_updated'] ?? 0) == 1 && ($currentProfile['can_edit_profile'] ?? 0) == 0) {
             throw new Exception('Profile is locked.', 403);
         }
 

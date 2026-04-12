@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\RoleHelper;
 use App\Repositories\RestoreUserRepository;
 use Exception;
 
@@ -14,10 +15,9 @@ class RestoreUserController extends Controller
   public function __construct()
   {
     parent::__construct();
-    $role = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
-    if (!in_array($role, ['superadmin', 'admin'])) {
-        http_response_code(403);
-        die("Forbidden: Access denied.");
+    if (!RoleHelper::hasGlobalAccess($_SESSION['role'] ?? '')) {
+      http_response_code(403);
+      die("Forbidden: Access denied.");
     }
     $this->restoreUserRepo = new RestoreUserRepository();
     $this->auditRepo = new \App\Repositories\AuditLogRepository();

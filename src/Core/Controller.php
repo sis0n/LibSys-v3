@@ -16,8 +16,8 @@ class Controller
 
         // Refresh permissions from DB on every request to avoid "stale" session data
         if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
-            $role = strtolower($_SESSION['role']);
-            if (in_array($role, ['admin', 'librarian', 'superadmin', 'campus_admin', 'campus admin'])) {
+            $role = $_SESSION['role'];
+            if (RoleHelper::isStaff($role)) {
                 $userPermissionRepo = new \App\Repositories\UserPermissionModuleRepository();
                 $_SESSION['user_permissions'] = $userPermissionRepo->getModulesByUserId($_SESSION['user_id']);
             }
@@ -50,15 +50,15 @@ class Controller
 
     protected function getCampusFilter(): ?int
     {
-        $role = strtolower(trim(str_replace([' ', '-', '_'], '', $_SESSION['role'] ?? '')));
+        $role = $_SESSION['role'] ?? 'guest';
         
         // Superadmin and Admin have global access (Global/All Campuses)
-        if (in_array($role, ['superadmin', 'admin'])) {
+        if (RoleHelper::hasGlobalAccess($role)) {
             return null;
         }
 
         // Campus Admin and Librarian are restricted to their own campus
-        if (in_array($role, ['campusadmin', 'librarian'])) {
+        if (RoleHelper::isCampusAdmin($role) || RoleHelper::isLibrarian($role)) {
             return $_SESSION['user_data']['campus_id'] ?? null;
         }
 

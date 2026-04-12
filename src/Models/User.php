@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Core\Database;
+use App\Core\RoleHelper;
 use PDO;
 use PDOException;
 
@@ -67,42 +68,34 @@ class User
     // static role checks – secure role methods
     public static function isAdmin(array $user): bool
     {
-        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
-        return $role === 'admin';
+        return RoleHelper::isAdmin($user['role'] ?? '');
     }
     public static function isLibrarian(array $user): bool
     {
-        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
-        return $role === 'librarian';
+        return RoleHelper::isLibrarian($user['role'] ?? '');
     }
     public static function isStudent(array $user): bool
     {
-        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
-        return $role === 'student';
+        return RoleHelper::compareNormalize($user['role'] ?? '') === RoleHelper::compareNormalize(RoleHelper::STUDENT);
     }
     public static function isSuperadmin(array $user): bool
     {
-        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
-        return $role === 'superadmin';
+        return RoleHelper::isSuperadmin($user['role'] ?? '');
     }
     public static function isCampusAdmin(array $user): bool
     {
-        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
-        return $role === 'campus_admin' || $role === 'campus_admin'; // handles both
+        return RoleHelper::isCampusAdmin($user['role'] ?? '');
     }
     public static function isScanner(array $user): bool
     {
-        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
-        return $role === 'scanner';
+        return RoleHelper::compareNormalize($user['role'] ?? '') === RoleHelper::compareNormalize(RoleHelper::SCANNER);
     }
     public static function isFaculty(array $user): bool
     {
-        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
-        return $role === 'faculty';
+        return RoleHelper::compareNormalize($user['role'] ?? '') === RoleHelper::compareNormalize(RoleHelper::FACULTY);
     }
     public static function isStaff(array $user): bool
     {
-        $role = strtolower(str_replace(' ', '_', $user['role'] ?? ''));
-        return $role === 'staff';
+        return RoleHelper::compareNormalize($user['role'] ?? '') === RoleHelper::compareNormalize(RoleHelper::STAFF);
     }
 }

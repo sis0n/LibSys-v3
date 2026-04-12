@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\RoleHelper;
 use App\Services\PromotionService;
 use App\Repositories\CollegeCourseRepository;
 use Exception;
@@ -22,8 +23,8 @@ class StudentPromotionController extends Controller
     public function index()
     {
         $courses = $this->courseRepo->getAllCourses();
-        $role = strtolower(str_replace([' ', '-', '_'], '', $_SESSION['role'] ?? ''));
-        $viewPath = ($role === 'superadmin' || $role === 'admin') ? 'Superadmin/studentPromotion' : 'campus_admin/studentPromotion';
+        $role = RoleHelper::compareNormalize($_SESSION['role'] ?? '');
+        $viewPath = RoleHelper::hasGlobalAccess($role) ? 'Superadmin/studentPromotion' : 'campus_admin/studentPromotion';
 
         $this->view($viewPath, [
             'title' => 'Student Promotion',

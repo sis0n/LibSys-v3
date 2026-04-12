@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Repositories\UserRepository;
 use App\Repositories\UserPermissionModuleRepository;
 use App\Repositories\CollegeCourseRepository;
+use App\Core\RoleHelper;
 
 class AuthRepository
 {
@@ -36,20 +37,19 @@ class AuthRepository
       $fullName = implode(' ', array_filter([$firstName, $middleName, $lastName, $suffix]));
 
       $modules = [];
-      $role = strtolower(trim($user['role'] ?? 'guest'));
-      $role = str_replace(' ', '_', $role); // Normalize 'campus admin' to 'campus_admin'
+      $role = RoleHelper::compareNormalize($user['role'] ?? 'guest');
 
       $departmentOrCourse = null;
 
-      if ($role === 'student' && isset($user['course_id'])) {
+      if ($role === RoleHelper::STUDENT && isset($user['course_id'])) {
         $course = $this->collegeCourseRepo->getCourseById((int)$user['course_id']);
         $departmentOrCourse = $course['course_code'] ?? 'N/A';
-      } elseif (in_array($role, ['faculty', 'staff']) && isset($user['college_id'])) {
+      } elseif (in_array($role, [RoleHelper::FACULTY, RoleHelper::STAFF]) && isset($user['college_id'])) {
         $college = $this->collegeCourseRepo->getCollegeById((int)$user['college_id']);
         $departmentOrCourse = $college['college_code'] ?? 'N/A';
       }
 
-      if (in_array($role, ['admin', 'librarian', 'superadmin', 'campus_admin'])) {
+      if (RoleHelper::isStaff($role)) {
         $modules = $this->userModuleRepo->getModulesByUserId($user['user_id']);
       }
 

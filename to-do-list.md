@@ -9,7 +9,7 @@
 - [x] **Integrity Checks:** Add validation to prevent deleting a campus if it still has books or users assigned to it.
 
 ### 🏗️ Architectural Hardening (Service Layer)
-- [ ] **Service Layer Implementation:** Refactor business logic from Controllers into dedicated Services.
+- [x] **Service Layer Implementation:** Refactor business logic from Controllers into dedicated Services.
     - [x] `BorrowingService`: Centralize policy checks, overdue validation, and stock updates.
     - [x] `ReturningService`: Calculate fines, handle damaged/lost items, and inventory return.
     - [x] `OverdueService`: Background logic for scanning and flagging overdue transactions.
@@ -27,12 +27,9 @@
     - [x] `CartService`: Reservation rules and inter-campus cart validation.
     - [x] `StorageService`: Centralized file management (Local vs Cloud abstraction).
 - [x] **API Standardization:** Transition existing `api/` routes to a strict RESTful standard (consistent status codes and JSON structure).
-- [ ] **Role Normalization:** Audit and centralize role-checking logic (Superadmin vs Super_admin) across the entire system to prevent 403/401 leaks.
-
-### 🛠️ Development Workflow & Quality Assurance
-- [ ] **Automated Testing Framework:** Set up PHPUnit for backend logic and a JS testing library (e.g., Jest) to verify Service Layer rules before deployment.
-- [ ] **API Documentation (Swagger/OpenAPI):** Implement automated API documentation so that any developer (or future mobile app) knows how to use the Service Layer endpoints.
-- [ ] **Enhanced CI/CD Pipeline:** Update GitHub Actions to run automated tests on every push and block deployments if any test fails.
+- [x] **Role Normalization:** Audit and centralize role-checking logic (Superadmin vs Super_admin) across the entire system to prevent 403/401 leaks.
+- [ ] **Global AJAX Interceptor:** Centralize frontend error handling (401/403) and session expiration alerts in a global `api.js`.
+- [ ] **Centralized Session Manager:** Move `session_start()` and security flags (HttpOnly, Secure) to a core `SessionService` to prevent session-fixation.
 
 ### 📜 Library Policy (Per Campus)
 - [x] **Schema Update:** Add `campus_id` to the `library_policies` table to allow per-campus rules.
@@ -85,6 +82,8 @@
 - [ ] **Campus Filtering:** Add a dropdown to filter users by campus in the Admin/Superadmin User Management table.
 - [ ] **Role-Based Dropdown Lockdown:** Restrict or disable campus selection dropdowns for `campus_admin` and `librarian` roles across all modules (User Management, Books, Reports). If a user is restricted to one campus, the dropdown should be locked to their assigned campus to prevent "empty" states from invalid selections.
 - [ ] **Bulk Import Alignment:** Ensure `campus_id` is correctly mapped during bulk student/staff imports.
+- [ ] **Superadmin "Campus View" Context:** Allow Superadmins to switch their active campus context via the UI to view the dashboard and logs from any branch's perspective.
+- [ ] **Granular Action Permissions:** Upgrade RBAC to support action-level checks (e.g., "librarian can View books but not Delete them").
 
 ### 🛠️ Librarian Controls
 - [ ] **Manual Borrowing Campus:** Include campus display/filter in the Manual Borrowing form to clarify where books are being pulled from.
@@ -103,6 +102,8 @@
 - [ ] **Campus Capacity Tracker:** Use QR Attendance data to show a "Real-time Occupancy" percentage for each campus library on the dashboard.
 - [ ] **Campus-specific Reports:** Add campus filters to all report types (Most Borrowed, Top Visitors, etc.).
 - [ ] **Audit Log Campus Tracking:** Include the campus name in Audit Logs to see which branch initiated an action.
+- [ ] **Campus-Specific Report Branding:** Update PDF report headers to dynamically display the logo and address of the originating campus.
+- [ ] **Email Notification Templates:** Transition hardcoded email strings into HTML templates with UCC branding and campus-specific signatures.
 
 ---
 
@@ -114,6 +115,8 @@
 - [ ] **Caching Layer (Redis):** Implement Redis to cache slow-changing data like Library Policies and User Permissions.
 - [ ] **Asynchronous Task Queue:** Set up a background worker for non-blocking tasks like sending overdue emails.
 - [ ] **API Rate Limiting:** Implement request throttling to protect the server from abuse or accidental DoS attacks.
+- [ ] **Database Migration System:** Set up a version-controlled migration runner (e.g., Phinx or custom) to sync schema changes across branches.
+- [ ] **Structured Error Logging:** Integrate a structured logging library (like Monolog) for better error tracing and Audit Log enrichment.
 
 ### ☁️ Storage & Infrastructure
 - [ ] **Cloud Storage Integration:** Support AWS S3 or Google Cloud Storage for media assets.

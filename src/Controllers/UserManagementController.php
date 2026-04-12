@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\RoleHelper;
 use App\Services\UserService;
 use Exception;
 
@@ -13,14 +14,13 @@ class UserManagementController extends Controller
     public function __construct()
     {
         parent::__construct();
-        
+
         // RBAC: Restricted roles for User Management
-        $role = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
-        if (in_array($role, ['librarian', 'student', 'faculty', 'staff', 'scanner'])) {
+        $role = $_SESSION['role'] ?? '';
+        if (RoleHelper::isLibrarian($role) || !RoleHelper::isStaff($role) || RoleHelper::compareNormalize($role) === RoleHelper::compareNormalize(RoleHelper::SCANNER)) {
             http_response_code(403);
             die("Forbidden: Access denied.");
         }
-
         $this->userService = new UserService();
     }
 
@@ -100,7 +100,7 @@ class UserManagementController extends Controller
         try {
             $data = json_decode(file_get_contents("php://input"), true);
             $adminId = $_SESSION['user_id'] ?? null;
-            $adminRole = strtolower(str_replace([' ', '-'], '_', $_SESSION['role'] ?? ''));
+            $adminRole = RoleHelper::compareNormalize($_SESSION['role'] ?? '');
 
             if (!$adminId) throw new Exception('Unauthorized');
 

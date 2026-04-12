@@ -2,21 +2,21 @@
 
 namespace App\Views\partials;
 
+use App\Core\RoleHelper;
+
 $currentPage = $currentPage ?? '';
 $role = $_SESSION['role'] ?? 'guest';
 
 $userPermissions = $_SESSION['user_permissions'] ?? [];
-$isSuperAdmin = $role === 'superadmin';
+$isSuperAdmin = RoleHelper::isSuperadmin($role);
 
 $normalizedPermissions = array_map(function ($p) {
-    return trim(strtolower($p));
+    return RoleHelper::compareNormalize($p);
 }, $userPermissions);
 
-$hasPermission = function ($code) use ($normalizedPermissions, $isSuperAdmin) {
-    if ($isSuperAdmin) {
-        return true;
-    }
-    return in_array(trim(strtolower($code)), $normalizedPermissions);
+$hasPermission = function ($module) use ($normalizedPermissions, $isSuperAdmin) {
+    if ($isSuperAdmin) return true;
+    return in_array(RoleHelper::compareNormalize($module), $normalizedPermissions);
 };
 
 $baseUrl = \BASE_URL;

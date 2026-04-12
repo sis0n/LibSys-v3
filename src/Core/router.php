@@ -49,12 +49,8 @@ class Router
 
         // --- HYBRID AUTHORIZATION CHECK ---
         if (!empty($allowedAccess)) {
-          $normalize = function($str) {
-              return strtolower(trim(str_replace([' ', '-', '_'], '', $str)));
-          };
-
-          $userRoleRaw = $_SESSION['role'] ?? 'guest';
-          $userRole = $normalize($userRoleRaw);
+          $userRole = $_SESSION['role'] ?? 'guest';
+          $userPermissions = $_SESSION['user_permissions'] ?? [];
           $userId = $_SESSION['user_id'] ?? null;
 
           if (!$userId) {
@@ -63,7 +59,7 @@ class Router
             return;
           }
 
-          // ... (Session Sync Check remains same)
+          // --- SESSION & ACCOUNT VALIDATION ---
           try {
             $db = \App\Core\Database::getInstance()->getConnection();
             $stmt = $db->prepare("SELECT campus_id, is_active FROM users WHERE user_id = ?");
@@ -74,7 +70,8 @@ class Router
               if (isset($_SESSION['user_data']) && $_SESSION['user_data']['campus_id'] != $currentData['campus_id']) {
                 $_SESSION['user_data']['campus_id'] = $currentData['campus_id'];
               }
-              if ($currentData['is_active'] == 0 && $userRole !== 'superadmin') {
+              // Force logout if deactivated (except superadmins)
+              if ($currentData['is_active'] == 0 && !RoleHelper::isSuperadmin($userRole)) {
                 session_destroy();
                 header('Location: /login');
                 exit;
@@ -84,30 +81,8 @@ class Router
             error_log("Session Sync Error: " . $e->getMessage());
           }
 
-          $allowedAccessNormalized = array_map($normalize, $allowedAccess);
-
-          $hasAccess = false;
-
-          // Superadmin has access to everything
-          if ($userRole === 'superadmin') {
-            $hasAccess = true;
-          } 
-          // Check if direct role matches
-          elseif (in_array($userRole, $allowedAccessNormalized)) {
-            $hasAccess = true;
-          } 
-          // Check module permissions for specific roles
-          elseif (in_array($userRole, ['admin', 'librarian', 'campusadmin'])) {
-            $userPermissions = $_SESSION['user_permissions'] ?? [];
-            $normalizedUserPermissions = array_map($normalize, $userPermissions);
-
-            $matches_permission = array_intersect($normalizedUserPermissions, $allowedAccessNormalized);
-            if (count($matches_permission) > 0) {
-              $hasAccess = true;
-            }
-          }
-
-          if (!$hasAccess) {
+          // --- ROLE & PERMISSION CHECK ---
+          if (!RoleHelper::hasAccess($userRole, $userPermissions, $allowedAccess)) {
             http_response_code(403);
             include __DIR__ . '/../Views/errors/403.php';
             return;
