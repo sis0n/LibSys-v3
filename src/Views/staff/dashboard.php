@@ -15,7 +15,8 @@ $totalOverdue = $stats['total_overdue'];
 
 $allHistory = $staffHistoryRepo->getDetailedHistory($userId);
 $currentBorrowedBooks = array_filter($allHistory, function ($record) {
-    return in_array($record['status'], ['borrowed', 'overdue']);
+    $status = strtolower($record['item_status'] ?? $record['status'] ?? '');
+    return in_array($status, ['borrowed', 'overdue']);
 });
 ?>
 

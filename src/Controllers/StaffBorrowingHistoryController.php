@@ -39,4 +39,17 @@ class StaffBorrowingHistoryController extends Controller
             return $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
         }
     }
+
+    public function fetchStats()
+    {
+        try {
+            $userId = $_SESSION['user_data']['user_id'] ?? null;
+            if (!$userId) throw new Exception('Unauthorized', 401);
+
+            $stats = $this->historyService->getOtherStats('staff', $userId);
+            return $this->jsonResponse(['stats' => $stats]);
+        } catch (Exception $e) {
+            return $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
+        }
+    }
 }

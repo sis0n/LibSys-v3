@@ -15,6 +15,15 @@ class DashboardRepository
     $this->db = Database::getInstance()->getConnection();
   }
 
+  public function updateOverdueStatuses(): void
+  {
+    $this->db->query("UPDATE borrow_transactions SET status = 'overdue' WHERE status = 'borrowed' AND due_date < NOW()");
+    $this->db->query("UPDATE borrow_transaction_items bti 
+                      INNER JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+                      SET bti.status = 'overdue' 
+                      WHERE bt.status = 'overdue' AND bti.status = 'borrowed'");
+  }
+
   public function countUsers(?int $campusId = null): int
   {
     $where = $campusId !== null ? " AND campus_id = " . (int)$campusId : "";
@@ -78,11 +87,10 @@ class DashboardRepository
         SELECT COUNT(*) 
         FROM borrow_transaction_items bti
         JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
-        LEFT JOIN users u ON u.user_id = COALESCE(
-            (SELECT user_id FROM students WHERE student_id = bt.student_id),
-            (SELECT user_id FROM faculty WHERE faculty_id = bt.faculty_id),
-            (SELECT user_id FROM staff WHERE staff_id = bt.staff_id)
-        )
+        LEFT JOIN students s ON bt.student_id = s.student_id
+        LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+        LEFT JOIN staff st ON bt.staff_id = st.staff_id
+        LEFT JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
         WHERE bti.status = 'borrowed' $where
     ");
     return (int)$stmt->fetchColumn();
@@ -95,12 +103,11 @@ class DashboardRepository
         SELECT COUNT(*) 
         FROM borrow_transaction_items bti
         JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
-        LEFT JOIN users u ON u.user_id = COALESCE(
-            (SELECT user_id FROM students WHERE student_id = bt.student_id),
-            (SELECT user_id FROM faculty WHERE faculty_id = bt.faculty_id),
-            (SELECT user_id FROM staff WHERE staff_id = bt.staff_id)
-        )
-        WHERE bti.status = 'overdue' $where
+        LEFT JOIN students s ON bt.student_id = s.student_id
+        LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+        LEFT JOIN staff st ON bt.staff_id = st.staff_id
+        LEFT JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+        WHERE (bti.status = 'overdue' OR bt.status = 'overdue') $where
     ");
     return (int)$stmt->fetchColumn();
   }
@@ -112,12 +119,11 @@ class DashboardRepository
         SELECT bt.transaction_id, bt.transaction_code, bt.borrowed_at, u.first_name, u.last_name, b.title
         FROM borrow_transactions bt
         JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-        JOIN books b ON bti.book_id = b.book_id
-        LEFT JOIN users u ON u.user_id = COALESCE(
-            (SELECT user_id FROM students WHERE student_id = bt.student_id),
-            (SELECT user_id FROM faculty WHERE faculty_id = bt.faculty_id),
-            (SELECT user_id FROM staff WHERE staff_id = bt.staff_id)
-        )
+        LEFT JOIN books b ON bti.book_id = b.book_id
+        LEFT JOIN students s ON bt.student_id = s.student_id
+        LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+        LEFT JOIN staff st ON bt.staff_id = st.staff_id
+        LEFT JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
         WHERE 1=1 $where
         ORDER BY bt.borrowed_at DESC
         LIMIT :limit
@@ -146,17 +152,14 @@ class DashboardRepository
   public function getDashboardStats(?int $campusId = null): array
   {
     try {
-      $this->db->query("UPDATE borrow_transactions SET status = 'overdue' WHERE status = 'borrowed' AND due_date < NOW()");
-      $this->db->query("UPDATE borrow_transaction_items bti 
-                        INNER JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
-                        SET bti.status = 'overdue' 
-                        WHERE bt.status = 'overdue' AND bti.status = 'borrowed'");
+      $this->updateOverdueStatuses();
 
       $userCampusWhere = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
       $bookCampusWhere = $campusId !== null ? " AND b.campus_id = " . (int)$campusId : "";
       
-      $campusJoin = " JOIN campuses c ON u.campus_id = c.campus_id AND c.is_active = 1 ";
-      $bookCampusJoin = " JOIN campuses c ON b.campus_id = c.campus_id AND c.is_active = 1 ";
+      // Use LEFT JOIN for campuses to not exclude records with NULL/missing campus data
+      $campusJoin = " LEFT JOIN campuses c ON u.campus_id = c.campus_id ";
+      $bookCampusJoin = " LEFT JOIN campuses c ON b.campus_id = c.campus_id ";
 
       $stmt = $this->db->query("SELECT COUNT(*) AS total_students FROM students s JOIN users u ON s.user_id = u.user_id $campusJoin WHERE s.status='enrolled' AND u.deleted_at IS NULL $userCampusWhere");
       $totalStudents = (int) ($stmt->fetch(PDO::FETCH_ASSOC)['total_students'] ?? 0);
@@ -213,13 +216,13 @@ class DashboardRepository
           LEFT JOIN staff st ON bt.staff_id = st.staff_id
           JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
           $campusJoin
-          WHERE bti.status='overdue' $userCampusWhere
+          WHERE (bti.status='overdue' OR bt.status='overdue') $userCampusWhere
       ");
       $overdueBooks = (int) ($stmt->fetch(PDO::FETCH_ASSOC)['overdue_books'] ?? 0);
 
-      $availableBooks = $totalBooks - $borrowedBooks - $overdueBooks;
+      $availableBooks = $totalBooks - $borrowed_books - $overdueBooks;
       $availableBooksPercent = $totalBooks > 0 ? round($availableBooks / $totalBooks * 100, 1) : 0;
-      $borrowedBooksPercent = $totalBooks > 0 ? round(($borrowedBooks + $overdueBooks) / $totalBooks * 100, 1) : 0;
+      $borrowedBooksPercent = $totalBooks > 0 ? round(($borrowed_books + $overdueBooks) / $totalBooks * 100, 1) : 0;
 
       return [
         'success' => true,
@@ -248,7 +251,7 @@ class DashboardRepository
 
   public function getTopVisitors(int $limit = 5, ?int $campusId = null): array
   {
-    $where = "WHERE DATE(a.first_scan_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND c.is_active = 1";
+    $where = "WHERE DATE(a.first_scan_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
     if ($campusId !== null) {
         $where .= " AND u.campus_id = :campus_id";
     }
@@ -257,7 +260,7 @@ class DashboardRepository
         SELECT u.first_name, u.last_name, s.student_number, s.year_level, s.section, COUNT(a.user_id) AS visits
         FROM attendance a
         JOIN users u ON u.user_id = a.user_id
-        JOIN campuses c ON u.campus_id = c.campus_id
+        LEFT JOIN campuses c ON u.campus_id = c.campus_id
         LEFT JOIN students s ON u.user_id = s.user_id
         $where
         GROUP BY a.user_id
@@ -294,8 +297,7 @@ class DashboardRepository
           SELECT COUNT(DISTINCT a.user_id) 
           FROM attendance a 
           JOIN users u ON a.user_id = u.user_id
-          JOIN campuses c ON u.campus_id = c.campus_id
-          WHERE c.is_active = 1 AND DATE(a.first_scan_at) = :date " . ($campusId !== null ? " AND u.campus_id = :campus_id" : "")
+          WHERE DATE(a.first_scan_at) = :date " . ($campusId !== null ? " AND u.campus_id = :campus_id" : "")
       );
       $params = ['date' => $date];
       if ($campusId !== null) $params['campus_id'] = $campusId;
@@ -309,8 +311,7 @@ class DashboardRepository
           LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
           LEFT JOIN staff st ON bt.staff_id = st.staff_id
           JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
-          JOIN campuses c ON u.campus_id = c.campus_id
-          WHERE c.is_active = 1 AND DATE(bt.borrowed_at) = :date " . ($campusId !== null ? " AND u.campus_id = :campus_id" : "")
+          WHERE DATE(bt.borrowed_at) = :date " . ($campusId !== null ? " AND u.campus_id = :campus_id" : "")
       );
       $stmt->execute($params);
       $borrows = (int) $stmt->fetchColumn();
@@ -323,12 +324,11 @@ class DashboardRepository
 
   public function getPopularBooks(int $limit = 5, ?int $campusId = null): array
   {
-    $where = " WHERE c.is_active = 1 " . ($campusId !== null ? " AND b.campus_id = :campus_id" : "");
+    $where = $campusId !== null ? " WHERE b.campus_id = :campus_id" : "";
     $sql = "
         SELECT b.title, b.author, b.accession_number, COUNT(bti.item_id) AS borrow_count
         FROM borrow_transaction_items bti
         JOIN books b ON bti.book_id = b.book_id
-        JOIN campuses c ON b.campus_id = c.campus_id
         $where
         GROUP BY b.book_id, b.title, b.author, b.accession_number
         ORDER BY borrow_count DESC
@@ -343,12 +343,11 @@ class DashboardRepository
 
   public function getRecentActivities(int $limit = 5, ?int $campusId = null): array
   {
-    $where = " WHERE (c.is_active = 1 OR u.campus_id IS NULL) " . ($campusId !== null ? " AND u.campus_id = :campus_id" : "");
+    $where = $campusId !== null ? " WHERE u.campus_id = :campus_id" : "";
     $sql = "
         SELECT al.action, al.details, al.created_at, u.username, CONCAT(u.first_name, ' ', u.last_name) as full_name
         FROM audit_logs al
         LEFT JOIN users u ON al.user_id = u.user_id
-        LEFT JOIN campuses c ON u.campus_id = c.campus_id
         $where
         ORDER BY al.created_at DESC
         LIMIT :limit
@@ -362,23 +361,24 @@ class DashboardRepository
 
   public function getOverdueBooks(int $limit = 5, ?int $campusId = null): array
   {
-    $campusWhere = " AND c.is_active = 1 " . ($campusId !== null ? " AND u.campus_id = :campus_id" : "");
+    $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
     $sql = "
         SELECT 
             CONCAT(u.first_name, ' ', u.last_name) AS borrower_name,
-            b.title,
-            b.accession_number,
+            COALESCE(b.title, e.equipment_name) AS title,
+            COALESCE(b.accession_number, e.asset_tag) AS accession_number,
             bt.due_date,
             DATEDIFF(CURDATE(), bt.due_date) AS days_overdue
         FROM borrow_transaction_items bti
         JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
-        JOIN books b ON bti.book_id = b.book_id
+        LEFT JOIN books b ON bti.book_id = b.book_id
+        LEFT JOIN equipments e ON bti.equipment_id = e.equipment_id
         LEFT JOIN students s ON bt.student_id = s.student_id
         LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
         LEFT JOIN staff st ON bt.staff_id = st.staff_id
         JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
-        JOIN campuses c ON u.campus_id = c.campus_id
-        WHERE bti.status = 'overdue' $campusWhere
+        WHERE (bti.status = 'overdue' OR bt.status = 'overdue' OR (bti.status = 'borrowed' AND bt.due_date < NOW()))
+        $campusWhere
         ORDER BY days_overdue DESC
         LIMIT :limit
     ";
@@ -391,7 +391,7 @@ class DashboardRepository
 
   public function getVisitorBreakdown(string $filter = 'month', ?int $campusId = null): array
   {
-    $whereClause = "WHERE c.is_active = 1";
+    $whereClause = "WHERE 1=1";
     if ($filter === 'day') {
         $whereClause .= " AND DATE(a.first_scan_at) = CURDATE()";
     } elseif ($filter === 'month') {
@@ -408,7 +408,6 @@ class DashboardRepository
         SELECT u.role, COUNT(a.id) AS count
         FROM attendance a
         JOIN users u ON a.user_id = u.user_id
-        JOIN campuses c ON u.campus_id = c.campus_id
         $whereClause
         GROUP BY u.role
     ";
@@ -419,7 +418,6 @@ class DashboardRepository
         SELECT cl.college_name AS department, COUNT(a.id) AS count
         FROM attendance a
         JOIN users u ON a.user_id = u.user_id
-        JOIN campuses c ON u.campus_id = c.campus_id
         JOIN students s ON u.user_id = s.user_id
         JOIN courses c_course ON s.course_id = c_course.course_id
         JOIN colleges cl ON c_course.college_id = cl.college_id

@@ -16,17 +16,17 @@ class StudentBorrowingHistoryRepository
   public function getBorrowingStats(int $userId): array
   {
     $stmt = $this->db->prepare("
-        SELECT 
-            COUNT(bti.item_id) AS total_borrowed,
-            SUM(CASE WHEN bti.status IN ('borrowed', 'overdue') THEN 1 ELSE 0 END) AS currently_borrowed,
-            SUM(CASE WHEN bti.status = 'returned' THEN 1 ELSE 0 END) AS total_returned,
-            SUM(CASE WHEN bti.status = 'overdue' OR (bti.status = 'borrowed' AND bt.due_date < NOW()) THEN 1 ELSE 0 END) AS total_overdue
-        FROM borrow_transactions bt
-        JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
-        JOIN students s ON bt.student_id = s.student_id
-        WHERE s.user_id = :user_id
-        AND bt.status NOT IN ('pending', 'expired')
-    ");
+            SELECT 
+                COUNT(bti.item_id) AS total_borrowed,
+                SUM(CASE WHEN bti.status != 'returned' AND bti.returned_at IS NULL THEN 1 ELSE 0 END) AS currently_borrowed,
+                SUM(CASE WHEN bti.status = 'returned' OR bti.returned_at IS NOT NULL THEN 1 ELSE 0 END) AS total_returned,
+                SUM(CASE WHEN (bti.status = 'overdue' OR (bti.status != 'returned' AND bti.returned_at IS NULL AND bt.due_date < NOW())) THEN 1 ELSE 0 END) AS total_overdue
+            FROM borrow_transactions bt
+            JOIN borrow_transaction_items bti ON bt.transaction_id = bti.transaction_id
+            JOIN students s ON bt.student_id = s.student_id
+            WHERE s.user_id = :user_id
+            AND bt.status NOT IN ('pending', 'expired')
+        ");
     $stmt->execute(['user_id' => $userId]);
     $stats = $stmt->fetch(\PDO::FETCH_ASSOC);
 
@@ -37,7 +37,6 @@ class StudentBorrowingHistoryRepository
       'total_overdue' => (int)($stats['total_overdue'] ?? 0)
     ];
   }
-
   public function getDetailedHistory(int $userId): array
   {
     $stmt = $this->db->prepare("

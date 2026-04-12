@@ -46,11 +46,10 @@ class BorrowingHistoryService
     }
 
     /**
-     * Get faculty/staff borrowing history (can be expanded to use specific repos)
+     * Get faculty/staff borrowing history
      */
     public function getOtherHistory(string $role, int $userId, int $limit, int $offset): array
     {
-        // Simple logic here, can be more specific if repositories differ significantly
         if ($role === 'faculty') {
             $history = $this->facultyRepo->getPaginatedBorrowingHistory($userId, $limit, $offset);
             $total = $this->facultyRepo->countBorrowingHistory($userId);
@@ -63,6 +62,18 @@ class BorrowingHistoryService
             'history' => $this->formatHistoryRecords($history),
             'total' => $total
         ];
+    }
+
+    /**
+     * Get faculty/staff borrowing stats
+     */
+    public function getOtherStats(string $role, int $userId): array
+    {
+        if ($role === 'faculty') {
+            return $this->facultyRepo->getBorrowingStats($userId);
+        } else {
+            return $this->staffRepo->getBorrowingStats($userId);
+        }
     }
 
     /**
@@ -79,23 +90,50 @@ class BorrowingHistoryService
     private function formatHistoryRecords(array $history): array
     {
         return array_map(function ($record) {
-            $dueDate = strtotime($record['due_date']);
-            $returnedDate = $record['returned_at'] ? strtotime($record['returned_at']) : null;
-            $now = time();
-
-            $status = $record['status'];
-            $isOverdue = ($status === 'overdue') || ($status === 'borrowed' && ($dueDate < $now));
+            $dueDateStr = $record['due_date'] ?? null;
+            $returnedAt = $record['returned_at'] ?? null;
+            $dbStatus = !empty($record['status']) ? strtolower(trim($record['status'])) : '';
             
+            $now = time();
+            $isOverdue = false;
+            
+            if ($dueDateStr && !$returnedAt) {
+                $dueDateTimestamp = strtotime($dueDateStr);
+                $dueDateEnd = strtotime(date('Y-m-d 23:59:59', $dueDateTimestamp));
+                
+                // If it's explicitly marked as overdue OR it's borrowed but past due date
+                if ($dbStatus === 'overdue' || ($now > $dueDateEnd)) {
+                    $isOverdue = true;
+                }
+            }
+
+            // Determine final status for display
+            $status = $dbStatus;
+            if (empty($status)) {
+                $status = $isOverdue ? 'overdue' : 'borrowed';
+            }
+
             $statusText = ucfirst($status);
             $statusBgClass = 'bg-gray-100 text-gray-700'; 
 
-            if ($status === 'returned') {
+            if ($status === 'returned' || !empty($returnedAt)) {
+                 $status = 'returned';
                  $statusBgClass = 'bg-green-100 text-green-700';
-            } elseif ($isOverdue) {
-                $statusText = ($status === 'overdue') ? 'Overdue' : 'Borrowed'; 
+                 $statusText = 'Returned';
+                 $isOverdue = false; // Cannot be overdue if returned
+            } elseif ($isOverdue || $status === 'overdue') {
                  $statusBgClass = 'bg-red-100 text-red-700';
+                 $statusText = 'Overdue';
+                 $isOverdue = true;
             } elseif ($status === 'borrowed') {
-                $statusBgClass = 'bg-amber-100 text-amber-700';
+                 $statusBgClass = 'bg-amber-100 text-amber-700';
+                 $statusText = 'Borrowed';
+            } elseif ($status === 'lost') {
+                 $statusBgClass = 'bg-red-200 text-red-800';
+                 $statusText = 'Lost';
+            } elseif ($status === 'damaged') {
+                 $statusBgClass = 'bg-orange-100 text-orange-700';
+                 $statusText = 'Damaged';
             }
 
             return [
@@ -104,8 +142,8 @@ class BorrowingHistoryService
                 'author' => $record['author'] ?? 'N/A',
                 'item_type' => $record['item_type'] ?? 'Book',
                 'borrowedDate' => $record['borrowed_at'] ? date('M d, Y', strtotime($record['borrowed_at'])) : 'N/A',
-                'dueDate' => $record['due_date'] ? date('M d, Y', $dueDate) : 'N/A',
-                'returnedDate' => $returnedDate ? date('M d, Y', $returnedDate) : 'Not returned',
+                'dueDate' => $dueDateStr ? date('M d, Y', strtotime($dueDateStr)) : 'N/A',
+                'returnedDate' => $returnedAt ? date('M d, Y', strtotime($returnedAt)) : 'Not returned',
                 'librarianName' => $record['librarian_name'] ?? 'N/A',
                 'statusText' => $statusText,
                 'statusBgClass' => $statusBgClass,

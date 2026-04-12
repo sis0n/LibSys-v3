@@ -42,6 +42,9 @@ class DashboardService
      */
     public function getDetailedData(?int $campusId): array
     {
+        // Ensure overdue statuses are updated in the database first
+        $this->dashboardRepo->updateOverdueStatuses();
+
         // Summary stats
         $totalBooks = $this->dashboardRepo->countBooks($campusId);
         $availableBooks = $this->dashboardRepo->countAvailableBooks($campusId);

@@ -15,27 +15,16 @@ class OverdueRepository
         $this->db = Database::getInstance()->getConnection();
     }
 
-    private function getBorrowerJoinSql()
-    {
-        return "
-            LEFT JOIN students s ON bt.student_id = s.student_id
-            LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
-            LEFT JOIN staff st ON bt.staff_id = st.staff_id
-            JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
-        ";
-    }
-
     public function getOverdueStats(?int $campusId = null): array
     {
-        // Refresh statuses first
+        // 1. Refresh statuses: Set transaction to overdue if it's still 'borrowed' but past due date
         $this->db->query("UPDATE borrow_transactions SET status = 'overdue' WHERE status = 'borrowed' AND due_date < NOW()");
+        
+        // 2. Sync items: Set item status to overdue if the parent transaction is overdue and item isn't returned
         $this->db->query("UPDATE borrow_transaction_items bti 
                           INNER JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
                           SET bti.status = 'overdue' 
-                          WHERE bt.status = 'overdue' AND bti.status = 'borrowed'");
-
-        $campusWhere = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
-        $borrowerJoin = $this->getBorrowerJoinSql();
+                          WHERE bt.status = 'overdue' AND bti.returned_at IS NULL AND bti.status != 'overdue'");
 
         $stats = [
             'total' => 0,
@@ -44,22 +33,36 @@ class OverdueRepository
             'notified_today' => 0
         ];
 
-        $stmt = $this->db->query("SELECT COUNT(*) FROM borrow_transaction_items bti JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id $borrowerJoin WHERE bti.status = 'overdue' $campusWhere");
-        $stats['total'] = (int)$stmt->fetchColumn();
+        // OVERDUE CONDITION: Parent transaction is 'overdue' OR (Transaction not returned AND due_date passed)
+        $overdueCondition = "(bt.status = 'overdue' OR (bt.status = 'borrowed' AND bt.due_date < NOW())) AND bti.returned_at IS NULL";
+        
+        $campusJoin = "";
+        $campusWhere = "";
+        if ($campusId !== null) {
+            $campusJoin = "
+                LEFT JOIN students s ON bt.student_id = s.student_id
+                LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+                LEFT JOIN staff st ON bt.staff_id = st.staff_id
+                LEFT JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+            ";
+            $campusWhere = " AND u.campus_id = " . (int)$campusId;
+        }
 
-        $stmt = $this->db->query("
-            SELECT COUNT(*) FROM borrow_transaction_items bti
-            JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
-            $borrowerJoin
-            WHERE bti.status = 'overdue' AND DATEDIFF(NOW(), bt.due_date) > 7 $campusWhere
-        ");
-        $stats['critical'] = (int)$stmt->fetchColumn();
+        // Total Overdue
+        $sqlTotal = "SELECT COUNT(bti.item_id) FROM borrow_transaction_items bti JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id $campusJoin WHERE $overdueCondition $campusWhere";
+        $stats['total'] = (int)$this->db->query($sqlTotal)->fetchColumn();
 
-        $stmt = $this->db->query("SELECT COUNT(*) FROM borrow_transactions bt $borrowerJoin WHERE DATE(bt.due_date) = CURDATE() AND bt.status = 'borrowed' $campusWhere");
-        $stats['due_today'] = (int)$stmt->fetchColumn();
+        // Critical Overdue (> 7 days late)
+        $sqlCritical = "SELECT COUNT(bti.item_id) FROM borrow_transaction_items bti JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id $campusJoin WHERE $overdueCondition AND DATEDIFF(NOW(), bt.due_date) > 7 $campusWhere";
+        $stats['critical'] = (int)$this->db->query($sqlCritical)->fetchColumn();
 
-        $stmt = $this->db->query("SELECT COUNT(*) FROM notification_logs nl JOIN users u ON nl.recipient_user_id = u.user_id WHERE DATE(nl.sent_at) = CURDATE() $campusWhere");
-        $stats['notified_today'] = (int)$stmt->fetchColumn();
+        // Due Today
+        $sqlDueToday = "SELECT COUNT(bt.transaction_id) FROM borrow_transactions bt " . ($campusId !== null ? $campusJoin : "") . " WHERE DATE(bt.due_date) = CURDATE() AND bt.status = 'borrowed' $campusWhere";
+        $stats['due_today'] = (int)$this->db->query($sqlDueToday)->fetchColumn();
+
+        // Notified Today
+        $sqlNotified = "SELECT COUNT(nl.id) FROM notification_logs nl " . ($campusId !== null ? " JOIN users u ON nl.recipient_user_id = u.user_id " : "") . " WHERE DATE(nl.sent_at) = CURDATE() $campusWhere";
+        $stats['notified_today'] = (int)$this->db->query($sqlNotified)->fetchColumn();
 
         return $stats;
     }
@@ -67,17 +70,21 @@ class OverdueRepository
     public function fetchOverdueList($filters = [], ?int $campusId = null): array
     {
         $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
-        
+        $overdueCondition = "(bt.status = 'overdue' OR (bt.status = 'borrowed' AND bt.due_date < NOW())) AND bti.returned_at IS NULL";
+
         $sql = "
             SELECT 
-                bti.item_id, bti.status, bti.returned_at,
-                bt.due_date, bt.borrowed_at, bt.transaction_id,
+                bti.item_id, bti.status as item_status, bti.returned_at,
+                bt.due_date, bt.borrowed_at, bt.transaction_id, bt.status as transaction_status,
                 COALESCE(b.title, e.equipment_name) AS item_title, 
                 COALESCE(b.accession_number, e.asset_tag) AS accession_number,
-                u.first_name, u.last_name, u.email, u.user_id,
-                COALESCE(s.student_number, f.unique_faculty_id, st.employee_id) AS student_number,
-                s.year_level, s.section,
-                COALESCE(c.course_code, cl.college_code) as dept_code,
+                COALESCE(u.first_name, 'Unknown') as first_name, 
+                COALESCE(u.last_name, 'User') as last_name, 
+                u.email, u.user_id,
+                COALESCE(s.student_number, f.unique_faculty_id, st.employee_id, 'N/A') AS student_number,
+                COALESCE(s.year_level, 'N/A') as year_level, 
+                COALESCE(s.section, 'N/A') as section,
+                COALESCE(c.course_code, cl.college_code, 'N/A') as dept_code,
                 DATEDIFF(NOW(), bt.due_date) as days_late,
                 (SELECT MAX(sent_at) FROM notification_logs WHERE borrowing_item_id = bti.item_id) as last_notified,
                 (SELECT COUNT(*) FROM notification_logs WHERE borrowing_item_id = bti.item_id) as notification_count
@@ -88,10 +95,11 @@ class OverdueRepository
             LEFT JOIN students s ON bt.student_id = s.student_id
             LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
             LEFT JOIN staff st ON bt.staff_id = st.staff_id
-            JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+            LEFT JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
             LEFT JOIN courses c ON s.course_id = c.course_id
             LEFT JOIN colleges cl ON f.college_id = cl.college_id
-            WHERE bti.status = 'overdue' $campusWhere
+            WHERE $overdueCondition
+            $campusWhere
         ";
 
         $params = [];
