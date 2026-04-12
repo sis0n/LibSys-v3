@@ -4,9 +4,10 @@
             <i class="ph ph-desktop text-orange-600"></i>
             Equipment Management
         </h2>
-        <p class="text-gray-700">Manage library equipments, availability, and inventory.</p>
+        <p class="text-gray-700">Manage library equipment, availability, and inventory.</p>
     </div>
     <div class="flex gap-2 text-sm">
+        <?php if ($permissions['multi_delete'] ?? false): ?>
         <button
             class="px-4 py-2 border border-orange-200 text-orange-700 font-bold rounded-lg hover:bg-orange-50 transition shadow-sm flex items-center gap-2"
             id="multiSelectBtn">
@@ -27,31 +28,35 @@
                 <i class="ph ph-x"></i> Cancel
             </button>
         </div>
+        <?php endif; ?>
+
+        <?php if ($permissions['add'] ?? false): ?>
         <button
             class="px-4 py-2 bg-orange-500 text-white font-medium rounded-lg border border-orange-600 hover:bg-orange-600 gap-2 inline-flex items-center shadow-sm transition-all"
             id="openAddEqBtn">
             <i class="ph ph-plus"></i>
             Add New Equipment
         </button>
+        <?php endif; ?>
     </div>
 </div>
 
-<div class="bg-[var(--color-card)] border border-orange-200 rounded-xl shadow-sm p-6 mt-6">
-    <div class="flex items-center justify-between mb-4">
+<div class="bg-[var(--color-card)] border border-orange-200 rounded-xl shadow-sm p-6 mt-6 text-left">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
         <div>
             <h3 class="text-lg font-semibold text-gray-800">Equipment Inventory</h3>
             <p class="text-sm text-gray-600">Total registered items in the system</p>
         </div>
-        <div class="flex items-center text-sm">
-            <div class="relative w-[330px]">
+        <div class="flex flex-wrap items-center gap-3 text-sm">
+            <div class="relative w-full md:w-[330px]">
                 <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
                 <input type="text" id="eqSearchInput" placeholder="Search by name or asset tag..."
                     class="bg-orange-50 border border-orange-200 rounded-lg pl-9 pr-3 py-2 outline-none transition text-sm w-full focus:ring-1 focus:ring-orange-300">
             </div>
             
-            <div class="relative inline-block text-left ml-3">
+            <div class="relative inline-block text-left">
                 <button id="eqStatusDropdownBtn"
-                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-36 hover:bg-orange-50 transition">
+                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 min-w-[140px] hover:bg-orange-50 transition">
                     <span>
                         <i class="ph ph-check-circle text-gray-500"></i>
                         <span id="eqStatusDropdownValue">All Status</span>
@@ -70,9 +75,10 @@
                 </div>
             </div>
 
-            <div class="relative inline-block text-left ml-3">
+            <?php if (!($filters['campus_locked'] ?? false)): ?>
+            <div class="relative inline-block text-left">
                 <button id="eqCampusDropdownBtn"
-                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition">
+                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 min-w-[170px] hover:bg-orange-50 transition">
                     <span>
                         <i class="ph ph-buildings text-gray-500"></i>
                         <span id="eqCampusDropdownValue">All Campuses</span>
@@ -82,14 +88,10 @@
                 <div id="eqCampusDropdownMenu"
                     class="absolute mt-1 w-full bg-white border border-orange-200 rounded-lg shadow-md hidden z-20">
                     <div class="campus-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectEqCampus(this, '', 'All Campuses')">All Campuses</div>
-                    <?php foreach ($campuses as $campus): ?>
-                        <div class="campus-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" 
-                             onclick="selectEqCampus(this, '<?= $campus['campus_id'] ?>', '<?= $campus['campus_name'] ?>')">
-                            <?= $campus['campus_name'] ?>
-                        </div>
-                    <?php endforeach; ?>
+                    <!-- Campuses loaded via JS -->
                 </div>
             </div>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -97,10 +99,11 @@
         <h4 id="eqResultsIndicator" class="text-sm text-gray-600 font-medium">Loading...</h4>
     </div>
 
-    <div class="overflow-hidden border border-orange-200 rounded-lg shadow-sm">
+    <div class="overflow-x-auto border border-orange-200 rounded-lg shadow-sm">
         <table class="min-w-full text-sm text-gray-700">
             <thead class="bg-orange-100 text-left text-gray-800">
                 <tr>
+                    <th id="multi-select-header" class="py-3 px-4 font-medium hidden w-10 text-center"></th>
                     <th class="py-3 px-4 font-medium text-left">Equipment Name</th>
                     <th class="py-3 px-4 font-medium text-left">Campus</th>
                     <th class="py-3 px-4 font-medium text-left">Asset Tag</th>
@@ -112,7 +115,7 @@
             </thead>
             <tbody id="eqTableBody" class="divide-y divide-orange-100 bg-white">
                 <tr>
-                    <td colspan="7" class="py-10 text-center text-gray-500">
+                    <td colspan="8" class="py-10 text-center text-gray-500">
                         <i class="ph ph-spinner animate-spin text-2xl"></i>
                     </td>
                 </tr>
@@ -126,8 +129,9 @@
 </div>
 
 <!-- Add Equipment Modal -->
-<div id="addEqModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
-    <div class="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md animate-fadeIn">
+<?php if ($permissions['add'] ?? false): ?>
+<div id="addEqModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+    <div class="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md animate-fadeIn text-left">
         <div class="flex justify-between items-start p-6 border-b border-gray-100">
             <div>
                 <h2 class="text-lg font-semibold text-gray-900">Add New Equipment</h2>
@@ -144,12 +148,14 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Campus <span class="text-red-500">*</span></label>
-                <select name="campus_id" required class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500 bg-white">
+                <select name="campus_id" required class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+                    <?= ($filters['campus_locked'] ?? false) ? 'disabled' : '' ?>>
                     <option value="" disabled selected>Select Campus</option>
-                    <?php foreach ($campuses as $campus): ?>
-                        <option value="<?= $campus['campus_id'] ?>"><?= $campus['campus_name'] ?></option>
-                    <?php endforeach; ?>
+                    <!-- Campuses loaded via JS -->
                 </select>
+                <?php if ($filters['campus_locked'] ?? false): ?>
+                    <input type="hidden" name="campus_id" value="<?= $filters['default_campus'] ?>">
+                <?php endif; ?>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Asset Tag</label>
@@ -164,15 +170,16 @@
                 </select>
             </div>
             <div class="flex justify-end gap-3 pt-4">
-                <button type="button" id="cancelAddEq" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
-                <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition">Add Equipment</button>
+                <button type="button" id="cancelAddEq" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition font-medium">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition font-medium">Add Equipment</button>
             </div>
         </form>
     </div>
 </div>
+<?php endif; ?>
 
 <!-- Edit Equipment Modal -->
-<div id="editEqModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+<div id="editEqModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4 text-left">
     <div class="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md animate-fadeIn">
         <div class="flex justify-between items-start p-6 border-b border-gray-100">
             <div>
@@ -191,12 +198,14 @@
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Campus <span class="text-red-500">*</span></label>
-                <select id="edit_campus_id" name="campus_id" required class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500 bg-white">
+                <select id="edit_campus_id" name="campus_id" required class="w-full border border-gray-300 rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+                    <?= ($filters['campus_locked'] ?? false) ? 'disabled' : '' ?>>
                     <option value="" disabled>Select Campus</option>
-                    <?php foreach ($campuses as $campus): ?>
-                        <option value="<?= $campus['campus_id'] ?>"><?= $campus['campus_name'] ?></option>
-                    <?php endforeach; ?>
+                    <!-- Campuses loaded via JS -->
                 </select>
+                <?php if ($filters['campus_locked'] ?? false): ?>
+                    <input type="hidden" name="campus_id" value="<?= $filters['default_campus'] ?>">
+                <?php endif; ?>
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Asset Tag</label>
@@ -213,12 +222,12 @@
                 </select>
             </div>
             <div class="flex justify-end gap-3 pt-4">
-                <button type="button" id="cancelEditEq" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
-                <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition">Save Changes</button>
+                <button type="button" id="cancelEditEq" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition font-medium">Cancel</button>
+                <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition font-medium">Save Changes</button>
             </div>
         </form>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="<?= BASE_URL ?>/js/superadmin/equipmentManagement.js" defer></script>
+<script src="<?= BASE_URL ?>/js/management/equipmentManagement.js" defer></script>

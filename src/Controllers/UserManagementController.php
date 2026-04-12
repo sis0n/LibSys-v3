@@ -18,17 +18,52 @@ class UserManagementController extends Controller
         // RBAC: Restricted roles for User Management
         $role = $_SESSION['role'] ?? '';
         if (RoleHelper::isLibrarian($role) || !RoleHelper::isStaff($role) || RoleHelper::compareNormalize($role) === RoleHelper::compareNormalize(RoleHelper::SCANNER)) {
-            http_response_code(403);
-            die("Forbidden: Access denied.");
+            // Check if user has explicit 'user management' permission
+            $userId = $_SESSION['user_id'] ?? null;
+            if ($userId) {
+                $userPermissionsRepo = new \App\Repositories\UserPermissionModuleRepository();
+                if (!$userPermissionsRepo->hasAccess($userId, 'user management')) {
+                    http_response_code(403);
+                    die("Forbidden: Access denied.");
+                }
+            } else {
+                http_response_code(403);
+                die("Forbidden: Access denied.");
+            }
         }
         $this->userService = new UserService();
     }
 
     public function index()
     {
-        $this->view('superadmin/userManagement', [
+        $role = strtolower($_SESSION['role'] ?? '');
+        $campusId = $_SESSION['user_data']['campus_id'] ?? null;
+
+        $campusRepo = new \App\Repositories\CampusRepository();
+        $allCampuses = $campusRepo->getAllCampuses();
+        $activeCampuses = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);
+
+        $data = [
             'title' => 'User Management',
-        ]);
+            'currentPage' => 'userManagement',
+            'campuses' => $activeCampuses,
+            'permissions' => [
+                'add' => true,
+                'edit' => true,
+                'delete' => RoleHelper::isSuperadmin($role) || RoleHelper::isCampusAdmin($role) || RoleHelper::isAdmin($role),
+                'bulk_import' => RoleHelper::isSuperadmin($role) || RoleHelper::isCampusAdmin($role) || RoleHelper::isAdmin($role),
+                'multi_select' => true,
+                'allow_edit' => true,
+                'manage_permissions' => RoleHelper::isSuperadmin($role) || RoleHelper::isAdmin($role) || RoleHelper::isCampusAdmin($role),
+            ],
+            'filters' => [
+                'campus_locked' => !RoleHelper::isSuperadmin($role),
+                'default_campus' => $campusId
+            ],
+            'user_role' => $role
+        ];
+
+        $this->view('management/userManagement/index', $data);
     }
 
     public function fetchPaginatedUsers()

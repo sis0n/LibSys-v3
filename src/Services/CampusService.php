@@ -26,6 +26,14 @@ class CampusService
     }
 
     /**
+     * Get active campuses only
+     */
+    public function getActiveCampuses(): array
+    {
+        return $this->campusRepo->getActiveCampuses();
+    }
+
+    /**
      * Create a new campus
      */
     public function createCampus(string $name, string $code, int $adminId): array

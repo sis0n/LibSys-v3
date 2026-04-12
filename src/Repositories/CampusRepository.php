@@ -21,6 +21,12 @@ class CampusRepository
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    public function getActiveCampuses()
+    {
+        $stmt = $this->db->query("SELECT * FROM campuses WHERE is_active = 1 ORDER BY campus_name ASC");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function getById(int $id): ?array
     {
         $stmt = $this->db->prepare("SELECT * FROM campuses WHERE campus_id = :id");

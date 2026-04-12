@@ -19,6 +19,29 @@ class BookManagementController extends Controller
         $this->storageService = new StorageService();
     }
 
+    public function index()
+    {
+        $role = $_SESSION['role'] ?? 'guest';
+        
+        $data = [
+            'title' => 'Book Management',
+            'currentPage' => 'bookManagement',
+            'permissions' => [
+                'add' => true, // Librarians and above can add
+                'edit' => true,
+                'delete' => $role === 'superadmin' || $role === 'admin' || $role === 'campus_admin',
+                'bulk_import' => $role === 'superadmin' || $role === 'admin' || $role === 'campus_admin',
+                'multi_delete' => $role === 'superadmin' || $role === 'admin' || $role === 'campus_admin'
+            ],
+            'filters' => [
+                'campus_locked' => !in_array($role, ['superadmin', 'admin']),
+                'default_campus' => $_SESSION['user_data']['campus_id'] ?? null
+            ]
+        ];
+
+        $this->view("management/bookManagement/index", $data);
+    }
+
     public function fetch()
     {
         try {

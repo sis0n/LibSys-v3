@@ -22,18 +22,26 @@ class EquipmentManagementController extends Controller
     public function index()
     {
         $role = $_SESSION['role'] ?? 'guest';
-        $viewPath = ucfirst($role) . "/equipmentManagement";
         
-        $campuses = $this->campusService->getAllCampuses();
-        $activeCampuses = array_filter($campuses, fn($c) => $c['is_active'] == 1);
+        $data = [
+            'title' => 'Equipment Management',
+            'currentPage' => 'equipmentManagement',
+            'permissions' => [
+                'add' => true,
+                'edit' => true,
+                'delete' => $role === 'superadmin' || $role === 'admin' || $role === 'campus_admin',
+                'multi_delete' => $role === 'superadmin' || $role === 'admin' || $role === 'campus_admin'
+            ],
+            'filters' => [
+                'campus_locked' => !in_array($role, ['superadmin', 'admin']),
+                'default_campus' => $_SESSION['user_data']['campus_id'] ?? null
+            ]
+        ];
 
-        $this->view($viewPath, [
-            "title" => "Equipment Management",
-            "campuses" => $activeCampuses
-        ]);
+        $this->view("management/equipmentManagement/index", $data);
     }
 
-    public function getAll()
+    public function fetch()
     {
         try {
             $campusFilter = $this->getCampusFilter();

@@ -20,7 +20,7 @@ class BookService
     /**
      * Get paginated books with filters
      */
-    public function getPaginatedBooks(array $params, ?int $campusId): array
+    public function getPaginatedBooks(array $params, ?int $campusIdRestriction): array
     {
         $limit = (int)($params['limit'] ?? 30);
         $offset = (int)($params['offset'] ?? 0);
@@ -28,8 +28,11 @@ class BookService
         $status = $params['status'] ?? 'All Status';
         $sort = $params['sort'] ?? 'default';
 
-        $books = $this->bookRepo->getPaginatedBooks($limit, $offset, $search, $status, $sort, $campusId);
-        $totalCount = $this->bookRepo->countPaginatedBooks($search, $status, $campusId);
+        // Use restricted campusId if set, otherwise use campus_id from request params
+        $finalCampusId = $campusIdRestriction ?? (!empty($params['campus_id']) ? (int)$params['campus_id'] : null);
+
+        $books = $this->bookRepo->getPaginatedBooks($limit, $offset, $search, $status, $sort, $finalCampusId);
+        $totalCount = $this->bookRepo->countPaginatedBooks($search, $status, $finalCampusId);
 
         return ['books' => $books, 'totalCount' => $totalCount];
     }
@@ -201,42 +204,62 @@ class BookService
         }
 
         $columnMapping = [
-            'accession_number' => $headerMap['accession_number'] ?? null,
-            'call_number'      => $headerMap['call_number']      ?? null,
-            'title'            => $headerMap['title']            ?? null,
-            'author'           => $headerMap['author']           ?? null,
-            'campus'           => $headerMap['campus']           ?? null,
+            'accession_number'  => $headerMap['accession_number']  ?? null,
+            'call_number'       => $headerMap['call_number']       ?? null,
+            'title'             => $headerMap['title']             ?? null,
+            'author'            => $headerMap['author']            ?? null,
+            'book_place'        => $headerMap['place']             ?? null,
+            'book_publisher'    => $headerMap['publisher']         ?? null,
+            'year'              => $headerMap['year']              ?? null,
+            'book_edition'      => $headerMap['edition']           ?? null,
+            'description'       => $headerMap['desc']              ?? null,
+            'book_isbn'         => $headerMap['isbn']              ?? null,
+            'book_supplementary'=> $headerMap['supp']              ?? null,
+            'subject'           => $headerMap['subj']              ?? null,
+            'campus'            => $headerMap['campus']            ?? null,
         ];
 
         // Basic validation of mapping
-        foreach (['accession_number', 'title', 'author', 'campus'] as $required) {
+        foreach (['accession_number', 'title', 'campus'] as $required) {
             if ($columnMapping[$required] === null) throw new Exception("Missing required CSV header: $required");
         }
 
         $imported = 0;
         $booksToInsert = [];
-        $batchSize = 500;
+        $batchSize = 250;
         $rowNumber = 2;
 
         while (($row = fgetcsv($handle)) !== false) {
-            $accessionNumber = trim($row[$columnMapping['accession_number']] ?? '');
-            $campusInput = strtoupper(trim($row[$columnMapping['campus']] ?? ''));
+            // Helper to get value safely
+            $getV = function($key) use ($row, $columnMapping) {
+                $idx = $columnMapping[$key] ?? null;
+                return ($idx !== null && isset($row[$idx])) ? trim($row[$idx]) : null;
+            };
+
+            $accessionNumber = trim($getV('accession_number') ?? '');
+            $campusInput = strtoupper(trim($getV('campus') ?? ''));
             
-            if ($accessionNumber === '') throw new Exception("Row $rowNumber: Accession number is missing.");
+            if ($accessionNumber === '') continue;
             
             $campusId = $campusIdFilter ?? ($campusMap[$campusInput] ?? null);
-            if ($campusId === null) throw new Exception("Row $rowNumber: Invalid campus '$campusInput'.");
-
-            $accessionKey = strtoupper($accessionNumber) . '|' . $campusId;
-            if (isset($existingAccessions[$accessionKey])) throw new Exception("Row $rowNumber: Accession number '$accessionNumber' already exists for this campus.");
+            if ($campusId === null) continue;
 
             $booksToInsert[] = [
-                'accession_number' => $accessionNumber,
-                'title' => trim($row[$columnMapping['title']] ?? ''),
-                'author' => trim($row[$columnMapping['author']] ?? ''),
-                'call_number' => trim($row[$columnMapping['call_number']] ?? null),
-                'campus_id' => $campusId,
-                'availability' => 'available'
+                'accession_number'  => $accessionNumber,
+                'call_number'       => $getV('call_number'),
+                'title'             => $getV('title') ?? 'Untitled',
+                'author'            => $getV('author') ?? 'Unknown',
+                'book_place'        => $getV('book_place'),
+                'book_publisher'    => $getV('book_publisher'),
+                'campus_id'         => $campusId,
+                'year'              => $getV('year'),
+                'book_edition'      => $getV('book_edition'),
+                'description'       => $getV('description'),
+                'book_isbn'         => $getV('book_isbn'),
+                'book_supplementary'=> $getV('book_supplementary'),
+                'subject'           => $getV('subject'),
+                'availability'      => 'available',
+                'borrowing_duration_override' => 0
             ];
 
             if (count($booksToInsert) >= $batchSize) {

@@ -73,18 +73,18 @@ class RouteConfig
     $router->get('api/staff/borrowing-history/stats', 'StaffBorrowingHistoryController@fetchStats', ['staff']);
 
 
-    $router->get('api/librarian/booksmanagement/fetch', 'BookManagementController@fetch', ['book management', 'librarian']);
-    $router->get('api/librarian/booksmanagement/get/{id}', 'BookManagementController@getDetails', ['book management', 'librarian']);
-    $router->get('api/librarian/booksmanagement/details/{id}', 'BookManagementController@getDetails', ['book management', 'librarian']);
-    $router->post('api/librarian/booksmanagement/store', 'BookManagementController@store', ['book management', 'librarian']);
-    $router->post('api/librarian/booksmanagement/add', 'BookManagementController@store', ['book management', 'librarian']);
-    $router->post('api/librarian/booksmanagement/update/{id}', 'BookManagementController@update', ['book management', 'librarian']);
-    $router->post('api/librarian/booksmanagement/delete/{id}', 'BookManagementController@destroy', ['book management', 'librarian']);
-    $router->post('api/librarian/booksmanagement/reactivate/{id}', 'BookManagementController@reactivate', ['book management', 'librarian']);
-    $router->post('api/librarian/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['book management', 'librarian']);
-    $router->post('api/librarian/booksmanagement/bulkImport', 'BookManagementController@bulkImport', ['book management', 'librarian']);
-    $router->get('api/librarian/booksmanagement/history/{id}', 'BookManagementController@getBookBorrowingHistory', ['book management', 'librarian']);
-    $router->get('api/librarian/equipmentManagement/fetch', 'EquipmentManagementController@getAll', ['equipment management', 'librarian']);
+    $router->get('api/librarian/bookManagement/fetch', 'BookManagementController@fetch', ['book management', 'librarian']);
+    $router->get('api/librarian/bookManagement/get/{id}', 'BookManagementController@getDetails', ['book management', 'librarian']);
+    $router->get('api/librarian/bookManagement/details/{id}', 'BookManagementController@getDetails', ['book management', 'librarian']);
+    $router->post('api/librarian/bookManagement/store', 'BookManagementController@store', ['book management', 'librarian']);
+    $router->post('api/librarian/bookManagement/add', 'BookManagementController@store', ['book management', 'librarian']);
+    $router->post('api/librarian/bookManagement/update/{id}', 'BookManagementController@update', ['book management', 'librarian']);
+    $router->post('api/librarian/bookManagement/delete/{id}', 'BookManagementController@destroy', ['book management', 'librarian']);
+    $router->post('api/librarian/bookManagement/reactivate/{id}', 'BookManagementController@reactivate', ['book management', 'librarian']);
+    $router->post('api/librarian/bookManagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['book management', 'librarian']);
+    $router->post('api/librarian/bookManagement/bulkImport', 'BookManagementController@bulkImport', ['book management', 'librarian']);
+    $router->get('api/librarian/bookManagement/history/{id}', 'BookManagementController@getBookBorrowingHistory', ['book management', 'librarian']);
+    $router->get('api/librarian/equipmentManagement/fetch', 'EquipmentManagementController@fetch', ['equipment management', 'librarian']);
     $router->get('api/librarian/equipmentManagement/get/{id}', 'EquipmentManagementController@get', ['equipment management', 'librarian']);
     $router->post('api/librarian/equipmentManagement/store', 'EquipmentManagementController@store', ['equipment management', 'librarian']);
     $router->post('api/librarian/equipmentManagement/update/{id}', 'EquipmentManagementController@update', ['equipment management', 'librarian']);
@@ -119,18 +119,18 @@ class RouteConfig
 
 
 
-     $router->get('api/admin/booksmanagement/fetch', 'BookManagementController@fetch', ['book management', 'librarian']);
-    $router->get('api/admin/booksmanagement/get/{id}', 'BookManagementController@getDetails', ['book management', 'librarian']);
-    $router->get('api/admin/booksmanagement/details/{id}', 'BookManagementController@getDetails', ['book management', 'librarian']);
-    $router->post('api/admin/booksmanagement/store', 'BookManagementController@store', ['book management', 'librarian']);
-    $router->post('api/admin/booksmanagement/add', 'BookManagementController@store', ['book management', 'librarian']);
-    $router->post('api/admin/booksmanagement/update/{id}', 'BookManagementController@update', ['book management', 'librarian']);
-    $router->post('api/admin/booksmanagement/delete/{id}', 'BookManagementController@destroy', ['book management', 'librarian']);
-    $router->post('api/admin/booksmanagement/reactivate/{id}', 'BookManagementController@reactivate', ['book management', 'librarian']);
-    $router->post('api/admin/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['book management', 'librarian']);
-    $router->post('api/admin/booksmanagement/bulkImport', 'BookManagementController@bulkImport', ['book management', 'librarian']);
-    $router->get('api/admin/booksmanagement/history/{id}', 'BookManagementController@getBookBorrowingHistory', ['book management', 'librarian']);
-    $router->get('api/admin/equipmentManagement/fetch', 'EquipmentManagementController@getAll', ['equipment management', 'librarian']);
+     $router->get('api/admin/bookManagement/fetch', 'BookManagementController@fetch', ['book management', 'librarian']);
+    $router->get('api/admin/bookManagement/get/{id}', 'BookManagementController@getDetails', ['book management', 'librarian']);
+    $router->get('api/admin/bookManagement/details/{id}', 'BookManagementController@getDetails', ['book management', 'librarian']);
+    $router->post('api/admin/bookManagement/store', 'BookManagementController@store', ['book management', 'librarian']);
+    $router->post('api/admin/bookManagement/add', 'BookManagementController@store', ['book management', 'librarian']);
+    $router->post('api/admin/bookManagement/update/{id}', 'BookManagementController@update', ['book management', 'librarian']);
+    $router->post('api/admin/bookManagement/delete/{id}', 'BookManagementController@destroy', ['book management', 'librarian']);
+    $router->post('api/admin/bookManagement/reactivate/{id}', 'BookManagementController@reactivate', ['book management', 'librarian']);
+    $router->post('api/admin/bookManagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['book management', 'librarian']);
+    $router->post('api/admin/bookManagement/bulkImport', 'BookManagementController@bulkImport', ['book management', 'librarian']);
+    $router->get('api/admin/bookManagement/history/{id}', 'BookManagementController@getBookBorrowingHistory', ['book management', 'librarian']);
+    $router->get('api/admin/equipmentManagement/fetch', 'EquipmentManagementController@fetch', ['equipment management', 'librarian']);
     $router->get('api/admin/equipmentManagement/get/{id}', 'EquipmentManagementController@get', ['equipment management', 'librarian']);
     $router->post('api/admin/equipmentManagement/store', 'EquipmentManagementController@store', ['equipment management', 'librarian']);
     $router->post('api/admin/equipmentManagement/update/{id}', 'EquipmentManagementController@update', ['equipment management', 'librarian']);
@@ -176,6 +176,7 @@ class RouteConfig
     $router->post('api/admin/userManagement/deleteMultiple', 'UserManagementController@deleteMultipleUsers', ['user management']);
     $router->post('api/admin/userManagement/toggleStatus/{id}', 'UserManagementController@toggleStatus', ['user management']);
     $router->post('api/admin/userManagement/allowEdit/{id}', 'UserManagementController@allowEdit', ['user management']);
+    $router->post('api/admin/userManagement/allowMultipleEdit', 'UserManagementController@allowMultipleEdit', ['user management']);
     $router->post('api/admin/userManagement/bulkImport', 'UserManagementController@bulkImport', ['user management']);
     $router->get('api/admin/userManagement/getAllCourses', 'DataController@getAllCourses', ['user management']);
     $router->get('api/admin/userManagement/getColleges', 'DataController@getColleges', ['user management']);
@@ -201,27 +202,28 @@ class RouteConfig
     $router->post('api/superadmin/userManagement/deleteMultiple', 'UserManagementController@deleteMultipleUsers');
     $router->post('api/superadmin/userManagement/toggleStatus/{id}', 'UserManagementController@toggleStatus');
     $router->post('api/superadmin/userManagement/allowEdit/{id}', 'UserManagementController@allowEdit', ['superadmin']);
+    $router->post('api/superadmin/userManagement/allowMultipleEdit', 'UserManagementController@allowMultipleEdit', ['superadmin']);
     $router->post('api/superadmin/userManagement/bulkImport', 'UserManagementController@bulkImport');
     $router->get('api/superadmin/userManagement/getAllCourses', 'DataController@getAllCourses', ['superadmin']);
     $router->get('api/superadmin/userManagement/getColleges', 'DataController@getColleges', ['superadmin']);
     $router->get('api/campuses/all', 'DataController@getAllCampuses');
-    $router->get('api/superadmin/booksmanagement/fetch', 'BookManagementController@fetch', ['superadmin']);
-    $router->get('api/superadmin/booksmanagement/get/{id}', 'BookManagementController@getDetails', ['superadmin']);
-    $router->get('api/superadmin/booksmanagement/details/{id}', 'BookManagementController@getDetails', ['superadmin']);
-    $router->post('api/superadmin/booksmanagement/store', 'BookManagementController@store', ['superadmin']);
-    $router->post('api/superadmin/booksmanagement/add', 'BookManagementController@store', ['superadmin']);
-    $router->post('api/superadmin/booksmanagement/update/{id}', 'BookManagementController@update', ['superadmin']);
-    $router->post('api/superadmin/booksmanagement/delete/{id}', 'BookManagementController@destroy', ['superadmin']);
-    $router->post('api/superadmin/booksmanagement/reactivate/{id}', 'BookManagementController@reactivate', ['superadmin']);
-    $router->post('api/superadmin/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['superadmin']);
-    $router->get('api/superadmin/booksmanagement/history/{id}', 'BookManagementController@getBookBorrowingHistory', ['superadmin']);
-    $router->get('api/superadmin/equipmentManagement/fetch', 'EquipmentManagementController@getAll', ['superadmin']);
+    $router->get('api/superadmin/bookManagement/fetch', 'BookManagementController@fetch', ['superadmin']);
+    $router->get('api/superadmin/bookManagement/get/{id}', 'BookManagementController@getDetails', ['superadmin']);
+    $router->get('api/superadmin/bookManagement/details/{id}', 'BookManagementController@getDetails', ['superadmin']);
+    $router->post('api/superadmin/bookManagement/store', 'BookManagementController@store', ['superadmin']);
+    $router->post('api/superadmin/bookManagement/add', 'BookManagementController@store', ['superadmin']);
+    $router->post('api/superadmin/bookManagement/update/{id}', 'BookManagementController@update', ['superadmin']);
+    $router->post('api/superadmin/bookManagement/delete/{id}', 'BookManagementController@destroy', ['superadmin']);
+    $router->post('api/superadmin/bookManagement/reactivate/{id}', 'BookManagementController@reactivate', ['superadmin']);
+    $router->post('api/superadmin/bookManagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['superadmin']);
+    $router->get('api/superadmin/bookManagement/history/{id}', 'BookManagementController@getBookBorrowingHistory', ['superadmin']);
+    $router->get('api/superadmin/equipmentManagement/fetch', 'EquipmentManagementController@fetch', ['superadmin']);
     $router->get('api/superadmin/equipmentManagement/get/{id}', 'EquipmentManagementController@get', ['superadmin']);
     $router->post('api/superadmin/equipmentManagement/store', 'EquipmentManagementController@store', ['superadmin']);
     $router->post('api/superadmin/equipmentManagement/update/{id}', 'EquipmentManagementController@update', ['superadmin']);
     $router->post('api/superadmin/equipmentManagement/toggleActive/{id}', 'EquipmentManagementController@toggleActive', ['superadmin']);
     $router->post('api/superadmin/equipmentManagement/delete/{id}', 'EquipmentManagementController@destroy', ['superadmin']);
-    $router->post('api/superadmin/booksmanagement/bulkImport', 'BookManagementController@bulkImport', ['superadmin']);
+    $router->post('api/superadmin/bookManagement/bulkImport', 'BookManagementController@bulkImport', ['superadmin']);
     $router->post('api/superadmin/qrScanner/scanTicket', 'QRScannerController@scan', ['superadmin']);
     $router->post('api/superadmin/qrScanner/borrowTransaction', 'QRScannerController@borrowTransaction', ['superadmin']);
     $router->get('api/superadmin/qrScanner/transactionHistory', 'QRScannerController@history', ['superadmin']);
@@ -264,6 +266,7 @@ class RouteConfig
     $router->post('api/superadmin/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['superadmin']);
     $router->get('api/superadmin/libraryPolicies/getAll', 'LibraryPolicyController@getAll', ['superadmin']);
     $router->post('api/superadmin/libraryPolicies/update', 'LibraryPolicyController@update', ['superadmin']);
+    $router->get('api/campuses/active', 'CampusController@getActive', ['superadmin', 'admin', 'librarian', 'campus_admin']);
     $router->get('api/superadmin/campuses/fetch', 'CampusManagementController@fetch', ['superadmin']);
     $router->post('api/superadmin/campuses/store', 'CampusManagementController@store', ['superadmin']);
     $router->post('api/superadmin/campuses/update/{id}', 'CampusManagementController@update', ['superadmin']);
@@ -290,27 +293,28 @@ class RouteConfig
     $router->post('api/campus_admin/userManagement/deleteMultiple', 'UserManagementController@deleteMultipleUsers');
     $router->post('api/campus_admin/userManagement/toggleStatus/{id}', 'UserManagementController@toggleStatus');
     $router->post('api/campus_admin/userManagement/allowEdit/{id}', 'UserManagementController@allowEdit', ['campus_admin']);
+    $router->post('api/campus_admin/userManagement/allowMultipleEdit', 'UserManagementController@allowMultipleEdit', ['campus_admin']);
     $router->post('api/campus_admin/userManagement/bulkImport', 'UserManagementController@bulkImport');
     $router->get('api/campus_admin/userManagement/getAllCourses', 'DataController@getAllCourses', ['campus_admin']);
     $router->get('api/campus_admin/userManagement/getColleges', 'DataController@getColleges', ['campus_admin']);
     $router->get('api/campuses/all', 'DataController@getAllCampuses');
-    $router->get('api/campus_admin/booksmanagement/fetch', 'BookManagementController@fetch', ['campus_admin']);
-    $router->get('api/campus_admin/booksmanagement/get/{id}', 'BookManagementController@getDetails', ['campus_admin']);
-    $router->get('api/campus_admin/booksmanagement/details/{id}', 'BookManagementController@getDetails', ['campus_admin']);
-    $router->post('api/campus_admin/booksmanagement/store', 'BookManagementController@store', ['campus_admin']);
-    $router->post('api/campus_admin/booksmanagement/add', 'BookManagementController@store', ['campus_admin']);
-    $router->post('api/campus_admin/booksmanagement/update/{id}', 'BookManagementController@update', ['campus_admin']);
-    $router->post('api/campus_admin/booksmanagement/delete/{id}', 'BookManagementController@destroy', ['campus_admin']);
-    $router->post('api/campus_admin/booksmanagement/reactivate/{id}', 'BookManagementController@reactivate', ['campus_admin']);
-    $router->post('api/campus_admin/booksmanagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['campus_admin']);
-    $router->get('api/campus_admin/booksmanagement/history/{id}', 'BookManagementController@getBookBorrowingHistory', ['campus_admin']);
-    $router->get('api/campus_admin/equipmentManagement/fetch', 'EquipmentManagementController@getAll', ['campus_admin']);
+    $router->get('api/campus_admin/bookManagement/fetch', 'BookManagementController@fetch', ['campus_admin']);
+    $router->get('api/campus_admin/bookManagement/get/{id}', 'BookManagementController@getDetails', ['campus_admin']);
+    $router->get('api/campus_admin/bookManagement/details/{id}', 'BookManagementController@getDetails', ['campus_admin']);
+    $router->post('api/campus_admin/bookManagement/store', 'BookManagementController@store', ['campus_admin']);
+    $router->post('api/campus_admin/bookManagement/add', 'BookManagementController@store', ['campus_admin']);
+    $router->post('api/campus_admin/bookManagement/update/{id}', 'BookManagementController@update', ['campus_admin']);
+    $router->post('api/campus_admin/bookManagement/delete/{id}', 'BookManagementController@destroy', ['campus_admin']);
+    $router->post('api/campus_admin/bookManagement/reactivate/{id}', 'BookManagementController@reactivate', ['campus_admin']);
+    $router->post('api/campus_admin/bookManagement/deleteMultiple', 'BookManagementController@deleteMultiple', ['campus_admin']);
+    $router->get('api/campus_admin/bookManagement/history/{id}', 'BookManagementController@getBookBorrowingHistory', ['campus_admin']);
+    $router->get('api/campus_admin/equipmentManagement/fetch', 'EquipmentManagementController@fetch', ['campus_admin']);
     $router->get('api/campus_admin/equipmentManagement/get/{id}', 'EquipmentManagementController@get', ['campus_admin']);
     $router->post('api/campus_admin/equipmentManagement/store', 'EquipmentManagementController@store', ['campus_admin']);
     $router->post('api/campus_admin/equipmentManagement/update/{id}', 'EquipmentManagementController@update', ['campus_admin']);
     $router->post('api/campus_admin/equipmentManagement/toggleActive/{id}', 'EquipmentManagementController@toggleActive', ['campus_admin']);
     $router->post('api/campus_admin/equipmentManagement/delete/{id}', 'EquipmentManagementController@destroy', ['campus_admin']);
-    $router->post('api/campus_admin/booksmanagement/bulkImport', 'BookManagementController@bulkImport', ['campus_admin']);
+    $router->post('api/campus_admin/bookManagement/bulkImport', 'BookManagementController@bulkImport', ['campus_admin']);
     $router->post('api/campus_admin/qrScanner/scanTicket', 'QRScannerController@scan', ['campus_admin']);
     $router->post('api/campus_admin/qrScanner/borrowTransaction', 'QRScannerController@borrowTransaction', ['campus_admin']);
     $router->get('api/campus_admin/qrScanner/transactionHistory', 'QRScannerController@history', ['campus_admin']);
@@ -374,6 +378,28 @@ class RouteConfig
     $router->get('api/attendance/logs/ajax', 'AttendanceController@fetchLogsAjax', ['attendance logs', 'superadmin', 'campus_admin']);
 
     $router->get('dashboard', 'ViewController@handleDashboard');
+
+    $router->get('userManagement', 'UserManagementController@index', ['user management']);
+    $router->get('bookManagement', 'BookManagementController@index', ['book management']);
+    $router->get('equipmentManagement', 'EquipmentManagementController@index', ['equipment management']);
+
+    // Unified API Routes
+    $router->get('api/bookManagement/fetch', 'BookManagementController@fetch', ['book management']);
+    $router->get('api/bookManagement/details/{id}', 'BookManagementController@getDetails', ['book management']);
+    $router->post('api/bookManagement/store', 'BookManagementController@store', ['book management']);
+    $router->post('api/bookManagement/update/{id}', 'BookManagementController@update', ['book management']);
+    $router->post('api/bookManagement/destroy/{id}', 'BookManagementController@destroy', ['book management']);
+    $router->post('api/bookManagement/delete-multiple', 'BookManagementController@deleteMultiple', ['book management']);
+    $router->post('api/bookManagement/bulk-import', 'BookManagementController@bulkImport', ['book management']);
+    $router->get('api/bookManagement/history/{id}', 'BookManagementController@getBookBorrowingHistory', ['book management']);
+
+    $router->get('api/equipmentManagement/fetch', 'EquipmentManagementController@fetch', ['equipment management']);
+    $router->get('api/equipmentManagement/get/{id}', 'EquipmentManagementController@get', ['equipment management']);
+    $router->post('api/equipmentManagement/store', 'EquipmentManagementController@store', ['equipment management']);
+    $router->post('api/equipmentManagement/update', 'EquipmentManagementController@update', ['equipment management']);
+    $router->post('api/equipmentManagement/destroy/{id}', 'EquipmentManagementController@destroy', ['equipment management']);
+    $router->post('api/equipmentManagement/delete-multiple', 'EquipmentManagementController@deleteMultiple', ['equipment management']);
+
 
     $router->get('{action}', 'ViewController@handleGenericPage');
     $router->get('{action}/{id}', 'ViewController@handleGenericPage');

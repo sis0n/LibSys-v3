@@ -49,7 +49,7 @@ class BookManagementRepository
             $params[] = $campus_id;
         }
 
-        $orderBy = "ORDER BY b.created_at DESC";
+        $orderBy = "ORDER BY b.book_id DESC";
         switch ($sort) {
             case 'title_asc':
                 $orderBy = "ORDER BY b.title ASC";

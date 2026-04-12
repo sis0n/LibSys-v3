@@ -1,9 +1,10 @@
 <div class="flex items-center justify-between mb-6">
     <div>
         <h2 class="text-2xl font-bold mb-4">Book Management</h2>
-        <p class="text-gray-700">Manage library books across all campuses, availability, and inventory.</p>
+        <p class="text-gray-700">Manage library books, availability, and inventory.</p>
     </div>
     <div class="flex gap-2 text-sm">
+        <?php if ($permissions['bulk_import'] ?? false): ?>
         <button
             class="inline-flex items-center bg-white font-medium border border-orange-200 justify-center px-4 py-2 rounded-lg hover:bg-gray-100 px-4 gap-2 shadow-sm transition-all"
             id="bulkImportBtn">
@@ -27,7 +28,9 @@
                         class="block border-2 border-dashed border-[var(--color-border)] rounded-lg p-8 text-center cursor-pointer hover:border-[var(--color-ring)]/60 transition">
                         <i class="ph ph-upload text-[var(--color-ring)] text-3xl mb-2 block"></i>
                         <p class="font-medium text-[var(--color-ring)]">Drop CSV file here or click to browse</p>
-                        <p class="text-xs text-gray-500 mt-1">Expected format: accession_number,call_number,title,author,place,publisher,year,edition,desc,isbn,supp,subj,campus_id</p>
+                        <p class="text-xs text-gray-500 mt-1 text-left mx-auto max-w-xs">
+                            Format: accession_number, call_number, title, author, place, publisher, year, edition, desc, isbn, supp, subj, campus
+                        </p>
                         <input type="file" id="csvFile" name="csv_file" accept=".csv" class="hidden" />
                     </label>
                 </form>
@@ -39,6 +42,9 @@
                 </div>
             </div>
         </div>
+        <?php endif; ?>
+
+        <?php if ($permissions['add'] ?? false): ?>
         <button
             class="px-4 py-2 bg-orange-500 text-white font-medium rounded-lg border hover:bg-orange-600 gap-2 inline-flex items-center shadow-sm"
             id="openAddBookBtn">
@@ -47,7 +53,7 @@
         </button>
         <div id="addBookModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
             <div
-                class="bg-[var(--color-card)] rounded-xl shadow-lg border border-[var(--color-border)] w-full max-w-md h-[85vh] flex flex-col animate-fadeIn mx-4">
+                class="bg-[var(--color-card)] rounded-xl shadow-lg border border-[var(--color-border)] w-full max-w-md h-[85vh] flex flex-col animate-fadeIn mx-4 text-left">
                 <div class="flex justify-between items-start p-6 border-b border-[var(--color-border)] flex-shrink-0">
                     <div>
                         <h2 class="text-lg font-semibold text-gray-900">Add New Book</h2>
@@ -76,18 +82,13 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1"> Campus <span class="text-red-500">*</span> </label>
-                        <select name="campus_id" required class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
+                        <select name="campus_id" required class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm"
+                            <?= ($filters['campus_locked'] ?? false) ? 'disabled' : '' ?>>
                             <option value="">Select Campus</option>
-                            <!-- Options loaded by JS -->
                         </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1"> Borrow Duration Override (Days) </label>
-                        <input type="number" name="borrowing_duration_override" min="0" placeholder="Default from policy" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1"> ISBN </label>
-                        <input type="text" name="book_isbn" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
+                        <?php if ($filters['campus_locked'] ?? false): ?>
+                            <input type="hidden" name="campus_id" value="<?= $filters['default_campus'] ?>">
+                        <?php endif; ?>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1"> Place of Publication </label>
@@ -98,12 +99,16 @@
                         <input type="text" name="book_publisher" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
                     </div>
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1"> Edition </label>
+                        <input type="text" name="book_edition" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1"> Year Published </label>
                         <input type="number" name="year" min="0" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1"> Edition </label>
-                        <input type="text" name="book_edition" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
+                        <label class="block text-sm font-medium text-gray-700 mb-1"> ISBN </label>
+                        <input type="text" name="book_isbn" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1"> Supplementary Info </label>
@@ -112,6 +117,18 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1"> Subject </label>
                         <input type="text" name="subject" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1"> Status <span class="text-red-500">*</span> </label>
+                        <select name="availability" required class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
+                            <option value="available">Available</option>
+                            <option value="damaged">Damaged</option>
+                            <option value="lost">Lost</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1"> Borrowing Duration Override (Days) </label>
+                        <input type="number" name="borrowing_duration_override" min="0" placeholder="0 to use default role policy" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1"> Description </label>
@@ -139,25 +156,27 @@
                 </div>
             </div>
         </div>
+        <?php endif; ?>
     </div>
 </div>
 
-<div class="bg-[var(--color-card)] border border-orange-200 rounded-xl shadow-sm p-6 mt-6">
-    <div class="flex items-center justify-between mb-4">
+<div class="bg-[var(--color-card)] border border-orange-200 rounded-xl shadow-sm p-6 mt-6 text-left">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
         <div>
             <h3 class="text-lg font-semibold text-gray-800">Book Catalog</h3>
-            <p class="text-sm text-gray-600">Registered Books across all campuses</p>
+            <p class="text-sm text-gray-600">Registered Books across system</p>
         </div>
-        <div class="flex items-center text-sm">
-            <div class="relative w-[300px]">
+        <div class="flex flex-wrap items-center gap-3 text-sm">
+            <div class="relative w-full md:w-[250px]">
                 <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"></i>
-                <input type="text" id="bookSearchInput" placeholder="Search by title, author, isbn..."
+                <input type="text" id="bookSearchInput" placeholder="Search title, author, isbn..."
                     class="bg-orange-50 border border-orange-200 rounded-lg pl-9 pr-3 py-2 outline-none transition text-sm w-full focus:ring-1 focus:ring-orange-300 shadow-sm">
             </div>
             
-            <div class="relative inline-block text-left ml-3">
+            <?php if (!($filters['campus_locked'] ?? false)): ?>
+            <div class="relative inline-block text-left">
                 <button id="campusDropdownBtn"
-                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition shadow-sm">
+                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 min-w-[160px] hover:bg-orange-50 transition shadow-sm">
                     <span class="flex items-center gap-2 text-gray-700">
                         <i class="ph ph-buildings text-gray-500"></i>
                         <span id="campusDropdownValue">All Campuses</span>
@@ -167,31 +186,13 @@
                 <div id="campusDropdownMenu"
                     class="absolute mt-1 w-full bg-white border border-orange-200 rounded-lg shadow-md hidden z-20">
                     <div class="campus-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectCampus(this, 0, 'All Campuses')">All Campuses</div>
-                    <!-- Campuses will be loaded here via JS -->
                 </div>
             </div>
+            <?php endif; ?>
 
-            <div class="relative inline-block text-left ml-3">
-                <button id="sortDropdownBtn"
-                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition shadow-sm">
-                    <span class="flex items-center gap-2 text-gray-700">
-                        <i class="ph ph-sort-ascending text-gray-500"></i>
-                        <span id="sortDropdownValue">Default Order</span>
-                    </span>
-                    <i class="ph ph-caret-down text-xs"></i>
-                </button>
-                <div id="sortDropdownMenu"
-                    class="absolute mt-1 w-full bg-white border border-orange-200 rounded-lg shadow-md hidden z-20">
-                    <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'default')">Default Order</div>
-                    <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'title_asc')">Title (A-Z)</div>
-                    <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'title_desc')">Title (Z-A)</div>
-                    <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'year_desc')">Year (newest)</div>
-                    <div class="sort-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm" onclick="selectSort(this, 'year_asc')">Year (oldest)</div>
-                </div>
-            </div>
-            <div class="relative inline-block text-left ml-3">
+            <div class="relative inline-block text-left">
                 <button id="statusDropdownBtn"
-                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-36 hover:bg-orange-50 transition shadow-sm">
+                    class="border border-orange-200 bg-white rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 min-w-[140px] hover:bg-orange-50 transition shadow-sm">
                     <span>
                         <i class="ph ph-check-circle text-gray-500"></i>
                         <span id="statusDropdownValue">All Status</span>
@@ -217,9 +218,10 @@
         </h4>
 
         <div class="inline-flex items-center gap-2">
+            <?php if ($permissions['multi_delete'] ?? false): ?>
             <div id="multiSelectActions" class="hidden items-center gap-2">
                 <button id="multiDeleteBtn" title="Delete selected books"
-                    class="hidden items-center gap-2 bg-red-600 text-white rounded-lg px-3 py-2 text-sm font-medium hover:bg-red-700 transition shadow-sm">
+                    class="items-center gap-2 bg-red-600 text-white rounded-lg px-3 py-2 text-sm font-medium hover:bg-red-700 transition shadow-sm flex">
                     <i class="ph ph-trash text-base"></i>
                     Delete (<span id="selectionCount">0</span>)
                 </button>
@@ -240,14 +242,15 @@
                 <i class="ph ph-list-checks text-base"></i>
                 Multiple Select
             </button>
+            <?php endif; ?>
         </div>
     </div>
 
-    <div class="overflow-hidden border border-orange-200 rounded-lg shadow-sm bg-white">
+    <div class="overflow-x-auto border border-orange-200 rounded-lg shadow-sm bg-white">
         <table class="min-w-full text-sm text-gray-700">
-            <thead class="bg-orange-100 text-left text-gray-800 sticky top-0 z-0 border-b border-orange-200">
+            <thead class="bg-orange-100 text-left text-gray-800 border-b border-orange-200">
                 <tr>
-                    <th id="multi-select-header" class="py-3 px-4 font-medium hidden w-10"></th>
+                    <th id="multi-select-header" class="py-3 px-4 font-medium hidden w-10 text-center"></th>
                     <th class="py-3 px-4 font-medium">Book Title</th>
                     <th class="py-3 px-4 font-medium text-center">Campus</th>
                     <th class="py-3 px-4 font-medium">Author</th>
@@ -272,9 +275,10 @@
     </nav>
 </div>
 
+<!-- Edit Modal -->
 <div id="editBookModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
     <div
-        class="bg-[var(--color-card)] rounded-xl shadow-lg border border-[var(--color-border)] w-full max-md h-[85vh] flex flex-col animate-fadeIn mx-4">
+        class="bg-[var(--color-card)] rounded-xl shadow-lg border border-[var(--color-border)] w-full max-w-md h-[85vh] flex flex-col animate-fadeIn mx-4 text-left">
         <div class="flex justify-between items-start p-6 border-b border-[var(--color-border)] flex-shrink-0">
             <div>
                 <h2 class="text-lg font-semibold text-gray-900">Edit Book Details</h2>
@@ -307,6 +311,42 @@
                     class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
             </div>
             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Campus <span class="text-red-500">*</span></label>
+                <select id="edit_campus_id" name="campus_id" required
+                    class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm"
+                    <?= ($filters['campus_locked'] ?? false) ? 'disabled' : '' ?>>
+                    <option value="">Select Campus</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Place of Publication</label>
+                <input type="text" id="edit_book_place" name="book_place" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Publisher</label>
+                <input type="text" id="edit_book_publisher" name="book_publisher" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Edition</label>
+                <input type="text" id="edit_book_edition" name="book_edition" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Year Published</label>
+                <input type="number" id="edit_year" name="year" min="0" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">ISBN</label>
+                <input type="text" id="edit_book_isbn" name="book_isbn" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Supplementary Info</label>
+                <input type="text" id="edit_book_supplementary" name="book_supplementary" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                <input type="text" id="edit_subject" name="subject" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2">
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Status <span class="text-red-500">*</span></label>
                 <select id="edit_availability" name="availability" required
                     class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
@@ -317,52 +357,8 @@
                 </select>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Campus <span class="text-red-500">*</span></label>
-                <select id="edit_campus_id" name="campus_id" required
-                    class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
-                    <option value="">Select Campus</option>
-                    <!-- Options loaded by JS -->
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Borrow Duration Override (Days)</label>
-                <input type="number" id="edit_borrowing_duration_override" name="borrowing_duration_override" min="0" placeholder="Default from policy"
-                    class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">ISBN</label>
-                <input type="text" id="edit_book_isbn" name="book_isbn"
-                    class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Place of Publication</label>
-                <input type="text" id="edit_book_place" name="book_place"
-                    class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Publisher</label>
-                <input type="text" id="edit_book_publisher" name="book_publisher"
-                    class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Year Published</label>
-                <input type="number" id="edit_year" name="year" min="0"
-                    class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Edition</label>
-                <input type="text" id="edit_book_edition" name="book_edition"
-                    class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Supplementary Info</label>
-                <input type="text" id="edit_book_supplementary" name="book_supplementary"
-                    class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                <input type="text" id="edit_subject" name="subject"
-                    class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2 focus:ring-2 focus:ring-[var(--color-ring)] outline-none transition shadow-sm">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Borrowing Duration Override (Days)</label>
+                <input type="number" id="edit_borrowing_duration_override" name="borrowing_duration_override" min="0" class="w-full bg-[var(--color-input)] border border-[var(--color-border)] rounded-md px-3 py-2">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -402,7 +398,8 @@
     </div>
 </div>
 
-<div id="viewBookModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300 ease-out p-4">
+<!-- View Modal -->
+<div id="viewBookModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300 ease-out p-4 text-left">
     <div id="viewBookModalContent" class="bg-[var(--color-card)] w-full max-w-lg rounded-2xl shadow-lg overflow-hidden transform scale-95 transition-transform duration-300 ease-out max-h-[90vh] flex flex-col">
         <div class="bg-gradient-to-r from-orange-500 to-amber-500 p-4 text-white flex-shrink-0 flex justify-between items-center rounded-t-xl">
             <div class="flex items-center gap-3 overflow-hidden text-white">
@@ -416,7 +413,7 @@
                 <i class="ph ph-x-circle"></i>
             </button>
         </div>
-        <div class="p-4 space-y-4 overflow-y-auto bg-gray-50/30">
+        <div class="p-4 space-y-4 overflow-y-auto bg-gray-50/30 custom-scrollbar">
             <div class="grid grid-cols-2 gap-4">
                 <div class="p-3 shadow-sm border border-orange-100 bg-white rounded flex flex-col items-start">
                     <p class="text-xs text-orange-500 font-semibold mb-1 uppercase tracking-wider">Status</p>
@@ -429,15 +426,17 @@
             </div>
             <div class="text-sm bg-white rounded-xl border border-orange-100 p-4 space-y-2 shadow-sm">
                 <p class="font-bold text-gray-700 text-sm mb-2 border-b border-orange-50 pb-1">Book Information</p>
-                <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Accession #:</span> <span id="viewModalAccessionNumber" class="font-mono text-sm font-semibold text-orange-600 break-words"></span></p>
-                <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Call Number:</span> <span id="viewModalCallNumber" class="text-gray-800 font-semibold"></span></p>
-                <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">ISBN:</span> <span id="viewModalIsbn" class="break-words text-gray-800"></span></p>
-                <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Subject:</span> <span id="viewModalSubject" class="break-words text-gray-800"></span></p>
-                <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Place:</span> <span id="viewModalPlace" class="break-words text-gray-800"></span></p>
-                <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Publisher:</span> <span id="viewModalPublisher" class="break-words text-gray-800"></span></p>
-                <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Year:</span> <span id="viewModalYear" class="break-words text-gray-800"></span></p>
-                <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Edition:</span> <span id="viewModalEdition" class="break-words text-gray-800"></span></p>
-                <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Supplementary:</span> <span id="viewModalSupplementary" class="break-words text-gray-800"></span></p>
+                <div class="space-y-1.5">
+                    <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Accession #:</span> <span id="viewModalAccessionNumber" class="font-mono text-sm font-semibold text-orange-600 break-words"></span></p>
+                    <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Call Number:</span> <span id="viewModalCallNumber" class="text-gray-800 font-semibold"></span></p>
+                    <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">ISBN:</span> <span id="viewModalIsbn" class="break-words text-gray-800"></span></p>
+                    <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Publisher:</span> <span id="viewModalPublisher" class="break-words text-gray-800"></span></p>
+                    <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Edition:</span> <span id="viewModalEdition" class="break-words text-gray-800"></span></p>
+                    <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Place:</span> <span id="viewModalPlace" class="break-words text-gray-800"></span></p>
+                    <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Subject:</span> <span id="viewModalSubject" class="break-words text-gray-800"></span></p>
+                    <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Year:</span> <span id="viewModalYear" class="break-words text-gray-800"></span></p>
+                    <p><span class="text-gray-500 w-28 inline-block flex-shrink-0">Duration:</span> <span id="viewModalDuration" class="break-words text-gray-800"></span></p>
+                </div>
             </div>
             <div class="bg-orange-50/30 rounded-xl p-4 border border-orange-100 shadow-sm">
                 <p class="font-bold text-orange-800 mb-1 text-sm">Description</p>
@@ -452,7 +451,8 @@
     </div>
 </div>
 
-<div id="historyModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
+<!-- History Modal -->
+<div id="historyModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4 text-left">
     <div class="bg-[var(--color-card)] rounded-xl shadow-lg border border-[var(--color-border)] w-full max-w-2xl max-h-[85vh] flex flex-col animate-fadeIn overflow-hidden">
         <div class="bg-gradient-to-r from-orange-500 to-amber-500 p-5 text-white flex justify-between items-center flex-shrink-0">
             <h2 class="text-xl font-bold flex items-center gap-2 text-white">
@@ -465,18 +465,17 @@
         </div>
         <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-gray-50/30">
             <div id="historyTableContainer" class="overflow-hidden border border-orange-100 rounded-lg shadow-sm bg-white">
-                <table class="min-w-full text-base text-gray-700">
+                <table class="min-w-full text-sm text-gray-700">
                     <thead class="bg-orange-50 text-left text-gray-800 sticky top-0 z-10 border-b border-orange-100">
                         <tr>
                             <th class="py-4 px-5 font-bold">Borrower</th>
-                            <th class="py-4 px-5 font-bold">ID / Role</th>
-                            <th class="py-4 px-5 font-bold">Borrowed Date</th>
-                            <th class="py-4 px-5 font-bold">Returned Date</th>
+                            <th class="py-4 px-5 font-bold">Role</th>
+                            <th class="py-4 px-5 font-bold">Borrowed</th>
+                            <th class="py-4 px-5 font-bold">Returned</th>
                             <th class="py-4 px-5 font-bold text-center">Status</th>
                         </tr>
                     </thead>
                     <tbody id="historyTableBody" class="divide-y divide-orange-100 bg-white">
-                        <!-- Rows injected here -->
                     </tbody>
                 </table>
             </div>
@@ -492,5 +491,4 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="<?= BASE_URL ?>/js/admin/bookManagement.js" defer></script>
-
+<script src="<?= BASE_URL ?>/js/management/bookManagement.js" defer></script>

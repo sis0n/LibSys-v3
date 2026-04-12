@@ -198,8 +198,22 @@ class ViewController extends Controller
     ];
 
     // Inject campuses data for management pages that need it
-    if (in_array($action, ['bookManagement', 'equipmentManagement', 'userManagement', 'libraryPolicies', 'bulkDeleteQueue'])) {
-      $campusRepo = new \App\Repositories\CampusRepository();
+    // Special handling for consolidated management views
+    if ($action === 'userManagement') {
+        header('Location: ' . BASE_URL . '/userManagement');
+        exit;
+    }
+
+    if ($action === 'bookManagement') {
+        header('Location: ' . BASE_URL . '/bookManagement');
+        exit;
+    }
+
+    if ($action === 'equipmentManagement') {
+        header('Location: ' . BASE_URL . '/equipmentManagement');
+        exit;
+    }
+    if (in_array($action, ['bookManagement', 'equipmentManagement', 'libraryPolicies', 'bulkDeleteQueue'])) {      $campusRepo = new \App\Repositories\CampusRepository();
       $allCampuses = $campusRepo->getAllCampuses();
       $data['campuses'] = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);
     }
