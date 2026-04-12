@@ -64,4 +64,18 @@ class BookCatalogController extends Controller
             $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
         }
     }
+
+    public function getAvailableCount()
+    {
+        try {
+            if (!isset($_SESSION['user_id'])) throw new Exception('Unauthorized', 401);
+
+            $userCampusId = $_SESSION['user_data']['campus_id'] ?? null;
+            $count = $this->searchService->getAvailableCount($_GET, $userCampusId);
+
+            $this->jsonResponse(['available' => $count]);
+        } catch (Exception $e) {
+            $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
+        }
+    }
 }

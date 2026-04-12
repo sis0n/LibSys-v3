@@ -57,6 +57,25 @@ class SearchService
     }
 
     /**
+     * Get available books count
+     */
+    public function getAvailableCount(array $params, ?int $userCampusId): int
+    {
+        $campusIdParam = $params['campus_id'] ?? null;
+        $campusId = null;
+
+        if ($campusIdParam === 'all') {
+            $campusId = null;
+        } elseif ($campusIdParam !== null) {
+            $campusId = (int)$campusIdParam;
+        } else {
+            $campusId = $userCampusId;
+        }
+
+        return $this->bookRepo->countAvailableBooks($campusId);
+    }
+
+    /**
      * Get list of all campuses for filter dropdown
      */
     public function getFilterCampuses(): array

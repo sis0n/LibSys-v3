@@ -26,7 +26,7 @@
     - [x] `DashboardService`: Statistical aggregation and analytics for the dashboard.
     - [x] `CartService`: Reservation rules and inter-campus cart validation.
     - [x] `StorageService`: Centralized file management (Local vs Cloud abstraction).
-- [ ] **API Standardization:** Transition existing `api/` routes to a strict RESTful standard (consistent status codes and JSON structure).
+- [x] **API Standardization:** Transition existing `api/` routes to a strict RESTful standard (consistent status codes and JSON structure).
 - [ ] **Role Normalization:** Audit and centralize role-checking logic (Superadmin vs Super_admin) across the entire system to prevent 403/401 leaks.
 
 ### 🛠️ Development Workflow & Quality Assurance
@@ -63,7 +63,7 @@
 - [x] **Policy Enforcement:** Update borrowing logic to prioritize book-specific duration before falling back to campus-wide `library_policies`.
 
 ### 📚 Book Catalog Enhancements
-- [ ] **Inter-campus Warning:** In `public/js/student/bookCatalog.js`, add a SweetAlert2 confirmation modal when a user attempts to "Add to Cart" a book from a different campus.
+- [x] **Inter-campus Warning:** In `public/js/student/bookCatalog.js` (and faculty/staff versions), added a SweetAlert2 confirmation modal when a user attempts to "Add to Cart" a book from a different campus.
     - *Message:* "Are you sure? This book belongs to [Campus Name]."
 
 ### 🎫 QR Borrowing & Scanning

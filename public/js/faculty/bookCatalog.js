@@ -52,6 +52,7 @@ window.addEventListener("DOMContentLoaded", () => {
     let cart = [];
 
     let currentPage = 1;
+    let currentBook = null;
     try {
         const savedPage = sessionStorage.getItem('bookCatalogPage_faculty');
         if (savedPage) {
@@ -158,7 +159,8 @@ window.addEventListener("DOMContentLoaded", () => {
         try {
             const r = await fetch("api/faculty/cart/json");
             if (!r.ok) throw Error();
-            cart = await r.json();
+            const data = await r.json();
+            cart = data.items || [];
             updateCartBadge();
         } catch (e) {
             cart = [];
@@ -493,6 +495,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     function openModal(book) {
         if (!book || !modal) return;
+        currentBook = book;
         if (addToCartBtn) {
             addToCartBtn.dataset.id = book.book_id || '';
             const availabilityText = (book.availability || "unknown").toUpperCase();
@@ -567,7 +570,39 @@ window.addEventListener("DOMContentLoaded", () => {
     if (addToCartBtn) {
         addToCartBtn.addEventListener("click", () => {
             const id = addToCartBtn.dataset.id;
-            if (id) addToCart(id);
+            if (!id || !currentBook) return;
+
+            const homeCampusId = document.getElementById("userHomeCampusId")?.value;
+            const bookCampusId = currentBook.campus_id;
+            const bookCampusName = currentBook.campus_name || "another campus";
+
+            if (homeCampusId && bookCampusId && String(homeCampusId) !== String(bookCampusId)) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: "Inter-campus Borrowing",
+                        text: `Are you sure? This book belongs to ${bookCampusName}.`,
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#f97316", // orange-500
+                        cancelButtonColor: "#6b7280", // gray-500
+                        confirmButtonText: "Yes, add to cart",
+                        cancelButtonText: "Cancel",
+                        customClass: {
+                            popup: "!rounded-xl !shadow-md !border-2 !border-orange-400 !p-6 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ffb34770]",
+                        },
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            addToCart(id);
+                        }
+                    });
+                } else {
+                    if (confirm(`Are you sure? This book belongs to ${bookCampusName}.`)) {
+                        addToCart(id);
+                    }
+                }
+            } else {
+                addToCart(id);
+            }
         });
     }
 
