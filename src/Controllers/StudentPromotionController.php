@@ -24,7 +24,7 @@ class StudentPromotionController extends Controller
     {
         $courses = $this->courseRepo->getAllCourses();
         $role = RoleHelper::compareNormalize($_SESSION['role'] ?? '');
-        $viewPath = RoleHelper::hasGlobalAccess($role) ? 'Superadmin/studentPromotion' : 'campus_admin/studentPromotion';
+        $viewPath = RoleHelper::isSuperadmin($role) ? 'Superadmin/studentPromotion' : 'Admin/studentPromotion';
 
         $this->view($viewPath, [
             'title' => 'Student Promotion',

@@ -50,11 +50,11 @@ class UserManagementController extends Controller
             'permissions' => [
                 'add' => true,
                 'edit' => true,
-                'delete' => RoleHelper::isSuperadmin($role) || RoleHelper::isCampusAdmin($role) || RoleHelper::isAdmin($role),
-                'bulk_import' => RoleHelper::isSuperadmin($role) || RoleHelper::isCampusAdmin($role) || RoleHelper::isAdmin($role),
+                'delete' => RoleHelper::isSuperadmin($role) || RoleHelper::isAdmin($role),
+                'bulk_import' => RoleHelper::isSuperadmin($role) || RoleHelper::isAdmin($role),
                 'multi_select' => true,
                 'allow_edit' => true,
-                'manage_permissions' => RoleHelper::isSuperadmin($role) || RoleHelper::isAdmin($role) || RoleHelper::isCampusAdmin($role),
+                'manage_permissions' => RoleHelper::isSuperadmin($role) || RoleHelper::isAdmin($role),
             ],
             'filters' => [
                 'campus_locked' => !RoleHelper::isSuperadmin($role),

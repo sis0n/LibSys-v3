@@ -53,8 +53,8 @@ class BulkDeleteController extends Controller
                 }
                 
                 if ($userRole === 'admin') {
-                    // Admin can ONLY see/approve requests from Campus Admins or Librarians
-                    return in_array($reqRole, ['campus_admin', 'campus admin', 'librarian']);
+                    // Admin can ONLY see/approve requests from Librarians
+                    return in_array($reqRole, ['librarian']);
                 }
                 
                 return false;
@@ -99,8 +99,8 @@ class BulkDeleteController extends Controller
             // --- HIERARCHY AUTHORIZATION ---
             $reqRole = strtolower($request['requester_role'] ?? '');
             if ($userRole === 'admin') {
-                if (!in_array($reqRole, ['campus_admin', 'campus admin', 'librarian'])) {
-                    return $this->json(['success' => false, 'message' => 'Unauthorized: Admins can only approve requests from Campus Admins.'], 403);
+                if (!in_array($reqRole, ['librarian'])) {
+                    return $this->json(['success' => false, 'message' => 'Unauthorized: Admins can only approve requests from Librarians.'], 403);
                 }
             } elseif ($userRole !== 'superadmin') {
                 return $this->json(['success' => false, 'message' => 'Unauthorized: Only Admins and Superadmins can approve requests.'], 403);
@@ -166,8 +166,8 @@ class BulkDeleteController extends Controller
             // --- HIERARCHY AUTHORIZATION ---
             $reqRole = strtolower($request['requester_role'] ?? '');
             if ($userRole === 'admin') {
-                if (!in_array($reqRole, ['campus_admin', 'campus admin', 'librarian'])) {
-                    return $this->json(['success' => false, 'message' => 'Unauthorized: Admins can only reject requests from Campus Admins.'], 403);
+                if (!in_array($reqRole, ['librarian'])) {
+                    return $this->json(['success' => false, 'message' => 'Unauthorized: Admins can only reject requests from Librarians.'], 403);
                 }
             } elseif ($userRole !== 'superadmin') {
                 return $this->json(['success' => false, 'message' => 'Unauthorized: Only Admins and Superadmins can reject requests.'], 403);

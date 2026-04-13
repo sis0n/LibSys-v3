@@ -48,7 +48,7 @@ class AuthService
             $redirectPath = User::getFirstAccessibleModuleUrl($userRole, $permissions);
         } elseif (User::isScanner($user)) {
             $redirectPath = \BASE_URL . '/attendance';
-        } elseif (User::isSuperadmin($user) || User::isCampusAdmin($user) || User::isStudent($user) || User::isFaculty($user) || User::isStaff($user)) {
+        } elseif (User::isSuperadmin($user) || User::isAdmin($user) || User::isStudent($user) || User::isFaculty($user) || User::isStaff($user)) {
             $redirectPath = \BASE_URL . '/dashboard';
         }
 

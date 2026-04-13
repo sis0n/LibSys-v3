@@ -29,9 +29,9 @@ class BookManagementController extends Controller
             'permissions' => [
                 'add' => true, // Librarians and above can add
                 'edit' => true,
-                'delete' => $role === 'superadmin' || $role === 'admin' || $role === 'campus_admin',
-                'bulk_import' => $role === 'superadmin' || $role === 'admin' || $role === 'campus_admin',
-                'multi_delete' => $role === 'superadmin' || $role === 'admin' || $role === 'campus_admin'
+                'delete' => $role === 'superadmin' || $role === 'admin',
+                'bulk_import' => $role === 'superadmin' || $role === 'admin',
+                'multi_delete' => $role === 'superadmin' || $role === 'admin'
             ],
             'filters' => [
                 'campus_locked' => !in_array($role, ['superadmin', 'admin']),

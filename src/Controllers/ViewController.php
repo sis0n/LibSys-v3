@@ -26,8 +26,7 @@ class ViewController extends Controller
         'student' => 'Student',
         'faculty' => 'Faculty',
         'librarian' => 'Librarian',
-        'staff' => 'staff',
-        'campus_admin' => 'campus_admin'
+        'staff' => 'staff'
     ];
     return $roleMap[$role] ?? $role;
   }
@@ -58,7 +57,6 @@ class ViewController extends Controller
         $current_page = 'dashboard';
         break;
 
-      case 'campus_admin':
       case 'admin':
       case 'librarian':
         $privilege_to_page = [
@@ -74,13 +72,6 @@ class ViewController extends Controller
           'transaction history' => 'transactionHistory',
         ];
 
-        if ($role === 'campus_admin') {
-            $view_path = $viewFolder . '/bookManagement';
-            $current_page = 'bookManagement';
-            $title = 'Book Management';
-            break;
-        }
-
         foreach ($privilege_to_page as $privilege => $pageName) {
           if (in_array($privilege, $normalizedPermissions)) {
             $view_path = $viewFolder . '/' . $pageName;
@@ -90,17 +81,10 @@ class ViewController extends Controller
           }
         }
 
-        // Fallback for Admin/Librarian if no specific permission page matched
         if (!$view_path) {
-            if ($role === 'admin') {
-                $view_path = $viewFolder . '/userManagement';
-                $current_page = 'userManagement';
-                $title = 'User Management';
-            } else {
-                $view_path = $viewFolder . '/bookManagement';
-                $current_page = 'bookManagement';
-                $title = 'Book Management';
-            }
+            $view_path = $viewFolder . ($role === 'admin' ? '/userManagement' : '/bookManagement');
+            $current_page = $role === 'admin' ? 'userManagement' : 'bookManagement';
+            $title = $role === 'admin' ? 'User Management' : 'Book Management';
         }
         break;
     }
@@ -157,22 +141,14 @@ class ViewController extends Controller
       'attendance'
     ];
 
-    if ($action === 'dashboard' && ($role === 'admin' || $role === 'librarian' || $role === 'campus_admin')) {
+    if ($action === 'dashboard' && ($role === 'admin' || $role === 'librarian')) {
         $this->handleDashboard();
         return;
     }
 
     if (array_key_exists($action, $protectedModules)) {
-
-      if ($role === 'superadmin' || $role === 'campus_admin') {
-        if ($role === 'campus_admin') {
-          // Restricted modules for Campus Admin based on RBAC_POLICY.md
-          $restrictedForCampusAdmin = ['campusManagement', 'backup', 'restoreUser', 'auditLogs', 'libraryPolicies'];
-          if (in_array($action, $restrictedForCampusAdmin)) {
-            $this->view("errors/403", ["title" => "Forbidden"], false);
-            exit;
-          }
-        }
+      if ($role === 'superadmin') {
+          // Superadmin has access to everything
       } else if ($role === 'admin' || $role === 'librarian') {
         $permissionName = $protectedModules[$action];
 

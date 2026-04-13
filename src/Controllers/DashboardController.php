@@ -27,15 +27,13 @@ class DashboardController extends Controller
         $viewPath = "Superadmin/dashboard";
         if (RoleHelper::isBorrower($role)) {
             $viewPath = ucfirst($role) . "/dashboard";
-        } elseif (RoleHelper::isCampusAdmin($role)) {
-            $viewPath = "campus_admin/dashboard";
         } elseif (RoleHelper::isAdmin($role)) {
             $viewPath = "Admin/dashboard";
         } elseif (RoleHelper::isLibrarian($role)) {
             $viewPath = "Librarian/dashboard";
+        } else {
+            $viewPath = "{$role}/dashboard";
         }
-
-        $this->view($viewPath, [
             "title" => "Dashboard",
             "stats" => $stats
         ]);

@@ -54,7 +54,6 @@ class User
             'backup' => 'backup',
             'restore books' => 'restoreBooks',
             'restore users' => 'restoreUser',
-
         ];
 
         foreach ($orderedModules as $permission => $urlSegment) {
@@ -65,35 +64,38 @@ class User
 
         return "changePassword";
     }
-    // static role checks – secure role methods
-    public static function isAdmin(array $user): bool
-    {
-        return RoleHelper::isAdmin($user['role'] ?? '');
-    }
-    public static function isLibrarian(array $user): bool
-    {
-        return RoleHelper::isLibrarian($user['role'] ?? '');
-    }
-    public static function isStudent(array $user): bool
-    {
-        return RoleHelper::compareNormalize($user['role'] ?? '') === RoleHelper::compareNormalize(RoleHelper::STUDENT);
-    }
+
+    // static role checks
     public static function isSuperadmin(array $user): bool
     {
         return RoleHelper::isSuperadmin($user['role'] ?? '');
     }
-    public static function isCampusAdmin(array $user): bool
+
+    public static function isAdmin(array $user): bool
     {
-        return RoleHelper::isCampusAdmin($user['role'] ?? '');
+        return RoleHelper::isAdmin($user['role'] ?? '');
     }
+
+    public static function isLibrarian(array $user): bool
+    {
+        return RoleHelper::isLibrarian($user['role'] ?? '');
+    }
+
+    public static function isStudent(array $user): bool
+    {
+        return RoleHelper::compareNormalize($user['role'] ?? '') === RoleHelper::compareNormalize(RoleHelper::STUDENT);
+    }
+
     public static function isScanner(array $user): bool
     {
         return RoleHelper::compareNormalize($user['role'] ?? '') === RoleHelper::compareNormalize(RoleHelper::SCANNER);
     }
+
     public static function isFaculty(array $user): bool
     {
         return RoleHelper::compareNormalize($user['role'] ?? '') === RoleHelper::compareNormalize(RoleHelper::FACULTY);
     }
+
     public static function isStaff(array $user): bool
     {
         return RoleHelper::compareNormalize($user['role'] ?? '') === RoleHelper::compareNormalize(RoleHelper::STAFF);

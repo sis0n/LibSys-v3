@@ -9,7 +9,6 @@ class RoleHelper
      */
     const SUPERADMIN = 'superadmin';
     const ADMIN = 'admin';
-    const CAMPUS_ADMIN = 'campus_admin';
     const LIBRARIAN = 'librarian';
     const SCANNER = 'scanner';
     const STUDENT = 'student';
@@ -85,29 +84,25 @@ class RoleHelper
         return self::compareNormalize($role) === self::compareNormalize(self::ADMIN);
     }
 
-    public static function isCampusAdmin(string $role): bool {
-        return self::compareNormalize($role) === self::compareNormalize(self::CAMPUS_ADMIN);
-    }
-
     public static function isLibrarian(string $role): bool {
         return self::compareNormalize($role) === self::compareNormalize(self::LIBRARIAN);
     }
 
     /**
-     * High-level check for management staff (Superadmin, Admin, Campus Admin, Librarian)
+     * High-level check for management staff (Superadmin, Admin, Librarian)
      */
     public static function isStaff(string $role): bool {
         $normalized = self::compareNormalize($role);
         return in_array($normalized, [
             self::compareNormalize(self::SUPERADMIN),
             self::compareNormalize(self::ADMIN),
-            self::compareNormalize(self::CAMPUS_ADMIN),
             self::compareNormalize(self::LIBRARIAN)
         ]);
     }
 
     /**
      * Check if the user has global access (Superadmin or Admin)
+     * NOTE: Admin can be Global or Local. This just checks if the role ITSELF allows global potential.
      */
     public static function hasGlobalAccess(string $role): bool {
         $normalized = self::compareNormalize($role);

@@ -1,7 +1,7 @@
 <div class="flex items-center justify-between mb-6">
     <div>
         <h2 class="text-2xl font-bold mb-4">Bulk Delete Approval Queue</h2>
-        <p class="text-gray-700">Review and approve bulk deletion requests from Librarians and Campus Admins.</p>
+        <p class="text-gray-700">Review and approve bulk deletion requests from Librarians and local Admins.</p>
     </div>
 </div>
 

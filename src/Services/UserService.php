@@ -74,7 +74,7 @@ class UserService
         }
 
         $modules = [];
-        if (in_array($role, ['admin', 'librarian', 'campus_admin', 'campus admin'])) {
+        if (in_array($role, ['admin', 'librarian'])) {
             $modules = $this->userPermissionRepo->getModulesByUserId($id);
         }
 
@@ -102,8 +102,10 @@ class UserService
         $role = strtolower(trim($data['role'] ?? ''));
         $campusId = $campusIdFilter ?? $data['campus_id'] ?? null;
 
-        if (!$firstName || !$lastName || !$username || !$role || !$campusId) {
-            throw new Exception('First Name, Last Name, Campus, Username, and Role are required.');
+        $isGlobalEligible = in_array($role, ['superadmin', 'admin']);
+        
+        if (!$firstName || !$lastName || !$username || !$role || (!$campusId && !$isGlobalEligible)) {
+            throw new Exception('First Name, Last Name, Username, and Role are required. Campus is also required for local roles.');
         }
 
         $db = $this->userRepo->getDbConnection();
@@ -179,8 +181,6 @@ class UserService
 
             case 'admin':
             case 'librarian':
-            case 'campus_admin':
-            case 'campus admin':
                 if (empty($data['modules']) || !is_array($data['modules'])) {
                     throw new Exception('Please select at least one module.');
                 }
@@ -405,7 +405,7 @@ class UserService
 
             $this->userRepo->updateUser($id, $data);
 
-            if (in_array($currentRole, ['superadmin', 'admin', 'librarian', 'campus_admin']) && $modulesKeyWasPresent) {
+            if (in_array($currentRole, ['superadmin', 'admin', 'librarian']) && $modulesKeyWasPresent) {
                 $this->userPermissionRepo->assignModules($id, (array)$modulesPayload);
             }
 
@@ -435,8 +435,7 @@ class UserService
     {
         if (empty($userIds)) throw new Exception('No user IDs provided.');
 
-        // Requirement: Admin/Campus Admin deleting 5+ users needs approval
-        if (in_array($adminRole, ['admin', 'campus_admin']) && count($userIds) >= 5) {
+        if ($adminRole === 'admin' && count($userIds) >= 5) {
             $requestId = (new BulkDeleteRepository())->createRequest($adminId, $userIds, 'users', $reason);
             $this->auditRepo->log($adminId, 'REQUEST_BULK_DELETE', 'USERS', $requestId, "Requested bulk delete for " . count($userIds) . " users. Reason: $reason");
             

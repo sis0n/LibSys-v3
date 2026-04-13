@@ -51,15 +51,21 @@ class Controller
     protected function getCampusFilter(): ?int
     {
         $role = $_SESSION['role'] ?? 'guest';
+        $campusId = $_SESSION['user_data']['campus_id'] ?? null;
         
-        // Superadmin and Admin have global access (Global/All Campuses)
-        if (RoleHelper::hasGlobalAccess($role)) {
+        // Superadmin is always global
+        if (RoleHelper::isSuperadmin($role)) {
             return null;
         }
 
-        // Campus Admin and Librarian are restricted to their own campus
-        if (RoleHelper::isCampusAdmin($role) || RoleHelper::isLibrarian($role)) {
-            return $_SESSION['user_data']['campus_id'] ?? null;
+        // Admin can be Global (no campus_id) or Local (with campus_id)
+        if (RoleHelper::isAdmin($role)) {
+            return $campusId ?: null;
+        }
+
+        // Librarian is always local
+        if (RoleHelper::isLibrarian($role)) {
+            return $campusId;
         }
 
         return null;

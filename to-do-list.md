@@ -27,9 +27,12 @@
     - [x] `CartService`: Reservation rules and inter-campus cart validation.
     - [x] `StorageService`: Centralized file management (Local vs Cloud abstraction).
 - [x] **API Standardization:** Transition existing `api/` routes to a strict RESTful standard (consistent status codes and JSON structure).
-- [x] **Role Normalization:** Audit and centralize role-checking logic (Superadmin vs Super_admin) across the entire system to prevent 403/401 leaks.
+- [ ] **Admin Role Consolidation:** Unified `campus_admin` into the `admin` role.
+    - [ ] **Global Admin:** `admin` with `campus_id = NULL` (Full system management).
+    - [ ] **Local Admin:** `admin` with assigned `campus_id` (Restricted to branch data).
+- [ ] **Role Normalization:** Audit and centralize role-checking logic across the entire system.
 - [ ] **Global AJAX Interceptor:** Centralize frontend error handling (401/403) and session expiration alerts in a global `api.js`.
-- [ ] **Centralized Session Manager:** Move `session_start()` and security flags (HttpOnly, Secure) to a core `SessionService` to prevent session-fixation.
+- [ ] **Centralized Session Manager:** Move `session_start()` and security flags (HttpOnly, Secure) to a core `SessionService`.
 
 ### 📜 Library Policy (Per Campus)
 - [x] **Schema Update:** Add `campus_id` to the `library_policies` table to allow per-campus rules.
@@ -37,16 +40,16 @@
 - [x] **Rule Enforcement:** Update borrowing logic to fetch policies based on the user's campus or the book's campus.
 
 ### 🗑️ Data Management Refactoring
-- [x] **Remove Soft Delete:** Replace `deleted_at` (soft delete) with `is_active` status toggle for Books and Equipment to align with the new Campus Management pattern. User Management will retain soft delete functionality.
-- [x] **Remove Restore Module:** Completely remove the 'Restore Books' module as it will be obsolete once soft delete is replaced by the `is_active` toggle.
-- [x] **Books Table Cleanup:** Drop the `deleted_at` and `deleted_by` columns from the `books` table after the transition to the `is_active` toggle pattern.
-- [x] **Bulk Delete Approval Workflow:** Implement a request-based bulk delete system for 10+ records requiring approval from a higher role.
-- [x] **Approval Queue Module:** Create a separate module where approvers can view, approve, or reject pending bulk delete requests with a time-limited approval window.
+- [x] **Remove Soft Delete:** Replace `deleted_at` (soft delete) with `is_active` status toggle for Books and Equipment.
+- [x] **Remove Restore Module:** Completely remove the 'Restore Books' module.
+- [x] **Books Table Cleanup:** Drop the `deleted_at` and `deleted_by` columns from the `books` table.
+- [x] **Bulk Delete Approval Workflow:** Implement a request-based bulk delete system for 10+ records.
+- [x] **Approval Queue Module:** Create a separate module where approvers (Global Admin/Superadmin) can view/approve requests.
 
 
 ### 🎨 UI & Usability Fixes
-- [ ] **Dropdown Z-Index Fix:** Fix the layering issue where book catalog dropdowns (Campus, Sort, Status) appear behind the book cards in `public/js/student/bookCatalog.js`.
-- [ ] **Modal Layering Fix:** Ensure the Sidebar and Header are correctly covered by the backdrop when any modal (Book details, Returning, etc.) is active.
+- [ ] **Dropdown Z-Index Fix:** Fix the layering issue where book catalog dropdowns appear behind book cards.
+- [ ] **Modal Layering Fix:** Ensure Sidebar and Header are correctly covered by the backdrop when a modal is active.
 
 ---
 
@@ -55,23 +58,21 @@
 
 
 ### 📖 Book-Specific Policies
-- [x] **Individual Book Borrowing Duration:** Allow management to override the default campus borrowing policy for specific books (e.g., change a 3-day limit to 2 days for high-demand books).
-- [x] **Schema Update:** Add `borrowing_duration_override` or similar column to the `books` table.
-- [x] **Policy Enforcement:** Update borrowing logic to prioritize book-specific duration before falling back to campus-wide `library_policies`.
+- [x] **Individual Book Borrowing Duration:** Allow management to override default campus borrowing policy for specific books.
+- [x] **Schema Update:** Add `borrowing_duration_override` to the `books` table.
+- [x] **Policy Enforcement:** Update borrowing logic to prioritize book-specific duration.
 
 ### 📚 Book Catalog Enhancements
-- [x] **Inter-campus Warning:** In `public/js/student/bookCatalog.js` (and faculty/staff versions), added a SweetAlert2 confirmation modal when a user attempts to "Add to Cart" a book from a different campus.
-    - *Message:* "Are you sure? This book belongs to [Campus Name]."
+- [x] **Inter-campus Warning:** Added a SweetAlert2 confirmation modal when a user attempts to "Add to Cart" a book from a different campus.
 
 ### 🎫 QR Borrowing & Scanning
-- [ ] **Attendance Overdue Warning:** In `src/Controllers/ScannerController.php`, check if the student has overdue items during an attendance scan and display a "Soft Warning" badge in the SweetAlert.
-- [ ] **Actionable Profile Errors:** Improve the "Incomplete Profile" error message in the scanner to specify which fields are missing (Course/Year) and where the student can update them.
-- [ ] **Profile Requirement Audit:** Review mandatory fields in `ScannerController.php`. Ensure critical data (Course, Year) blocks attendance for report accuracy, but evaluate if non-critical missing data (e.g., Profile Picture) should still allow entry.
-- [ ] **Campus Visibility on Scan:** In `src/Controllers/QRScannerController.php`, update the scan result to display the student's home campus and the specific campus where each item in the ticket belongs.
+- [ ] **Attendance Overdue Warning:** Check if the student has overdue items during attendance scan and display a "Soft Warning".
+- [ ] **Actionable Profile Errors:** Improve the "Incomplete Profile" error message to specify missing fields.
+- [ ] **Campus Visibility on Scan:** Update scan results to display student's home campus and book's originating campus.
 
 ### 📜 Transaction History
-- [ ] **Data Visibility:** Update `src/Repositories/TransactionHistoryRepository.php` to include student and item campus information.
-- [ ] **Display Details:** Show the student's home campus and the book's campus in the transaction history table/details.
+- [ ] **Data Visibility:** Update Repository to include student and item campus information.
+- [ ] **Display Details:** Show the student's home campus and the book's campus in the history table.
 
 ---
 
@@ -80,14 +81,14 @@
 
 ### 👥 User Management
 - [ ] **Campus Filtering:** Add a dropdown to filter users by campus in the Admin/Superadmin User Management table.
-- [ ] **Role-Based Dropdown Lockdown:** Restrict or disable campus selection dropdowns for `campus_admin` and `librarian` roles across all modules (User Management, Books, Reports). If a user is restricted to one campus, the dropdown should be locked to their assigned campus to prevent "empty" states from invalid selections.
+- [ ] **Role-Based Dropdown Lockdown:** Restrict or disable campus selection dropdowns for **Local Admins** and **Librarians** across all modules.
 - [ ] **Bulk Import Alignment:** Ensure `campus_id` is correctly mapped during bulk student/staff imports.
-- [ ] **Superadmin "Campus View" Context:** Allow Superadmins to switch their active campus context via the UI to view the dashboard and logs from any branch's perspective.
-- [ ] **Granular Action Permissions:** Upgrade RBAC to support action-level checks (e.g., "librarian can View books but not Delete them").
+- [ ] **Global Admin "Campus View" Context:** Allow Superadmins and Global Admins to switch their active campus context via the UI to view logs from any branch.
+- [ ] **Granular Action Permissions:** Upgrade RBAC to support action-level checks (e.g., "View only" vs "Edit").
 
 ### 🛠️ Librarian Controls
-- [ ] **Manual Borrowing Campus:** Include campus display/filter in the Manual Borrowing form to clarify where books are being pulled from.
-- [ ] **Campus Lockdown (Optional):** Add a toggle to restrict Librarians to only view/manage data from their assigned campus.
+- [ ] **Manual Borrowing Campus:** Include campus display/filter in the Manual Borrowing form.
+- [ ] **Campus Lockdown (Optional):** Add a toggle to restrict Librarians to only view data from their assigned campus.
 
 ---
 
@@ -95,15 +96,15 @@
 *Inter-campus operations and smart features.*
 
 ### 🚚 Inter-Campus Logistics
-- [ ] **Inter-Campus Transfer Request:** Allow students to request books from other campuses, creating a "Transfer Task" for librarians to move physical books between branches.
-- [ ] **"Return Anywhere" Logic:** Allow students to return books to any campus library; the system will automatically update the book's current physical location.
+- [ ] **Inter-Campus Transfer Request:** Allow students to request books from other campuses (Transfer Task).
+- [ ] **"Return Anywhere" Logic:** Allow students to return books to any campus library.
 
 ### 📊 Smart Analytics & Visibility
-- [ ] **Campus Capacity Tracker:** Use QR Attendance data to show a "Real-time Occupancy" percentage for each campus library on the dashboard.
-- [ ] **Campus-specific Reports:** Add campus filters to all report types (Most Borrowed, Top Visitors, etc.).
-- [ ] **Audit Log Campus Tracking:** Include the campus name in Audit Logs to see which branch initiated an action.
-- [ ] **Campus-Specific Report Branding:** Update PDF report headers to dynamically display the logo and address of the originating campus.
-- [ ] **Email Notification Templates:** Transition hardcoded email strings into HTML templates with UCC branding and campus-specific signatures.
+- [ ] **Campus Capacity Tracker:** Use QR Attendance data to show real-time occupancy.
+- [ ] **Campus-specific Reports:** Add campus filters to all report types.
+- [ ] **Audit Log Campus Tracking:** Include the campus name in Audit Logs.
+- [ ] **Campus-Specific Report Branding:** Update PDF report headers with branch-specific info.
+- [ ] **Email Notification Templates:** Transition templates into HTML with UCC branding and branch signatures.
 
 ---
 
@@ -111,14 +112,14 @@
 *Performance optimization and high-load hardening.*
 
 ### ⚡ Performance & Data
-- [ ] **Database Indexing Audit:** Full audit to ensure all frequently filtered columns (`status`, `campus_id`, `role`) have optimized indexes.
-- [ ] **Caching Layer (Redis):** Implement Redis to cache slow-changing data like Library Policies and User Permissions.
-- [ ] **Asynchronous Task Queue:** Set up a background worker for non-blocking tasks like sending overdue emails.
-- [ ] **API Rate Limiting:** Implement request throttling to protect the server from abuse or accidental DoS attacks.
-- [ ] **Database Migration System:** Set up a version-controlled migration runner (e.g., Phinx or custom) to sync schema changes across branches.
-- [ ] **Structured Error Logging:** Integrate a structured logging library (like Monolog) for better error tracing and Audit Log enrichment.
+- [ ] **Database Indexing Audit:** Optimize indexes for `status`, `campus_id`, and `role`.
+- [ ] **Caching Layer (Redis):** Implement Redis for slow-changing data.
+- [ ] **Asynchronous Task Queue:** Background worker for sending emails.
+- [ ] **API Rate Limiting:** Implement request throttling.
+- [ ] **Database Migration System:** Version-controlled schema management.
+- [ ] **Structured Error Logging:** Integrate Monolog for better tracing.
 
 ### ☁️ Storage & Infrastructure
-- [ ] **Cloud Storage Integration:** Support AWS S3 or Google Cloud Storage for media assets.
-- [ ] **Image Optimization Pipeline:** Automatic resizing and compression for book covers on upload.
-- [ ] **Centralized Error Tracking:** Integrate Sentry for real-time production error capturing.
+- [ ] **Cloud Storage Integration:** Support AWS S3 or Google Cloud for media assets.
+- [ ] **Image Optimization Pipeline:** Automatic resizing for book covers.
+- [ ] **Centralized Error Tracking:** Integrate Sentry Capturing.
