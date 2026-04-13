@@ -34,6 +34,8 @@ class DashboardController extends Controller
         } else {
             $viewPath = "{$role}/dashboard";
         }
+
+        $this->view($viewPath, [
             "title" => "Dashboard",
             "stats" => $stats
         ]);
