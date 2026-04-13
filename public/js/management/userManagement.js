@@ -111,6 +111,7 @@ window.addEventListener("DOMContentLoaded", () => {
     let users = [];
     let selectedRole = "All Roles";
     let selectedStatus = "All Status";
+    let selectedCampus = null; // Smart Filter for Superadmin/Global Admin
     let currentEditingUserId = null;
     let isMultiSelectMode = false;
     let selectedUsers = new Set();
@@ -249,7 +250,7 @@ window.addEventListener("DOMContentLoaded", () => {
     function togglePermissionsUI(container, role, userModules = []) {
         if (!container) return;
         const normalized = role.toLowerCase();
-        const isPrivileged = ['admin', 'librarian', 'campus admin', 'campus_admin'].includes(normalized);
+        const isPrivileged = ['admin', 'librarian'].includes(normalized);
         container.classList.toggle("hidden", !isPrivileged);
         if (!isPrivileged) return;
 
@@ -264,9 +265,6 @@ window.addEventListener("DOMContentLoaded", () => {
 
         if (normalized === 'admin') {
             Object.values(wrappers).forEach(w => w?.classList.remove('hidden'));
-        } else if (normalized.includes('campus')) {
-            wrappers['user management']?.classList.remove('hidden');
-            wrappers['bulk delete queue']?.classList.remove('hidden');
         }
 
         container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
@@ -307,6 +305,7 @@ window.addEventListener("DOMContentLoaded", () => {
             search,
             role: selectedRole === 'All Roles' ? '' : selectedRole,
             status: selectedStatus === 'All Status' ? '' : selectedStatus,
+            campus_id: selectedCampus || '',
             limit,
             offset: (page - 1) * limit
         });
@@ -330,6 +329,33 @@ window.addEventListener("DOMContentLoaded", () => {
             showErrorToast("Error", "Failed to load users.");
         } finally { isLoading = false; }
     }
+
+    window.selectCampus = (el, name, id) => {
+        const valEl = document.getElementById("campusDropdownValue");
+        if (valEl) valEl.textContent = name;
+        selectedCampus = id;
+        setActiveOption("campusDropdownMenu", el);
+        currentPage = 1;
+        loadUsers(1);
+    };
+
+    window.selectRole = (el, val) => {
+        const valEl = document.getElementById("roleDropdownValue");
+        if (valEl) valEl.textContent = val;
+        selectedRole = val;
+        setActiveOption("roleDropdownMenu", el);
+        currentPage = 1;
+        loadUsers(1);
+    };
+
+    window.selectStatus = (el, val) => {
+        const valEl = document.getElementById("statusDropdownValue");
+        if (valEl) valEl.textContent = val;
+        selectedStatus = val;
+        setActiveOption("statusDropdownMenu", el);
+        currentPage = 1;
+        loadUsers(1);
+    };
 
     function renderTable(usersToRender) {
         if (!userTableBody) return;
@@ -371,7 +397,7 @@ window.addEventListener("DOMContentLoaded", () => {
             }
 
             const name = [user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ');
-            const roleBadge = getRoleBadge(user.role);
+            const roleBadge = getRoleBadge(user.role, user.campus_id);
             const statusBadge = getStatusBadge(isActive ? "Active" : "Inactive");
 
             let actions = `
@@ -555,14 +581,21 @@ window.addEventListener("DOMContentLoaded", () => {
         el?.classList.add("bg-orange-50", "font-semibold");
     }
 
-    function getRoleBadge(role) {
+    function getRoleBadge(role, campusId = null) {
         const r = role.toLowerCase();
         let color = "bg-gray-500";
-        if (r === 'student') color = "bg-green-500";
-        else if (r === 'admin') color = "bg-orange-600";
-        else if (r.includes('campus')) color = "bg-blue-600";
-        else if (r === 'librarian') color = "bg-amber-500";
-        return `<span class="${color} text-white px-2 py-1 rounded text-xs">${role}</span>`;
+        let displayRole = role;
+
+        if (r === 'student') {
+            color = "bg-green-500";
+        } else if (r === 'admin') {
+            color = "bg-orange-600";
+            displayRole = campusId ? 'Local Admin' : 'Global Admin';
+        } else if (r === 'librarian') {
+            color = "bg-amber-500";
+        }
+
+        return `<span class="${color} text-white px-2 py-1 rounded text-xs">${displayRole}</span>`;
     }
 
     function getStatusBadge(status) {
@@ -650,7 +683,7 @@ window.addEventListener("DOMContentLoaded", () => {
     // Init
     loadUsers(currentPage);
     // Simple dropdown toggle setup
-    ["roleDropdownBtn", "statusDropdownBtn", "userRoleDropdownBtn", "editRoleDropdownBtn", "editStatusDropdownBtn"].forEach(id => {
+    ["roleDropdownBtn", "statusDropdownBtn", "campusDropdownBtn", "userRoleDropdownBtn", "editRoleDropdownBtn", "editStatusDropdownBtn"].forEach(id => {
         const btn = document.getElementById(id);
         const menu = btn?.nextElementSibling;
         btn?.addEventListener('click', (e) => { e.stopPropagation(); menu?.classList.toggle('hidden'); });

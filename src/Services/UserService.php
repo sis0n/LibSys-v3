@@ -55,11 +55,11 @@ class UserService
     /**
      * Get comprehensive user details by ID
      */
-    public function getUserDetails(int $id): array
+    public function getUserDetails(int $id, ?int $campusIdFilter = null): array
     {
-        $user = $this->userRepo->getUserById($id);
+        $user = $this->userRepo->getUserById($id, $campusIdFilter);
         if (!$user) {
-            throw new Exception('User not found');
+            throw new Exception('User not found or unauthorized access.');
         }
 
         $role = strtolower($user['role'] ?? '');
@@ -101,6 +101,11 @@ class UserService
         $username = trim($data['username'] ?? '');
         $role = strtolower(trim($data['role'] ?? ''));
         $campusId = $campusIdFilter ?? $data['campus_id'] ?? null;
+
+        // Ensure campusId is truly null if it's empty or 0 (for Global Admin)
+        if (empty($campusId) || $campusId == 0) {
+            $campusId = null;
+        }
 
         $isGlobalEligible = in_array($role, ['superadmin', 'admin']);
         
@@ -152,7 +157,7 @@ class UserService
         }
     }
 
-    private function handleRoleSpecificInsert(int $userId, string $role, array $data, int $campusId, $db): void
+    private function handleRoleSpecificInsert(int $userId, string $role, array $data, ?int $campusId, $db): void
     {
         switch ($role) {
             case 'student':
@@ -387,6 +392,11 @@ class UserService
             $modulesKeyWasPresent = array_key_exists('modules', $data);
             unset($data['modules'], $data['role'], $data['user_id']);
 
+            // Normalize campus_id for Global Admins
+            if (array_key_exists('campus_id', $data) && (empty($data['campus_id']) || $data['campus_id'] == 0)) {
+                $data['campus_id'] = null;
+            }
+
             if (!empty($data['password'])) {
                 $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
             } else {
@@ -468,19 +478,19 @@ class UserService
     /**
      * Search users by keyword
      */
-    public function searchUsers(string $query): array
+    public function searchUsers(string $query, ?int $campusId = null): array
     {
         if (empty($query)) {
-            return $this->userRepo->getAllUsers();
+            return $this->userRepo->getPaginatedUsers(100, 0, '', 'All Roles', 'All Status', null, $campusId);
         }
-        return $this->userRepo->searchUsers($query);
+        return $this->userRepo->searchUsers($query, $campusId);
     }
 
     /**
      * Get all users
      */
-    public function getAllUsers(): array
+    public function getAllUsers(?int $campusId = null): array
     {
-        return $this->userRepo->getAllUsers();
+        return $this->userRepo->getPaginatedUsers(1000, 0, '', 'All Roles', 'All Status', null, $campusId);
     }
 }

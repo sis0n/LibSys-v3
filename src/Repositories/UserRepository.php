@@ -329,9 +329,9 @@ class UserRepository
     }
   }
 
-  public function getUserById($id)
+  public function getUserById($id, ?int $campusId = null)
   {
-    $stmt = $this->db->prepare("
+    $sql = "
             SELECT 
                 user_id, 
                 first_name, 
@@ -346,16 +346,24 @@ class UserRepository
                 campus_id
             FROM users 
             WHERE user_id = :id AND deleted_at IS NULL
-        ");
+        ";
+    if ($campusId !== null) {
+      $sql .= " AND campus_id = :campus_id";
+    }
+
+    $stmt = $this->db->prepare($sql);
     $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+    if ($campusId !== null) {
+      $stmt->bindValue(':campus_id', $campusId, PDO::PARAM_INT);
+    }
     $stmt->execute();
     return $stmt->fetch(PDO::FETCH_ASSOC);
   }
 
-  public function searchUsers(string $query): array
+  public function searchUsers(string $query, ?int $campusId = null): array
   {
     $searchQuery = "%" . strtolower($query) . "%";
-    $stmt = $this->db->prepare("
+    $sql = "
             SELECT 
                 user_id, 
                 username, 
@@ -373,9 +381,19 @@ class UserRepository
                 OR LOWER(username) LIKE :query
                 OR LOWER(email) LIKE :query)
             AND deleted_at IS NULL
-            ORDER BY user_id DESC
-        ");
-    $stmt->execute(['query' => $searchQuery]);
+        ";
+    if ($campusId !== null) {
+      $sql .= " AND campus_id = :campus_id";
+    }
+
+    $sql .= " ORDER BY user_id DESC";
+
+    $stmt = $this->db->prepare($sql);
+    $params = ['query' => $searchQuery];
+    if ($campusId !== null) {
+      $params['campus_id'] = $campusId;
+    }
+    $stmt->execute($params);
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
   }
 
@@ -643,7 +661,7 @@ class UserRepository
     $query = "
         SELECT 
             u.user_id, u.username, u.first_name, u.middle_name, u.last_name, u.suffix,
-            u.email, u.role, u.is_active, u.created_at,
+            u.email, u.role, u.is_active, u.created_at, u.campus_id,
             GROUP_CONCAT(um.module_name) AS modules
         " . $baseQuery . " GROUP BY u.user_id" . $orderBy . $limitOffset;
 

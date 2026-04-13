@@ -13,23 +13,24 @@
 
 | Module               | Superadmin | Admin (Global) | Admin (Local)    | Librarian          |
 |----------------------|------------|----------------|------------------|--------------------|
-| User Management      | ✅ Full    | ✅ Full         | ✅ Campus Only   | ❌                 |
-| Campus Management    | ✅ Full    | ❌              | ❌               | ❌                 |
-| Student Promotion    | ✅ Full    | ✅ Full         | ✅ Campus Only   | ❌                 |
-| Book Management      | ✅ Full    | ✅ Full         | ✅ Campus Only   | ✅ Campus Only     |
-| Equipment Management | ✅ Full    | ✅ Full         | ✅ Campus Only   | ✅ Campus Only     |
-| QR Scanner           | ✅ Full    | ✅ Full         | ✅ Campus Only   | ✅ Campus Only     |
-| Returning            | ✅ Full    | ✅ Full         | ✅ Campus Only   | ✅ Campus Only     |
-| Borrowing Form       | ✅ Full    | ✅ Full         | ✅ Campus Only   | ✅ Campus Only     |
-| Attendance Logs      | ✅ Full    | ✅ Full         | ✅ Campus Only   | ✅ Campus Only     |
-| Overdue Tracking     | ✅ Full    | ✅ Full         | ✅ Campus Only   | ✅ Campus Only     |
-| Reports              | ✅ Full    | ✅ Full         | ✅ Campus Only   | ✅ Campus Only     |
-| Transaction History  | ✅ Full    | ✅ Full         | ✅ Campus Only   | ✅ Campus Only     |
-| Audit Trail          | ✅ Full    | ✅ Full         | ❌               | ❌                 |
-| Backup               | ✅ Full    | ❌              | ❌               | ❌                 |
-| Restore User         | ✅ Full    | ✅ Full         | ❌               | ❌                 |
-| Bulk Delete Queue    | ✅ Full    | ✅ Full         | ✅ Campus Only   | ❌                 |
-| Library Policies     | ✅ Full    | ❌              | ❌               | ❌                 |
+| User Management      | ✅ Full    | ✅ Full       | ✅ Campus Only   | ❌                |
+| Campus Management    | ✅ Full    | ❌            | ❌               | ❌                |
+| Student Promotion    | ✅ Full    | ❌            | ❌               | ❌                |
+| Book Management      | ✅ Full    | ✅ Full       | ✅ Campus Only   | ✅ Campus Only    |
+| Equipment Management | ✅ Full    | ✅ Full       | ✅ Campus Only   | ✅ Campus Only    |
+| QR Scanner           | ✅ Full    | ✅ Full       | ✅ Full          | ✅ Full           |
+| Returning            | ✅ Full    | ✅ Full       | ✅ Full          | ✅ Full           |
+| Borrowing Form       | ✅ Full    | ✅ Full       | ✅ Full          | ✅ Full           |
+| Attendance Logs      | ✅ Full    | ✅ Full       | ✅ Campus Only   | ✅ Campus Only    |
+| Overdue Tracking     | ✅ Full    | ✅ Full       | ✅ Campus Only   | ✅ Campus Only    |
+| Reports              | ✅ Full    | ✅ Full       | ✅ Campus Only   | ✅ Campus Only    |
+| Transaction History  | ✅ Full    | ✅ Full       | ✅ Campus Only   | ✅ Campus Only    |
+
+| Audit Trail          | ✅ Full    | ❌            | ❌               | ❌                |
+| Backup               | ✅ Full    | ❌            | ❌               | ❌                |
+| Restore User         | ✅ Full    | ✅ Full       | ❌               | ❌                |
+| Bulk Delete Queue    | ✅ Full    | ✅ Full       | ✅ Campus Only   | ❌                |
+| Library Policies     | ✅ Full    | ❌            | ❌               | ❌                |
 
 ---
 

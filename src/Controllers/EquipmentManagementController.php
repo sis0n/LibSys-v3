@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\RoleHelper;
 use App\Services\EquipmentService;
 use App\Services\CampusService;
 use Exception;
@@ -22,7 +23,11 @@ class EquipmentManagementController extends Controller
     public function index()
     {
         $role = $_SESSION['role'] ?? 'guest';
-        
+        $campusId = $_SESSION['user_data']['campus_id'] ?? null;
+
+        // Global Admin is privileged (can switch campuses)
+        $isPrivileged = RoleHelper::isSuperadmin($role) || RoleHelper::isGlobalAdmin($role, $campusId);
+
         $data = [
             'title' => 'Equipment Management',
             'currentPage' => 'equipmentManagement',
@@ -33,8 +38,8 @@ class EquipmentManagementController extends Controller
                 'multi_delete' => $role === 'superadmin' || $role === 'admin'
             ],
             'filters' => [
-                'campus_locked' => !in_array($role, ['superadmin', 'admin']),
-                'default_campus' => $_SESSION['user_data']['campus_id'] ?? null
+                'campus_locked' => !$isPrivileged,
+                'default_campus' => $campusId
             ]
         ];
 
@@ -56,7 +61,8 @@ class EquipmentManagementController extends Controller
     {
         try {
             if (!$id) throw new Exception('ID required');
-            $equipment = $this->equipmentService->getEquipmentDetails((int)$id);
+            $campusFilter = $this->getCampusFilter();
+            $equipment = $this->equipmentService->getEquipmentDetails((int)$id, $campusFilter);
             return $this->jsonResponse(['equipment' => $equipment]);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage(), 404);

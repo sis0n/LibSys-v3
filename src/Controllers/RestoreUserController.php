@@ -15,9 +15,16 @@ class RestoreUserController extends Controller
   public function __construct()
   {
     parent::__construct();
-    if (!RoleHelper::hasGlobalAccess($_SESSION['role'] ?? '')) {
-      http_response_code(403);
-      die("Forbidden: Access denied.");
+    
+    $role = $_SESSION['role'] ?? '';
+    $campusId = $_SESSION['user_data']['campus_id'] ?? null;
+
+    $isSuper = RoleHelper::isSuperadmin($role);
+    $isGlobalAdmin = RoleHelper::isGlobalAdmin($role, $campusId);
+
+    if (!$isSuper && !$isGlobalAdmin) {
+      $this->view('errors/403', ['title' => 'Access Denied']);
+      exit;
     }
     $this->restoreUserRepo = new RestoreUserRepository();
     $this->auditRepo = new \App\Repositories\AuditLogRepository();

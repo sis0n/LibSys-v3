@@ -16,6 +16,10 @@ class StudentPromotionController extends Controller
     public function __construct()
     {
         parent::__construct();
+        if (!RoleHelper::isSuperadmin($_SESSION['role'] ?? '')) {
+            $this->view('errors/403', ['title' => 'Access Denied']);
+            exit;
+        }
         $this->promotionService = new PromotionService();
         $this->courseRepo = new CollegeCourseRepository();
     }

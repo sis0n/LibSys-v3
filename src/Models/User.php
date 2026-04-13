@@ -76,6 +76,16 @@ class User
         return RoleHelper::isAdmin($user['role'] ?? '');
     }
 
+    public static function isGlobalAdmin(array $user): bool
+    {
+        return RoleHelper::isGlobalAdmin($user['role'] ?? '', $user['campus_id'] ?? null);
+    }
+
+    public static function isLocalAdmin(array $user): bool
+    {
+        return RoleHelper::isLocalAdmin($user['role'] ?? '', $user['campus_id'] ?? null);
+    }
+
     public static function isLibrarian(array $user): bool
     {
         return RoleHelper::isLibrarian($user['role'] ?? '');

@@ -40,11 +40,11 @@ class BookService
     /**
      * Get book details by ID
      */
-    public function getBookDetails(int $id): array
+    public function getBookDetails(int $id, ?int $campusIdRestriction = null): array
     {
-        $book = $this->bookRepo->findBookByIdAll($id);
+        $book = $this->bookRepo->findBookByIdAll($id, $campusIdRestriction);
         if (!$book) {
-            throw new Exception('Book not found.');
+            throw new Exception('Book not found or unauthorized access.');
         }
 
         if (!empty($book['cover'])) {

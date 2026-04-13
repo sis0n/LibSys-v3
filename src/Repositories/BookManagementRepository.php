@@ -107,17 +107,29 @@ class BookManagementRepository
         return (int) $stmt->fetchColumn();
     }
 
-    public function findBookById($id)
+    public function findBookById($id, ?int $campusId = null)
     {
-        $stmt = $this->db->prepare("SELECT b.*, c.campus_name FROM books b LEFT JOIN campuses c ON b.campus_id = c.campus_id WHERE b.book_id = ? AND b.is_active = 1");
-        $stmt->execute([$id]);
+        $sql = "SELECT b.*, c.campus_name FROM books b LEFT JOIN campuses c ON b.campus_id = c.campus_id WHERE b.book_id = ? AND b.is_active = 1";
+        $params = [$id];
+        if ($campusId !== null) {
+            $sql .= " AND b.campus_id = ?";
+            $params[] = $campusId;
+        }
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function findBookByIdAll($id)
+    public function findBookByIdAll($id, ?int $campusId = null)
     {
-        $stmt = $this->db->prepare("SELECT b.*, c.campus_name FROM books b LEFT JOIN campuses c ON b.campus_id = c.campus_id WHERE b.book_id = ?");
-        $stmt->execute([$id]);
+        $sql = "SELECT b.*, c.campus_name FROM books b LEFT JOIN campuses c ON b.campus_id = c.campus_id WHERE b.book_id = ?";
+        $params = [$id];
+        if ($campusId !== null) {
+            $sql .= " AND b.campus_id = ?";
+            $params[] = $campusId;
+        }
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 

@@ -31,8 +31,6 @@ class DashboardController extends Controller
             $viewPath = "Admin/dashboard";
         } elseif (RoleHelper::isLibrarian($role)) {
             $viewPath = "Librarian/dashboard";
-        } else {
-            $viewPath = "{$role}/dashboard";
         }
 
         $this->view($viewPath, [

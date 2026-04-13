@@ -36,12 +36,17 @@ class EquipmentService
     /**
      * Get equipment details by ID
      */
-    public function getEquipmentDetails(int $id): array
+    public function getEquipmentDetails(int $id, ?int $campusIdRestriction = null): array
     {
         $equipment = $this->equipmentRepo->getById($id);
         if (!$equipment) {
             throw new Exception('Equipment not found');
         }
+
+        if ($campusIdRestriction !== null && $equipment['campus_id'] != $campusIdRestriction) {
+            throw new Exception('Unauthorized access to this equipment.');
+        }
+
         return $equipment;
     }
 

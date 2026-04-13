@@ -74,6 +74,27 @@
                         onclick="selectStatus(this, 'Inactive')">Inactive</div>
                 </div>
             </div>
+
+            <?php if (!$filters['campus_locked']): ?>
+            <div class="relative inline-block text-left ml-3">
+                <button id="campusDropdownBtn"
+                    class="border border-orange-200 rounded-lg px-3 py-2 text-sm text-gray-700 flex items-center justify-between gap-2 w-44 hover:bg-orange-50 transition">
+                    <span id="campusDropdownValue">All Campuses</span>
+                    <i class="ph ph-caret-down text-xs"></i>
+                </button>
+                <div id="campusDropdownMenu"
+                    class="absolute mt-1 w-full bg-white border border-orange-200 rounded-lg shadow-md hidden z-20 max-h-60 overflow-y-auto">
+                    <div class="campus-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
+                        onclick="selectCampus(this, 'All Campuses', null)">All Campuses</div>
+                    <?php foreach ($campuses as $campus): ?>
+                        <div class="campus-item px-3 py-2 hover:bg-orange-100 cursor-pointer"
+                            onclick="selectCampus(this, '<?= $campus['campus_name'] ?>', <?= $campus['campus_id'] ?>)">
+                            <?= $campus['campus_name'] ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
     </div>
     

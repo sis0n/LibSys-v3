@@ -89,6 +89,20 @@ class RoleHelper
     }
 
     /**
+     * Check if the user is a Global Admin (role 'admin' and no campus assigned)
+     */
+    public static function isGlobalAdmin(string $role, ?int $campusId): bool {
+        return self::isAdmin($role) && $campusId === null;
+    }
+
+    /**
+     * Check if the user is a Local Admin (role 'admin' and has a campus assigned)
+     */
+    public static function isLocalAdmin(string $role, ?int $campusId): bool {
+        return self::isAdmin($role) && $campusId !== null;
+    }
+
+    /**
      * High-level check for management staff (Superadmin, Admin, Librarian)
      */
     public static function isStaff(string $role): bool {
@@ -101,14 +115,21 @@ class RoleHelper
     }
 
     /**
-     * Check if the user has global access (Superadmin or Admin)
-     * NOTE: Admin can be Global or Local. This just checks if the role ITSELF allows global potential.
+     * Check if the user has global system-wide access (Superadmin or Global Admin)
      */
-    public static function hasGlobalAccess(string $role): bool {
+    public static function hasGlobalAccess(string $role, ?int $campusId = null): bool {
         $normalized = self::compareNormalize($role);
-        return in_array($normalized, [
-            self::compareNormalize(self::SUPERADMIN),
-            self::compareNormalize(self::ADMIN)
-        ]);
+        
+        // Superadmin is always global
+        if ($normalized === self::compareNormalize(self::SUPERADMIN)) {
+            return true;
+        }
+
+        // Admin is global if they have no campus_id
+        if ($normalized === self::compareNormalize(self::ADMIN)) {
+            return $campusId === null;
+        }
+
+        return false;
     }
 }

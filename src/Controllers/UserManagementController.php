@@ -43,6 +43,9 @@ class UserManagementController extends Controller
         $allCampuses = $campusRepo->getAllCampuses();
         $activeCampuses = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);
 
+        // Global Admin is privileged (can switch campuses)
+        $isPrivileged = RoleHelper::isSuperadmin($role) || RoleHelper::isGlobalAdmin($role, $campusId);
+
         $data = [
             'title' => 'User Management',
             'currentPage' => 'userManagement',
@@ -57,7 +60,7 @@ class UserManagementController extends Controller
                 'manage_permissions' => RoleHelper::isSuperadmin($role) || RoleHelper::isAdmin($role),
             ],
             'filters' => [
-                'campus_locked' => !RoleHelper::isSuperadmin($role),
+                'campus_locked' => !$isPrivileged,
                 'default_campus' => $campusId
             ],
             'user_role' => $role
@@ -70,6 +73,12 @@ class UserManagementController extends Controller
     {
         try {
             $campusId = $this->getCampusFilter();
+            
+            // Allow manual campus filtering if user is privileged
+            if ($campusId === null && isset($_GET['campus_id']) && $_GET['campus_id'] !== '') {
+                $campusId = (int)$_GET['campus_id'];
+            }
+
             $result = $this->userService->getPaginatedUsers($_GET, $_SESSION['user_id'] ?? null, $campusId);
             return $this->jsonResponse(['users' => $result['users'], 'totalCount' => $result['totalCount']]);
         } catch (Exception $e) {
@@ -80,7 +89,8 @@ class UserManagementController extends Controller
     public function getUserById($id)
     {
         try {
-            $details = $this->userService->getUserDetails((int)$id);
+            $campusId = $this->getCampusFilter();
+            $details = $this->userService->getUserDetails((int)$id, $campusId);
             return $this->jsonResponse($details);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage(), 404);
@@ -91,7 +101,14 @@ class UserManagementController extends Controller
     {
         try {
             $query = $_GET['q'] ?? '';
-            $users = $this->userService->searchUsers($query);
+            $campusId = $this->getCampusFilter();
+
+            // Allow manual campus filtering if user is privileged
+            if ($campusId === null && isset($_GET['campus_id']) && $_GET['campus_id'] !== '') {
+                $campusId = (int)$_GET['campus_id'];
+            }
+
+            $users = $this->userService->searchUsers($query, $campusId);
             return $this->jsonResponse(['users' => $users]);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());

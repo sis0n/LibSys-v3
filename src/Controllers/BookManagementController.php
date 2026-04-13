@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\RoleHelper;
 use App\Services\BookService;
 use App\Services\StorageService;
 use Exception;
@@ -22,20 +23,24 @@ class BookManagementController extends Controller
     public function index()
     {
         $role = $_SESSION['role'] ?? 'guest';
-        
+        $campusId = $_SESSION['user_data']['campus_id'] ?? null;
+
+        // Global Admin is privileged (can switch campuses)
+        $isPrivileged = RoleHelper::isSuperadmin($role) || RoleHelper::isGlobalAdmin($role, $campusId);
+
         $data = [
             'title' => 'Book Management',
             'currentPage' => 'bookManagement',
             'permissions' => [
-                'add' => true, // Librarians and above can add
+                'add' => true,
                 'edit' => true,
                 'delete' => $role === 'superadmin' || $role === 'admin',
                 'bulk_import' => $role === 'superadmin' || $role === 'admin',
                 'multi_delete' => $role === 'superadmin' || $role === 'admin'
             ],
             'filters' => [
-                'campus_locked' => !in_array($role, ['superadmin', 'admin']),
-                'default_campus' => $_SESSION['user_data']['campus_id'] ?? null
+                'campus_locked' => !$isPrivileged,
+                'default_campus' => $campusId
             ]
         ];
 
@@ -56,7 +61,8 @@ class BookManagementController extends Controller
     public function getDetails($id)
     {
         try {
-            $book = $this->bookService->getBookDetails((int)$id);
+            $campusFilter = $this->getCampusFilter();
+            $book = $this->bookService->getBookDetails((int)$id, $campusFilter);
             return $this->jsonResponse(['book' => $book]);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage(), 404);
