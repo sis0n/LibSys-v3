@@ -239,8 +239,8 @@ class ManualBorrowingRepository
       $transactionCampusId = $borrowData['campus_id'] ?? $borrowerCampusId; // Originating campus of the transaction
 
       $stmt = $this->db->prepare("
-            INSERT INTO borrow_transactions (student_id, staff_id, faculty_id, guest_id, transaction_code, borrowed_at, due_date, status, method, collateral_id, librarian_id, campus_id)
-            VALUES (:student_id, :staff_id, :faculty_id, :guest_id, :transaction_code, NOW(), :due_date, 'borrowed', 'manual', :collateral_id, :librarian_id, :campus_id)
+            INSERT INTO borrow_transactions (student_id, staff_id, faculty_id, guest_id, transaction_code, borrowed_at, due_date, status, method, collateral_id, librarian_id)
+            VALUES (:student_id, :staff_id, :faculty_id, :guest_id, :transaction_code, NOW(), :due_date, 'borrowed', 'manual', :collateral_id, :librarian_id)
         ");
       $stmt->execute([
         ':student_id' => $studentId,
@@ -250,8 +250,7 @@ class ManualBorrowingRepository
         ':transaction_code' => $transactionCode,
         ':due_date' => $dueDate,
         ':collateral_id' => $collateralId,
-        ':librarian_id' => $borrowData['librarian_id'] ?? null,
-        ':campus_id' => $transactionCampusId
+        ':librarian_id' => $borrowData['librarian_id'] ?? null
       ]);
 
       $transactionId = $this->db->lastInsertId();

@@ -111,8 +111,10 @@ class ReturningRepository
   public function findItemByIdentifier($identifier): ?array
   {
     try {
-      // 1. First, look for ACTIVE BORROWINGS (borrowed or overdue) for this book
-      $stmt = $this->db->prepare("
+      // 1. First, look for ACTIVE BORROWINGS (borrowed or overdue)
+      
+      // Query for Book
+      $sqlBook = "
           SELECT 
               bti.item_id as borrowing_id, bti.transaction_id, bti.book_id, bti.status as bti_status,
               bt.borrowed_at, bt.due_date,
@@ -122,8 +124,9 @@ class ReturningRepository
               st.employee_id,
               c.course_code, c.course_title,
               cl.college_code,
-              b.title as book_title, b.author, b.accession_number, b.call_number, b.book_isbn, b.campus_id as book_campus_id,
-              camp.campus_name as home_campus_name
+              b.title as item_title, b.author, b.accession_number as identifier, b.call_number, b.book_isbn, b.campus_id as home_campus_id,
+              camp.campus_name as home_campus_name,
+              'Book' as item_type
           FROM borrow_transaction_items bti
           JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
           JOIN books b ON bti.book_id = b.book_id
@@ -136,9 +139,45 @@ class ReturningRepository
           LEFT JOIN campuses camp ON camp.campus_id = b.campus_id
           WHERE b.accession_number = ?
           AND bti.status IN ('borrowed', 'overdue')
-      ");
+      ";
+
+      // Query for Equipment
+      $sqlEquip = "
+          SELECT 
+              bti.item_id as borrowing_id, bti.transaction_id, bti.equipment_id, bti.status as bti_status,
+              bt.borrowed_at, bt.due_date,
+              u.first_name, u.last_name, u.email,
+              s.student_number, s.year_level, s.section,
+              f.unique_faculty_id,
+              st.employee_id,
+              c.course_code, c.course_title,
+              cl.college_code,
+              e.equipment_name as item_title, NULL as author, e.asset_tag as identifier, NULL as call_number, NULL as book_isbn, e.campus_id as home_campus_id,
+              camp.campus_name as home_campus_name,
+              'Equipment' as item_type
+          FROM borrow_transaction_items bti
+          JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
+          JOIN equipments e ON bti.equipment_id = e.equipment_id
+          LEFT JOIN students s ON bt.student_id = s.student_id
+          LEFT JOIN faculty f ON bt.faculty_id = f.faculty_id
+          LEFT JOIN staff st ON bt.staff_id = st.staff_id
+          LEFT JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+          LEFT JOIN courses c ON s.course_id = c.course_id
+          LEFT JOIN colleges cl ON f.college_id = cl.college_id
+          LEFT JOIN campuses camp ON camp.campus_id = e.campus_id
+          WHERE (e.asset_tag = ? OR e.equipment_id = ?)
+          AND bti.status IN ('borrowed', 'overdue')
+      ";
+
+      $stmt = $this->db->prepare($sqlBook);
       $stmt->execute([$identifier]);
       $activeBorrowings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+      if (count($activeBorrowings) == 0) {
+          $stmt = $this->db->prepare($sqlEquip);
+          $stmt->execute([$identifier, $identifier]);
+          $activeBorrowings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+      }
 
       if (count($activeBorrowings) > 0) {
         $matches = [];
@@ -151,10 +190,10 @@ class ReturningRepository
 
           $matches[] = [
             'status' => 'borrowed',
-            'item_type' => 'Book',
-            'title' => $row['book_title'],
+            'item_type' => $row['item_type'],
+            'title' => $row['item_title'],
             'author' => $row['author'] ?? null,
-            'accession_number' => $row['accession_number'],
+            'accession_number' => $row['identifier'],
             'borrower_name' => $borrowerName,
             'id_number' => $idNumber,
             'course_or_department' => $dept,
@@ -162,7 +201,7 @@ class ReturningRepository
             'due_date' => $row['due_date'],
             'borrowing_id' => $row['borrowing_id'],
             'availability' => $row['bti_status'],
-            'home_campus_id' => $row['book_campus_id'],
+            'home_campus_id' => $row['home_campus_id'],
             'home_campus_name' => $row['home_campus_name'],
             'call_number' => $row['call_number'] ?? null,
             'book_isbn' => $row['book_isbn'] ?? null
@@ -176,11 +215,11 @@ class ReturningRepository
         ];
       }
 
-      // 2. If no active borrowings, check if the book exists at all (Available)
+      // 2. If no active borrowings, check if the item exists at all (Available)
       $stmt = $this->db->prepare("
           SELECT b.*, camp.campus_name as home_campus_name 
           FROM books b 
-          LEFT JOIN campuses camp ON b.campus_id = camp.id 
+          LEFT JOIN campuses camp ON b.campus_id = camp.campus_id 
           WHERE b.accession_number = ?
       ");
       $stmt->execute([$identifier]);
@@ -191,9 +230,33 @@ class ReturningRepository
           'status' => 'available',
           'details' => array_merge($book, [
             'item_type' => 'Book',
+            'title' => $book['title'],
             'home_campus_name' => $book['home_campus_name']
           ])
         ];
+      }
+
+      // Check equipment availability
+      $stmt = $this->db->prepare("
+          SELECT e.*, camp.campus_name as home_campus_name 
+          FROM equipments e 
+          LEFT JOIN campuses camp ON e.campus_id = camp.campus_id 
+          WHERE (e.asset_tag = ? OR e.equipment_id = ?)
+      ");
+      $stmt->execute([$identifier, $identifier]);
+      $equip = $stmt->fetch(PDO::FETCH_ASSOC);
+
+      if ($equip) {
+          return [
+              'status' => 'available',
+              'details' => [
+                  'item_type' => 'Equipment',
+                  'title' => $equip['equipment_name'],
+                  'accession_number' => $equip['asset_tag'],
+                  'home_campus_name' => $equip['home_campus_name'],
+                  'availability' => $equip['status']
+              ]
+          ];
       }
 
       return ['status' => 'not_found'];

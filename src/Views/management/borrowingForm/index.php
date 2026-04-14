@@ -41,7 +41,7 @@
                     <div>
                         <label for="collateral_id" class="block text-sm font-medium text-gray-700 mb-1">Collateral ID <span class="text-red-500">*</span></label>
                         <div class="relative">
-                            <input type="hidden" id="collateral_id_hidden" name="collateral_id_hidden">
+                            <input type="hidden" id="collateral_id_hidden" name="collateral_id">
                             <button type="button" id="collateralDropdownBtn" class="w-full flex items-center justify-between px-4 py-2 rounded-lg border border-amber-300 bg-white text-left focus:ring-2 focus:ring-amber-500 outline-none transition text-sm">
                                 <span id="collateralDropdownValue">Select Collateral</span>
                                 <i class="ph ph-caret-down text-gray-500"></i>
@@ -141,6 +141,7 @@
 
     <script>
         const BASE_URL = "<?= BASE_URL ?>";
+        const BORROWING_API_BASE = "<?= $apiBasePath ?>";
     </script>
-    <script src="<?= BASE_URL ?>/js/superadmin/borrowingForm.js" defer></script>
+    <script src="<?= BASE_URL ?>/js/management/borrowingForm.js" defer></script>
 </main>

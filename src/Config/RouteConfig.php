@@ -309,6 +309,7 @@ class RouteConfig
     $router->get('userManagement', 'UserManagementController@index', ['user management']);
     $router->get('bookManagement', 'BookManagementController@index', ['book management']);
     $router->get('equipmentManagement', 'EquipmentManagementController@index', ['equipment management']);
+    $router->get('borrowingForm', 'ManualBorrowingController@index', ['borrowing form']);
     $router->get('qrScanner', 'QRScannerController@index', ['qr scanner']);
     $router->get('returning', 'ReturningController@index', ['returning']);
     $router->get('transactionHistory', 'TransactionHistoryController@index', ['transaction history']);

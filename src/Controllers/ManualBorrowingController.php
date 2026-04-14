@@ -16,12 +16,24 @@ class ManualBorrowingController extends Controller
         $this->borrowingService = new BorrowingService();
     }
 
+    public function index()
+    {
+        $role = strtolower($_SESSION['role'] ?? '');
+        $apiBasePath = BASE_URL . '/api/' . ($role === 'superadmin' ? 'superadmin' : ($role === 'admin' ? 'admin' : 'librarian')) . '/borrowingForm';
+
+        $this->view('management/borrowingForm/index', [
+            'title' => 'Borrowing Form',
+            'currentPage' => 'borrowingForm',
+            'apiBasePath' => $apiBasePath
+        ]);
+    }
+
     public function getEquipments(): void
     {
         try {
             $campusId = $this->getCampusFilter();
             $equipments = $this->borrowingService->getAvailableEquipments($campusId);
-            $this->jsonResponse($equipments);
+            $this->jsonResponse(['list' => $equipments]);
         } catch (Exception $e) {
             $this->errorResponse('Failed to fetch equipments', 500);
         }
@@ -31,7 +43,7 @@ class ManualBorrowingController extends Controller
     {
         try {
             $collaterals = $this->borrowingService->getCollaterals();
-            $this->jsonResponse($collaterals);
+            $this->jsonResponse(['list' => $collaterals]);
         } catch (Exception $e) {
             $this->errorResponse('Failed to fetch collaterals', 500);
         }

@@ -324,21 +324,41 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   function openReturnModal(data) {
+    const isBook = data.item_type === 'Book';
+    
     document.getElementById("modal-book-title").textContent = data.title;
-    document.getElementById("modal-book-author").textContent =
-      data.author || "";
-    document.getElementById("modal-book-accessionnumber").textContent =
-      data.accession_number || data.title;
-    document.getElementById("modal-book-callnumber").textContent =
-      data.call_number || "N/A";
-    document.getElementById("modal-borrower-name").textContent =
-      data.borrower_name;
+    document.getElementById("modal-book-author").textContent = data.author || "";
+    document.getElementById("modal-book-accessionnumber").textContent = data.accession_number || data.title;
+    document.getElementById("modal-book-callnumber").textContent = data.call_number || "N/A";
+    document.getElementById("modal-book-isbn").textContent = data.book_isbn || "N/A";
+    document.getElementById("modal-borrower-name").textContent = data.borrower_name;
     document.getElementById("modal-student-id").textContent = data.id_number;
-    document.getElementById("modal-borrower-course").textContent =
-      data.course_or_department;
-    document.getElementById("modal-borrower-year-section").textContent =
-      data.student_year_section;
+    document.getElementById("modal-borrower-course").textContent = data.course_or_department;
+    document.getElementById("modal-borrower-year-section").textContent = data.student_year_section;
     document.getElementById("modal-due-date").textContent = data.due_date;
+
+    // Handle visibility based on item type
+    document.querySelectorAll('.book-only-field').forEach(el => {
+        if (isBook) el.style.display = '';
+        else el.style.display = 'none';
+    });
+
+    const assetTagContainer = document.getElementById("modal-equipment-asset-tag-container");
+    const assetTagValue = document.getElementById("modal-equipment-asset-tag");
+    if (assetTagContainer && assetTagValue) {
+        if (!isBook) {
+            assetTagValue.textContent = data.accession_number;
+            assetTagContainer.style.display = 'block';
+        } else {
+            assetTagContainer.style.display = 'none';
+        }
+    }
+
+    const itemTypeLabel = document.getElementById("modal-item-type-label");
+    if (itemTypeLabel) itemTypeLabel.textContent = isBook ? "Book Title" : "Equipment Name";
+
+    const itemIdentifierLabel = document.getElementById("modal-item-identifier-label");
+    if (itemIdentifierLabel) itemIdentifierLabel.textContent = isBook ? "Accession No." : "Asset Tag / ID";
 
     const warningEl = document.getElementById("cross-campus-warning");
     const campusNameEl = document.getElementById("home-campus-name");
