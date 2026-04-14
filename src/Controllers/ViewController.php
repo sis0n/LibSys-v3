@@ -194,6 +194,16 @@ class ViewController extends Controller
         header('Location: ' . BASE_URL . '/qrScanner');
         exit;
     }
+
+    if ($action === 'returning') {
+        header('Location: ' . BASE_URL . '/returning');
+        exit;
+    }
+
+    if ($action === 'transactionHistory') {
+        header('Location: ' . BASE_URL . '/transactionHistory');
+        exit;
+    }
     if (in_array($action, ['bookManagement', 'equipmentManagement', 'libraryPolicies', 'bulkDeleteQueue'])) {      $campusRepo = new \App\Repositories\CampusRepository();
       $allCampuses = $campusRepo->getAllCampuses();
       $data['campuses'] = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);

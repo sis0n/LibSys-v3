@@ -16,6 +16,18 @@ class TransactionHistoryController extends Controller
         $this->historyService = new BorrowingHistoryService();
     }
 
+    public function index()
+    {
+        $role = strtolower($_SESSION['role'] ?? '');
+        $apiBasePath = BASE_URL . '/api/' . ($role === 'superadmin' ? 'superadmin' : ($role === 'admin' ? 'admin' : 'librarian')) . '/transactionHistory/json';
+
+        $this->view('management/transactionHistory/index', [
+            'title' => 'Transaction History',
+            'currentPage' => 'transactionHistory',
+            'apiBasePath' => $apiBasePath
+        ]);
+    }
+
     public function getTransactionsJson()
     {
         try {

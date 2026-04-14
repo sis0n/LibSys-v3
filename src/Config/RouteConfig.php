@@ -310,6 +310,8 @@ class RouteConfig
     $router->get('bookManagement', 'BookManagementController@index', ['book management']);
     $router->get('equipmentManagement', 'EquipmentManagementController@index', ['equipment management']);
     $router->get('qrScanner', 'QRScannerController@index', ['qr scanner']);
+    $router->get('returning', 'ReturningController@index', ['returning']);
+    $router->get('transactionHistory', 'TransactionHistoryController@index', ['transaction history']);
 
     // Unified API Routes
     $router->get('api/bookManagement/fetch', 'BookManagementController@fetch', ['book management']);

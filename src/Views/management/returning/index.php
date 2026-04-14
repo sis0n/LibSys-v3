@@ -89,7 +89,7 @@
 
 <!-- RETURN MODAL -->
 <div id="return-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] hidden px-4">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg border-2 border-orange-500 max-h-[90vh] flex flex-col overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg border-2 border-orange-500 max-h-[90vh] flex flex-col overflow-hidden text-left">
         <!-- Header -->
         <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-white flex-shrink-0">
             <div>
@@ -152,9 +152,6 @@
                     <div class="col-span-2"><p id="modal-borrower-course-label" class="text-[10px] text-gray-500 uppercase font-bold">Course / Department</p><p id="modal-borrower-course" class="text-sm font-medium text-gray-700"></p></div>
                     <div><p id="modal-year-section-label" class="text-[10px] text-gray-500 uppercase font-bold">Year & Section</p><p id="modal-borrower-year-section" class="text-sm font-medium text-gray-700"></p></div>
                     <div><p class="text-[10px] text-red-500 uppercase font-bold">Due Date</p><p id="modal-due-date" class="text-sm font-bold text-red-600"></p></div>
-                    <p id="modal-borrower-email" class="hidden"></p>
-                    <p id="modal-borrower-contact" class="hidden"></p>
-                    <p id="modal-borrow-date" class="hidden"></p>
                 </div>
             </div>
 
@@ -214,7 +211,7 @@
 
 <!-- AVAILABLE ITEM MODAL -->
 <div id="available-book-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] hidden px-4">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 mx-4 border-2 border-green-500 max-h-[90vh] flex flex-col overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 mx-4 border-2 border-green-500 max-h-[90vh] flex flex-col overflow-hidden text-left">
         <div class="flex justify-between items-center mb-4 flex-shrink-0">
             <div>
                 <h3 class="text-xl font-bold text-gray-800">Item Scanned Successfully</h3>
@@ -282,7 +279,7 @@
 
 <!-- SELECTION MODAL (For Duplicates) -->
 <div id="selection-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] hidden px-4 py-6">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl border border-orange-200 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl border border-orange-200 flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200 text-left">
         <!-- Header -->
         <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-white">
             <div class="flex items-center gap-3">
@@ -315,5 +312,6 @@
 
 <script>
     const STORAGE_URL = "<?= STORAGE_URL ?>";
+    const RETURNING_API_BASE = "<?= $apiBasePath ?>";
 </script>
-<script src="<?= BASE_URL ?>/js/superadmin/returning.js" defer></script>
+<script src="<?= BASE_URL ?>/js/management/returning.js" defer></script>

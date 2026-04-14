@@ -1,3 +1,164 @@
+/**
+ * Unified Returning JS
+ * Smart logic for handling book returns across roles.
+ */
+
+// --- CORE CONFIRMATION FUNCTION (FINAL TEMPLATE) ---
+async function showCustomConfirmationModal(title, text, confirmText = "Confirm") {
+  if (typeof Swal == "undefined") return confirm(title);
+  const result = await Swal.fire({
+    background: "transparent",
+    buttonsStyling: false,
+    width: "450px",
+
+    html: `
+            <div class="flex flex-col text-center">
+                <div class="flex justify-center mb-3">
+                    <div class="flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 text-orange-600">     
+                        <i class="ph ph-warning-circle text-3xl"></i>
+                    </div>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-800">${title}</h3>
+                <p class="text-[14px] text-gray-700 mt-1">${text}</p>
+            </div>
+        `,
+    showCancelButton: true,
+    confirmButtonText: confirmText,
+    cancelButtonText: "Cancel",
+
+    customClass: {
+      popup:
+        "!rounded-xl !shadow-lg !p-6 !bg-white !border-2 !border-orange-500 !border-solid",
+      confirmButton:
+        "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700 !mx-2 !font-semibold !text-base",
+      cancelButton:
+        "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300 !mx-2 !font-semibold !text-base",
+      actions: "!mt-4",
+    },
+  });
+  return result.isConfirmed;
+}
+
+// ==========================================================
+// SWEETALERT UTILITY FUNCTIONS
+// ==========================================================
+
+const showReturningToast = (title, text, duration = 3000) => {
+  const iconClass = "ph-x-circle";
+  const contentColor = "text-red-600";
+  const bgColor = "bg-red-100";
+  const inlineStyle =
+    "border: 2px solid #dc2626 !important; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);";
+
+  Swal.fire({
+    toast: true,
+    position: "bottom-end",
+    showConfirmButton: false,
+    timer: duration,
+    width: "360px",
+    background: "white",
+    backdrop: `transparent`,
+    customClass: { popup: `!rounded-xl !p-4 backdrop-blur-sm` },
+    html: `
+            <div class="flex flex-col text-left">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="flex items-center justify-center w-10 h-10 rounded-full ${bgColor} ${contentColor}">        
+                        <i class="ph ${iconClass} text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-[15px] font-semibold ${contentColor}">${title}</h3>
+                        <p class="text-[13px] text-gray-700 mt-0.5">${text}</p>
+                    </div>
+                </div>
+            </div>
+        `,
+    didOpen: (toast) => {
+      toast.style.cssText = inlineStyle + " " + toast.style.cssText;
+    },
+  });
+};
+
+const showFinalReturningModal = (isSuccess, title, message) => {
+  if (typeof Swal == "undefined") return alert(`${title}: ${message}`);
+
+  const duration = 3000;
+  let timerInterval;
+
+  const theme = isSuccess
+    ? {
+        bg: "bg-green-50",
+        border: "border-green-300",
+        text: "text-green-700",
+        iconBg: "bg-green-100",
+        iconColor: "text-green-600",
+        iconClass: "ph-check-circle",
+        progressBarColor: "bg-green-500",
+      }
+    : {
+        bg: "bg-red-50",
+        border: "border-red-300",
+        text: "text-red-700",
+        iconBg: "bg-red-100",
+        iconColor: "text-red-600",
+        iconClass: "ph-x-circle",
+        progressBarColor: "bg-red-500",
+      };
+
+  Swal.fire({
+    showConfirmButton: false,
+    showCancelButton: false,
+    buttonsStyling: false,
+    width: "450px",
+    backdrop: `rgba(0,0,0,0.3) backdrop-filter: blur(6px)`,
+    timer: duration,
+    didOpen: () => {
+      const progressBar =
+        Swal.getHtmlContainer().querySelector("#progress-bar");
+      let width = 100;
+      timerInterval = setInterval(() => {
+        width -= 100 / (duration / 100);
+        if (progressBar) progressBar.style.width = width + "%";
+      }, 100);
+    },
+    willClose: () => clearInterval(timerInterval),
+    html: `
+            <div class="w-full ${theme.bg} border-2 ${theme.border} rounded-2xl p-8 shadow-xl text-center">
+                <div class="flex items-center justify-center w-16 h-16 rounded-full ${theme.iconBg} mx-auto mb-4">
+                    <i class="ph ${theme.iconClass} ${theme.iconColor} text-3xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold ${theme.text}">${title}</h3>
+                <p class="text-base ${theme.text} mt-3 mb-4">${message}</p>
+                <div class="w-full bg-gray-200 h-2 rounded mt-4 overflow-hidden">
+                    <div id="progress-bar" class="${theme.progressBarColor} h-2 w-full transition-all duration-100 ease-linear"></div>
+                </div>
+            </div>
+        `,
+    customClass: {
+      popup:
+        "!block !bg-transparent !shadow-none !p-0 !border-0 !w-auto !min-w-0 !max-w-none",
+    },
+  });
+};
+
+const showSuccessReturningToast = (title, body = "") => {
+  if (typeof Swal == "undefined") return alert(title);
+  Swal.fire({
+    toast: true,
+    position: "bottom-end",
+    showConfirmButton: false,
+    timer: 3000,
+    width: "360px",
+    background: "transparent",
+    html: `<div class="flex flex-col text-left"><div class="flex items-center gap-3 mb-2"><div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-600"><i class="ph ph-check-circle text-lg"></i></div><div><h3 class="text-[15px] font-semibold text-green-600">${title}</h3><p class="text-[13px] text-gray-700 mt-0.5">${body}</p></div></div></div>`,
+    customClass: {
+      popup:
+        "!rounded-xl !shadow-md !border-2 !border-green-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#f0fff5] shadow-[0_0_8px_#22c55e70]",
+    },
+  });
+};
+
+// ==========================================================
+
 document.addEventListener("DOMContentLoaded", function () {
   const returnModal = document.getElementById("return-modal");
   const closeButton = document.getElementById("modal-close-button");
@@ -23,45 +184,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (availableBookModal) availableBookModal.classList.add("hidden");
   };
 
-  function showSuccessToast(title, body = "") {
-    if (typeof Swal == "undefined") return alert(title);
-    Swal.fire({
-      toast: true,
-      position: "bottom-end",
-      showConfirmButton: false,
-      timer: 3000,
-      width: "360px",
-      background: "transparent",
-      html: `<div class="flex flex-col text-left"><div class="flex items-center gap-3 mb-2"><div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-600"><i class="ph ph-check-circle text-lg"></i></div><div><h3 class="text-[15px] font-semibold text-green-600">${title}</h3><p class="text-[13px] text-gray-700 mt-0.5">${body}</p></div></div></div>`,
-      customClass: {
-        popup:
-          "!rounded-xl !shadow-md !border-2 !border-green-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#f0fff5] shadow-[0_0_8px_#22c55e70]",
-      },
-    });
-  }
-
-  function showErrorToast(title, body = "An error occurred.") {
-    if (typeof Swal == "undefined") return alert(title);
-    Swal.fire({
-      toast: true,
-      position: "bottom-end",
-      showConfirmButton: false,
-      timer: 4000,
-      width: "360px",
-      background: "transparent",
-      html: `<div class="flex flex-col text-left"><div class="flex items-center gap-3 mb-2"><div class="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600"><i class="ph ph-x-circle text-lg"></i></div><div><h3 class="text-[15px] font-semibold text-red-600">${title}</h3><p class="text-[13px] text-gray-700 mt-0.5">${body}</p></div></div></div>`,
-      customClass: {
-        popup:
-          "!rounded-xl !shadow-md !border-2 !border-red-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ff6b6b70]",
-      },
-    });
-  }
-
   async function fetchRecentReturns() {
     try {
-      const response = await fetch(
-        "api/librarian/returning/getRecent?limit=10",
-      );
+      const response = await fetch(`${RETURNING_API_BASE}/getRecent?limit=10`);
       const result = await response.json();
       if (result.success) {
         renderRecentReturns(result.list);
@@ -84,14 +209,26 @@ document.addEventListener("DOMContentLoaded", function () {
             <tr class="hover:bg-gray-50 transition-colors">
                 <td class="px-4 py-4">
                     <div class="flex flex-col">
-                        <span class="font-bold text-gray-800 text-base leading-tight">${item.first_name} ${item.last_name}</span>
-                        <span class="text-[14px] text-orange-600 font-mono font-black uppercase tracking-tight mt-0.5">${item.identifier || "N/A"}</span>
+                        <span class="font-bold text-gray-800 text-base leading-tight">${
+                          item.first_name
+                        } ${item.last_name}</span>
+                        <span class="text-[14px] text-orange-600 font-mono font-black uppercase tracking-tight mt-0.5">${
+                          item.identifier || "N/A"
+                        }</span>
                     </div>
                 </td>
-                <td class="px-4 py-4 text-center text-sm text-gray-700 font-bold">${item.year_section || "N/A"}</td>
-                <td class="px-4 py-4 text-center text-sm text-gray-600 font-mono font-black">${item.accession_number || "N/A"}</td>
-                <td class="px-4 py-4 text-gray-800 text-sm font-medium truncate max-w-[200px]" title="${item.item_title}">${item.item_title}</td>
-                <td class="px-4 py-4 text-right text-orange-700 text-base font-black font-mono">${formatTime(item.returned_at)}</td>
+                <td class="px-4 py-4 text-center text-sm text-gray-700 font-bold">${
+                  item.year_section || "N/A"
+                }</td>
+                <td class="px-4 py-4 text-center text-sm text-gray-600 font-mono font-black">${
+                  item.accession_number || "N/A"
+                }</td>
+                <td class="px-4 py-4 text-gray-800 text-sm font-medium truncate max-w-[200px]" title="${
+                  item.item_title
+                }">${item.item_title}</td>
+                <td class="px-4 py-4 text-right text-orange-700 text-base font-black font-mono">${formatTime(
+                  item.returned_at,
+                )}</td>
             </tr>
         `,
       )
@@ -119,7 +256,7 @@ document.addEventListener("DOMContentLoaded", function () {
     formData.append("accession_number", accessionNumber);
 
     try {
-      const response = await fetch("api/librarian/returning/checkBook", {
+      const response = await fetch(`${RETURNING_API_BASE}/checkBook`, {
         method: "POST",
         body: formData,
       });
@@ -139,14 +276,18 @@ document.addEventListener("DOMContentLoaded", function () {
         } else if (data.status === "available") {
           openAvailableModal(data.details);
         } else {
-          showErrorToast("Not Found", "No active borrowing or item found with this identifier.");
+          showReturningToast(
+            "Not Found",
+            "No active borrowing or item found with this identifier.",
+            4000,
+          );
         }
       } else {
-        showErrorToast("Error", result.message || "An error occurred.");
+        showReturningToast("Error", result.message || "An error occurred.");
       }
     } catch (error) {
       console.error("Error:", error);
-      showErrorToast("Error", "Could not connect to server.");
+      showReturningToast("Error", "Could not connect to server.");
     }
     accessionInput.value = "";
     qrCodeValueInput.value = "";
@@ -252,7 +393,7 @@ document.addEventListener("DOMContentLoaded", function () {
       "available-modal-img-placeholder",
     );
     if (data.cover && img) {
-      img.src = STORAGE_URL + "/" + data.cover;
+      img.src = `${STORAGE_URL}/${data.cover}`;
       img.classList.remove("hidden");
       placeholder.classList.add("hidden");
     } else if (img) {
@@ -270,25 +411,51 @@ document.addEventListener("DOMContentLoaded", function () {
         document.querySelector('input[name="item_condition"]:checked')?.value ||
         "good";
 
-      const formData = new FormData();
-      formData.append("borrowing_id", id);
-      formData.append("condition", condition);
+      const confirmed = await showCustomConfirmationModal(
+        "Return Item?",
+        "Are you sure you want to mark this item as returned?",
+        "Yes, Return It!",
+      );
 
-      try {
-        const response = await fetch("api/librarian/returning/markReturned", {
-          method: "POST",
-          body: formData,
+      if (confirmed) {
+        Swal.fire({
+          background: "transparent",
+          html: `
+                    <div class="flex flex-col items-center justify-center gap-2">
+                        <div class="animate-spin rounded-full h-10 w-10 border-4 border-orange-200 border-t-orange-600"></div>
+                        <p class="text-gray-700 text-[14px]">Processing return...<br><span class="text-sm text-gray-500">Just a moment.</span></p>
+                    </div>
+                `,
+          allowOutsideClick: false,
+          showConfirmButton: false,
+          customClass: {
+            popup:
+              "!rounded-xl !shadow-md !border-2 !border-orange-400 !p-6 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ffb34770]",
+          },
         });
-        const result = await response.json();
-        if (result.success) {
-          closeReturnModal();
-          showSuccessToast("Item Returned", result.message);
-          renderRecentReturns(result.recent);
-        } else {
-          showErrorToast("Return Failed", result.message);
+
+        const formData = new FormData();
+        formData.append("borrowing_id", id);
+        formData.append("condition", condition);
+
+        try {
+          const response = await fetch(`${RETURNING_API_BASE}/markReturned`, {
+            method: "POST",
+            body: formData,
+          });
+          const result = await response.json();
+          Swal.close();
+          if (result.success) {
+            closeReturnModal();
+            showFinalReturningModal(true, "Item Returned", result.message);
+            renderRecentReturns(result.recent);
+          } else {
+            showFinalReturningModal(false, "Return Failed", result.message);
+          }
+        } catch (error) {
+          Swal.close();
+          showFinalReturningModal(false, "Error", "Could not process return.");
         }
-      } catch (error) {
-        showErrorToast("Error", "Could not process return.");
       }
     });
   }
@@ -314,7 +481,7 @@ document.addEventListener("DOMContentLoaded", function () {
         const formData = new FormData();
         formData.append("borrowing_id", id);
         formData.append("days", days);
-        const response = await fetch("api/librarian/returning/extend", {
+        const response = await fetch(`${RETURNING_API_BASE}/extend`, {
           method: "POST",
           body: formData,
         });
@@ -322,12 +489,12 @@ document.addEventListener("DOMContentLoaded", function () {
         if (result.success) {
           document.getElementById("modal-due-date").textContent =
             result.new_due_date;
-          showSuccessToast(
+          showSuccessReturningToast(
             "Due Date Extended",
             `New due date: ${result.new_due_date}`,
           );
         } else {
-          showErrorToast("Extension Failed", result.message);
+          showReturningToast("Extension Failed", result.message);
         }
       }
     });

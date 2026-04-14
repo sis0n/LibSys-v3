@@ -19,6 +19,18 @@ class ReturningController extends Controller
         $this->notificationService = new NotificationService();
     }
 
+    public function index()
+    {
+        $role = strtolower($_SESSION['role'] ?? '');
+        $apiBasePath = BASE_URL . '/api/' . ($role === 'superadmin' ? 'superadmin' : ($role === 'admin' ? 'admin' : 'librarian')) . '/returning';
+
+        $this->view('management/returning/index', [
+            'title' => 'Returning',
+            'currentPage' => 'returning',
+            'apiBasePath' => $apiBasePath
+        ]);
+    }
+
     public function getOverdue()
     {
         try {

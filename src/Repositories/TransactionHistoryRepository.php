@@ -53,7 +53,8 @@ class TransactionHistoryRepository
                 END as item_type,
 
                 c.course_code, c.course_title,
-                cl.college_code, cl.college_name
+                cl.college_code, cl.college_name,
+                cam.campus_name
         ";
   }
 
@@ -85,6 +86,7 @@ class TransactionHistoryRepository
             
             -- Joined user table for campus filtering
             JOIN users u ON u.user_id = COALESCE(s.user_id, f.user_id, st.user_id)
+            LEFT JOIN campuses cam ON u.campus_id = cam.campus_id
         ";
   }
 
