@@ -87,7 +87,7 @@ class CartController extends Controller
         try {
             $auth = $this->ensureAuthenticated();
             $cartItems = $this->cartService->getUserCart($auth['user_id']);
-            $this->jsonResponse(['items' => $cartItems]);
+            $this->json($cartItems); // Return array directly
         } catch (Exception $e) {
             $this->errorResponse($e->getMessage());
         }

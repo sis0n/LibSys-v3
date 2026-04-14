@@ -309,6 +309,7 @@ class RouteConfig
     $router->get('userManagement', 'UserManagementController@index', ['user management']);
     $router->get('bookManagement', 'BookManagementController@index', ['book management']);
     $router->get('equipmentManagement', 'EquipmentManagementController@index', ['equipment management']);
+    $router->get('qrScanner', 'QRScannerController@index', ['qr scanner']);
 
     // Unified API Routes
     $router->get('api/bookManagement/fetch', 'BookManagementController@fetch', ['book management']);

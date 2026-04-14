@@ -1,4 +1,9 @@
-// --- CORE CONFIRMATION FUNCTION (FINAL TEMPLATE) ---
+/**
+ * Unified QR Scanner JS
+ * Smart logic for handling QR scanning and transaction processing across roles.
+ */
+
+// --- CORE CONFIRMATION FUNCTION ---
 async function showCustomConfirmationModal(title, text, confirmText = "Confirm") {
     if (typeof Swal == "undefined") return confirm(title);
     const result = await Swal.fire({
@@ -23,46 +28,23 @@ async function showCustomConfirmationModal(title, text, confirmText = "Confirm")
         
       customClass: {
         popup: "!rounded-xl !shadow-lg !p-6 !bg-white !border-2 !border-orange-500 !border-solid",
-
-        // Confirm Button (Orange, Large, Bold)
-        confirmButton:
-            "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700 !mx-2 !font-semibold !text-base", 
-        // Cancel Button (Gray, Large, Bold)
-        cancelButton:
-            "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300 !mx-2 !font-semibold !text-base", 
-
+        confirmButton: "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700 !mx-2 !font-semibold !text-base", 
+        cancelButton: "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300 !mx-2 !font-semibold !text-base", 
         actions: "!mt-4"
         },
     });
     return result.isConfirmed;
 }
-// ----------------------------------------------------
-
-const scanResultCard = document.getElementById('scanResultCard');
-const transactionHistoryTableBody = document.getElementById('transactionHistoryTableBody');
-const defaultAvatar = `/LibSys/public/img/default_avatar.png`;
-
-const searchInput = document.getElementById('transactionSearchInput');
-const dateInput = document.getElementById('transactionDate');
-const statusBtn = document.getElementById("statusFilterBtn");
-const statusMenu = document.getElementById("statusFilterMenu");
-const statusValue = document.getElementById("statusFilterValue");
 
 // ==========================================================
 // SWEETALERT UTILITY FUNCTIONS
 // ==========================================================
 
-// Utility for showing small, auto-closing toasts (Consistent Design)
-// NOTE: Hardcoded to RED/Error theme as per user request to simplify and enforce RED border.
-const showLibrarianToast = (title, text, duration = 3000) => {
-    
-    // HARDCODED RED BORDER THEME (FOR INVALID TICKET/ERROR)
+const showScannerToast = (title, text, duration = 3000) => {
     const iconClass = 'ph-x-circle'; 
     const contentColor = 'text-red-600'; 
     const bgColor = 'bg-red-100'; 
-    
-    // Ang CSS na ito ang mag-e-enforce ng RED border!
-    const inlineStyle = "border: 2px solid #dc2626 !important; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);"; // #dc2626 is red-600 color
+    const inlineStyle = "border: 2px solid #dc2626 !important; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);";
 
     Swal.fire({
         toast: true,
@@ -70,18 +52,9 @@ const showLibrarianToast = (title, text, duration = 3000) => {
         showConfirmButton: false,
         timer: duration,
         width: "360px",
-        
         background: "white", 
         backdrop: `transparent`,
-        
-        // Dito natin ilalagay ang style attribute:
-        customClass: {
-            popup: `!rounded-xl !p-4 backdrop-blur-sm`, 
-        },
-        // Ginawa natin itong hiwalay na parameter, imbes na nasa customClass.popup
-        // dahil ang style ay dapat nasa top level ng Swal.fire object para sa toast.
-        // PERO dahil hindi natin alam ang buong configuration, gagamitin natin ang didOpen hook.
-        
+        customClass: { popup: `!rounded-xl !p-4 backdrop-blur-sm` },
         html: `
             <div class="flex flex-col text-left">
                 <div class="flex items-center gap-3 mb-2">
@@ -95,23 +68,18 @@ const showLibrarianToast = (title, text, duration = 3000) => {
                 </div>
             </div>
         `,
-        
-        // Gagamitin ang didOpen hook para i-inject ang style pagkatapos ma-render ang toast.
         didOpen: (toast) => {
-            // I-apply ang style sa popup element
-            const popup = toast;
-            popup.style.cssText = inlineStyle + " " + popup.style.cssText;
+            toast.style.cssText = inlineStyle + " " + toast.style.cssText;
         },
     });
 };
-// Custom Modal for Final Success/Error (with Progress Bar, auto-close, and fixed size)
-const showFinalLibrarianModal = (isSuccess, title, message) => {
+
+const showFinalScannerModal = (isSuccess, title, message) => {
     if (typeof Swal == "undefined") return alert(`${title}: ${message}`);
     
     const duration = 3000;
     let timerInterval;
 
-    // HARDCODED THEMES based on isSuccess
     const theme = isSuccess ? {
         bg: 'bg-green-50',
         border: 'border-green-300',
@@ -134,35 +102,25 @@ const showFinalLibrarianModal = (isSuccess, title, message) => {
         showConfirmButton: false, 
         showCancelButton: false,
         buttonsStyling: false,
-        
         width: '450px', 
-        
         backdrop: `rgba(0,0,0,0.3) backdrop-filter: blur(6px)`,
         timer: duration, 
-        
         didOpen: () => {
             const progressBar = Swal.getHtmlContainer().querySelector("#progress-bar");
             let width = 100;
             timerInterval = setInterval(() => {
                 width -= 100 / (duration / 100); 
-                if (progressBar) {
-                    progressBar.style.width = width + "%";
-                }
+                if (progressBar) progressBar.style.width = width + "%";
             }, 100);
         },
-        willClose: () => {
-            clearInterval(timerInterval);
-        },
-
+        willClose: () => clearInterval(timerInterval),
         html: `
             <div class="w-full ${theme.bg} border-2 ${theme.border} rounded-2xl p-8 shadow-xl text-center">
                 <div class="flex items-center justify-center w-16 h-16 rounded-full ${theme.iconBg} mx-auto mb-4">
                     <i class="ph ${theme.iconClass} ${theme.iconColor} text-3xl"></i>
                 </div>
                 <h3 class="text-2xl font-bold ${theme.text}">${title}</h3>
-                <p class="text-base ${theme.text} mt-3 mb-4">
-                    ${message}
-                </p>
+                <p class="text-base ${theme.text} mt-3 mb-4">${message}</p>
                 <div class="w-full bg-gray-200 h-2 rounded mt-4 overflow-hidden">
                     <div id="progress-bar" class="${theme.progressBarColor} h-2 w-full transition-all duration-100 ease-linear"></div>
                 </div>
@@ -175,6 +133,9 @@ const showFinalLibrarianModal = (isSuccess, title, message) => {
 };
 
 // ==========================================================
+
+const scanResultCard = document.getElementById('scanResultCard');
+const defaultAvatar = `${BASE_URL_JS}/public/img/default_avatar.png`;
 
 function renderScanResult(data) {
     if (!data || !data.isValid) {
@@ -324,64 +285,15 @@ function renderScanResult(data) {
     }
 }
 
-function renderTransactionHistory(transactions) {
-    if (!transactionHistoryTableBody) return;
-
-    if (!transactions || transactions.length === 0) {
-        transactionHistoryTableBody.innerHTML = `
-            <tr>
-                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
-                    <div class="flex flex-col items-center justify-center gap-3 mt-6 mb-6">
-                        <div class="bg-orange-100 rounded-full w-16 h-16 flex items-center justify-center">
-                            <i class="ph ph-clock text-3xl text-orange-500"></i>
-                        </div>
-                        <p class="text-base font-semibold text-gray-700">No transactions found</p>
-                        <p class="text-sm text-gray-500">There are no recent borrowing or return activities matching the filters.</p>
-                    </div>
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    let tableRowsHtml = '';
-    transactions.forEach(transaction => {
-        const statusClass = transaction.status === 'Borrowed'
-            ? 'bg-orange-100 text-orange-800'
-            : transaction.status === 'Returned'
-                ? 'bg-green-100 text-green-800'
-                : 'bg-gray-100 text-gray-800';
-
-        tableRowsHtml += `
-            <tr class="hover:bg-orange-50 transition">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${transaction.studentName}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${transaction.studentNumber}</td>
-                <td class="px-6 py-4 max-w-[240px] break-words text-sm text-gray-500">${transaction.itemsBorrowed}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${transaction.borrowedDateTime}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${transaction.returnedDateTime}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
-                        ${transaction.status}
-                    </span>
-                </td>
-            </tr>
-        `;
-    });
-
-    transactionHistoryTableBody.innerHTML = tableRowsHtml;
-}
-
 function processTransaction(transactionCode, action) {
     const actionText = 'finalize this borrowing transaction';
 
-    // 🟠 Confirmation Modal (Using the custom function to match design)
     showCustomConfirmationModal(
         `Borrow Transaction?`,
         `Are you sure you want to ${actionText} for ticket ${transactionCode}?`,
         `Yes, Process Borrow!`
     ).then((isConfirmed) => {
         if (isConfirmed) {
-            // 🟠 Loading Animation
             Swal.fire({
                 background: "transparent",
                 html: `
@@ -397,7 +309,8 @@ function processTransaction(transactionCode, action) {
                 },
             });
 
-            const url = `api/superadmin/qrScanner/borrowTransaction`;
+            // Use QR_SCANNER_API_BASE defined in the view
+            const url = `${QR_SCANNER_API_BASE}/borrowTransaction`;
             const formData = `transaction_code=${encodeURIComponent(transactionCode)}`;
 
             fetch(url, {
@@ -407,31 +320,30 @@ function processTransaction(transactionCode, action) {
             })
             .then(res => res.json())
             .then(res => {
-                Swal.close(); // Close loading animation
-
+                Swal.close();
                 if (res.success) {
-                    // 🟢 Success Modal (Custom size/style with timer)
-                    showFinalLibrarianModal(true, 'Success!', res.message);
+                    showFinalScannerModal(true, 'Success!', res.message);
                     renderScanResult(null); 
-                    document.getElementById('scannerInput').value = '';
-                    document.getElementById('scannerInput').focus();
+                    const scannerInput = document.getElementById('scannerInput');
+                    if (scannerInput) {
+                        scannerInput.value = '';
+                        scannerInput.focus();
+                    }
                 } else {
-                    // 🔴 Error Modal (Custom size/style with timer)
-                    showFinalLibrarianModal(false, 'Transaction Failed', res.message);
+                    showFinalScannerModal(false, 'Transaction Failed', res.message);
                 }
             })
             .catch(() => {
                 Swal.close();
-                // 🔴 Network Error Modal (Custom size/style with timer)
-                showFinalLibrarianModal(false, 'Network Error', 'Could not connect to the server.');
+                showFinalScannerModal(false, 'Network Error', 'Could not connect to the server.');
             });
         }
     });
 }
 
-
 function scanQRCode(transactionCode) {
-    fetch(`api/superadmin/qrScanner/scanTicket`, {
+    // Use QR_SCANNER_API_BASE defined in the view
+    fetch(`${QR_SCANNER_API_BASE}/scanTicket`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `transaction_code=${encodeURIComponent(transactionCode)}`
@@ -440,42 +352,16 @@ function scanQRCode(transactionCode) {
         .then(res => {
             if (res.success) {
                 renderScanResult({ isValid: true, ...res.data });
-                document.getElementById('manualTicketInput').value = '';
+                const manualInput = document.getElementById('manualTicketInput');
+                if (manualInput) manualInput.value = '';
             } else {
                 renderScanResult({ isValid: false, message: res.message });
-                // 🔴 Invalid Ticket Toast - Ngayon ay RED na ang default na design
-                showLibrarianToast('Invalid Ticket', res.message, 4000); 
+                showScannerToast('Invalid Ticket', res.message, 4000); 
             }
         });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-
-    if (statusBtn && statusMenu && statusValue) {
-        statusBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            statusMenu.classList.toggle("hidden");
-        });
-
-        statusMenu.querySelectorAll(".dropdown-item").forEach(item => {
-            item.addEventListener("click", () => {
-                statusValue.textContent = item.dataset.value;
-                statusMenu.classList.add("hidden");
-
-            });
-        });
-
-        document.addEventListener("click", e => {
-            if (!statusBtn.contains(e.target) && !statusMenu.contains(e.target)) {
-                statusMenu.classList.add("hidden");
-            }
-        });
-    }
-
-    // Assume fetchTransactionHistory is defined elsewhere
-    // searchInput.addEventListener('input', () => fetchTransactionHistory());
-    // dateInput.addEventListener('change', () => fetchTransactionHistory());
-
     const scannerInput = document.getElementById('scannerInput');
     const scannerBox = document.getElementById('scannerBox');
     const manualBtn = document.getElementById('manualTicketBtn');
@@ -484,10 +370,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (scannerInput && scannerBox) {
         scannerBox.addEventListener('click', () => scannerInput.focus());
         scannerInput.focus();
+        
+        scannerInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' || e.keyCode === 13) {
+                e.preventDefault();
+                const code = scannerInput.value.trim();
+                if (code) {
+                    scanQRCode(code);
+                    scannerInput.value = '';
+                }
+            }
+        });
     }
 
-    manualBtn.addEventListener('click', () => {
-        const code = manualInput.value.trim();
-        if (code) scanQRCode(code);
-    });
+    if (manualBtn && manualInput) {
+        manualBtn.addEventListener('click', () => {
+            const code = manualInput.value.trim();
+            if (code) scanQRCode(code);
+        });
+    }
 });

@@ -56,35 +56,9 @@
     </div>
 </div>
 
-<script src="<?= BASE_URL ?>/js/admin/qrScanner.js" defer></script>
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const scannerInput = document.getElementById('scannerInput');
-        const scannerBox = document.getElementById('scannerBox');
-        const manualBtn = document.getElementById('manualTicketBtn');
-        const manualInput = document.getElementById('manualTicketInput');
-
-        scannerInput.focus();
-
-        scannerBox.addEventListener('click', () => scannerInput.focus());
-
-        scannerInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' || e.keyCode === 13) {
-                e.preventDefault();
-
-                const code = scannerInput.value.trim();
-
-                if (code) {
-                    scanQRCode(code);
-                    scannerInput.value = '';
-                }
-            }
-        });
-
-
-        manualBtn.addEventListener('click', () => {
-            const code = manualInput.value.trim();
-            if (code) scanQRCode(code);
-        });
-    });
+    // These should be passed from the Controller
+    const USER_ROLE = <?= json_encode($user_role ?? 'admin') ?>;
+    const QR_SCANNER_API_BASE = 'api/' + (USER_ROLE === 'superadmin' ? 'superadmin' : (USER_ROLE === 'librarian' ? 'librarian' : 'admin')) + '/qrScanner';
 </script>
+<script src="<?= BASE_URL ?>/js/management/qrScanner.js" defer></script>

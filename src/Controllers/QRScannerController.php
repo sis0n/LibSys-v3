@@ -19,8 +19,11 @@ class QRScannerController extends Controller
     public function index()
     {
         $role = $_SESSION['role'] ?? 'guest';
-        $viewFolder = $role === 'staff' ? 'staff' : ucfirst($role);
-        $this->view("$viewFolder/qrScanner", ["title" => "QR Scanner"]);
+        $this->view("management/qrScanner/index", [
+            "title" => "QR Scanner",
+            "user_role" => $role,
+            "currentPage" => "qrScanner"
+        ]);
     }
 
     public function scan()

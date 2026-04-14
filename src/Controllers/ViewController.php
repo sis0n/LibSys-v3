@@ -189,6 +189,11 @@ class ViewController extends Controller
         header('Location: ' . BASE_URL . '/equipmentManagement');
         exit;
     }
+
+    if ($action === 'qrScanner') {
+        header('Location: ' . BASE_URL . '/qrScanner');
+        exit;
+    }
     if (in_array($action, ['bookManagement', 'equipmentManagement', 'libraryPolicies', 'bulkDeleteQueue'])) {      $campusRepo = new \App\Repositories\CampusRepository();
       $allCampuses = $campusRepo->getAllCampuses();
       $data['campuses'] = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);
