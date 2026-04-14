@@ -1,39 +1,12 @@
-<?php
-
-use App\Repositories\AttendanceRepository;
-
-$attendanceRepo = new AttendanceRepository();
-$logs = $attendanceRepo->getAllLogs();
-
-date_default_timezone_set('Asia/Manila');
-
-$formattedLogs = [];
-foreach ($logs as $log) {
-    try{
-    $logTime = new DateTime($log['timestamp']);
-    $formattedLogs[] = [
-        'date' => $logTime->format("Y-m-d"),
-        'day' => $logTime->format("l"),
-        'studentName' => $log['full_name'],
-        'studentNumber' => $log['student_number'],
-        'time' => $logTime->format("H:i:s"),
-        'status' => "Present"
-    ];
-     } catch (Exception $e) {
-        error_log("Invalid timestamp in attendanceLogs: " . $log['timestamp']);
-    }
-}
-?>
-
 <main class="min-h-screen ">
-        <div>
-            <h2 class="text-2xl font-bold flex items-center gap-2 text-gray-800 mb-4">
-                Attendance Logs
-            </h2>
-            <p class="text-gray-700 text-md">
-                Monitor student visits and library usage patterns.
-            </p>
-        </div>
+    <div>
+        <h2 class="text-2xl font-bold flex items-center gap-2 text-gray-800 mb-4">
+            Attendance Logs
+        </h2>
+        <p class="text-gray-700 text-md">
+            Monitor student visits and library usage patterns.
+        </p>
+    </div>
 
     <div class="bg-[var(--color-card)] border border-orange-200 rounded-xl shadow-sm p-6 mt-6">
         <div class="flex items-center justify-between mb-4">
@@ -43,7 +16,6 @@ foreach ($logs as $log) {
             </div>
 
             <div class="flex items-center gap-2 text-sm">
-
                 <div class="relative">
                     <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                     <input type="text" id="attendanceSearchInput" placeholder="Search by student..."
@@ -126,7 +98,7 @@ foreach ($logs as $log) {
         </div>
     </div>
 
-    <script src="<?= BASE_URL ?>/js/admin/attendanceLogs.js" defer></script>
+    <script src="<?= BASE_URL ?>/js/management/attendanceLogs.js" defer></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {

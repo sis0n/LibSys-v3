@@ -190,43 +190,64 @@ class AttendanceRepository
 
     public function getLogsByPeriod(?string $start = null, ?string $end = null, string $search = '', ?string $courseName = null, ?int $campusId = null): array
     {
-        $query = "
-            SELECT al.full_name, al.student_number, al.timestamp, c.course_title AS course 
-            FROM attendance_logs al
-            LEFT JOIN courses c ON al.course_id = c.course_id
-            JOIN users u ON al.user_id = u.user_id
-            JOIN campuses cp ON u.campus_id = cp.campus_id
-            WHERE cp.is_active = 1
-        ";
-        $params = [];
+        try {
+            $query = "
+                SELECT 
+                    al.full_name, 
+                    al.student_number, 
+                    al.timestamp, 
+                    al.year_level, 
+                    al.section, 
+                    al.method,
+                    c.course_title AS course 
+                FROM attendance_logs al
+                LEFT JOIN courses c ON al.course_id = c.course_id
+                LEFT JOIN users u ON al.user_id = u.user_id
+                LEFT JOIN campuses cp ON u.campus_id = cp.campus_id
+                WHERE (cp.is_active = 1 OR cp.is_active IS NULL)
+            ";
+            $params = [];
 
-        if ($start && $end) {
-            $endOfDay = $end . ' 23:59:59';
-            $query .= " AND al.timestamp BETWEEN :start AND :end";
-            $params[':start'] = $start;
-            $params[':end'] = $endOfDay;
+            if ($start && $end) {
+                // Only append time if it's not already present (no space in the string)
+                $finalEnd = (strpos($end, ' ') === false) ? $end . ' 23:59:59' : $end;
+                $query .= " AND al.timestamp BETWEEN :start AND :end";
+                $params[':start'] = $start;
+                $params[':end'] = $finalEnd;
+            }
+
+            if ($search) {
+                $query .= " AND (al.full_name LIKE :search OR al.student_number LIKE :search)";
+                $params[':search'] = "%{$search}%";
+            }
+
+            if ($courseName) {
+                $query .= " AND c.course_title = :courseName";
+                $params[':courseName'] = $courseName;
+            }
+
+            if ($campusId !== null) {
+                $query .= " AND u.campus_id = :campus_id";
+                $params[':campus_id'] = $campusId;
+            }
+
+            $query .= " ORDER BY al.timestamp DESC";
+
+            $stmt = $this->db->prepare($query);
+            $stmt->execute($params);
+
+            $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            
+            if (!$results) return [];
+
+            // Consistency fix: add year_level_section
+            return array_map(function ($row) {
+                $row['year_level_section'] = trim(($row['year_level'] ?? '') . ' ' . ($row['section'] ?? ''));
+                return $row;
+            }, $results);
+        } catch (PDOException $e) {
+            error_log("AttendanceRepository::getLogsByPeriod SQL Error: " . $e->getMessage());
+            return [];
         }
-
-        if ($search) {
-            $query .= " AND (al.full_name LIKE :search OR al.student_number LIKE :search)";
-            $params[':search'] = "%{$search}%";
-        }
-
-        if ($courseName) {
-            $query .= " AND c.course_title = :courseName";
-            $params[':courseName'] = $courseName;
-        }
-
-        if ($campusId !== null) {
-            $query .= " AND u.campus_id = :campus_id";
-            $params[':campus_id'] = $campusId;
-        }
-
-        $query .= " ORDER BY al.timestamp DESC";
-
-        $stmt = $this->db->prepare($query);
-        $stmt->execute($params);
-
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 }

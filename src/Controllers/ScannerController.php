@@ -29,6 +29,8 @@ class ScannerController extends Controller
     {
         try {
             $qrValue = $_POST['qrCodeValue'] ?? null;
+            error_log("ScannerController::attendance - Received qrCodeValue: " . ($qrValue ?? 'NULL'));
+            
             if ($qrValue) {
                 $qrValue = strtoupper(trim($qrValue));
             }
@@ -39,6 +41,7 @@ class ScannerController extends Controller
 
             $user = $this->userRepo->findByStudentNumberWithDetails($qrValue);
             if (!$user) {
+                error_log("ScannerController::attendance - Student not found for: " . $qrValue);
                 throw new \Exception("Student not found in records.");
             }
 
@@ -87,7 +90,10 @@ class ScannerController extends Controller
                 "time" => $now->format('g:i A')
             ]);
         } catch (\Exception $e) {
-            return $this->errorResponse($e->getMessage(), 400, ["status" => "error"]);
+            return $this->errorResponse($e->getMessage(), 400, [
+                "status" => "error",
+                "searched_value" => $qrValue ?? $_POST['qrCodeValue'] ?? 'NONE'
+            ]);
         }
     }
 
@@ -154,7 +160,10 @@ class ScannerController extends Controller
                 "time" => $now->format('g:i A')
             ]);
         } catch (\Exception $e) {
-            return $this->errorResponse($e->getMessage(), 400, ["status" => "error"]);
+            return $this->errorResponse($e->getMessage(), 400, [
+                "status" => "error",
+                "searched_value" => $studentNumber ?? $_POST['studentNumber'] ?? 'NONE'
+            ]);
         }
     }
 }

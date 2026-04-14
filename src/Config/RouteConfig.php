@@ -302,7 +302,7 @@ class RouteConfig
 
     $router->get('api/superadmin/overdue/getTableData', 'OverdueController@getTableData', ['superadmin', 'overdue tracking']);
     $router->post('api/superadmin/overdue/sendReminder', 'OverdueController@sendReminder', ['superadmin', 'overdue tracking']);
-    $router->get('api/attendance/logs/ajax', 'AttendanceController@fetchLogsAjax', ['attendance logs', 'superadmin']);
+    $router->get('api/attendance/logs/ajax', 'AttendanceController@fetchLogsAjax', ['attendance logs', 'superadmin', 'admin', 'librarian']);
 
     $router->get('dashboard', 'ViewController@handleDashboard');
 
@@ -313,6 +313,7 @@ class RouteConfig
     $router->get('qrScanner', 'QRScannerController@index', ['qr scanner']);
     $router->get('returning', 'ReturningController@index', ['returning']);
     $router->get('transactionHistory', 'TransactionHistoryController@index', ['transaction history']);
+    $router->get('attendanceLogs', 'AttendanceController@index', ['attendance logs']);
 
     // Unified API Routes
     $router->get('api/bookManagement/fetch', 'BookManagementController@fetch', ['book management']);

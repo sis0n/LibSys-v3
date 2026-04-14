@@ -18,6 +18,14 @@ class AttendanceController extends Controller
         $this->attendanceRepo = new AttendanceRepository();
     }
 
+    public function index()
+    {
+        $this->view("management/attendanceLogs/index", [
+            "title" => "Attendance Logs",
+            "currentPage" => "attendanceLogs"
+        ]);
+    }
+
     public function fetchAttendance()
     {
         try {
@@ -88,26 +96,34 @@ class AttendanceController extends Controller
 
             $formattedLogs = [];
             foreach ($logs as $log) {
-                $logTime = new DateTime($log['timestamp'], new DateTimeZone('Asia/Manila'));
+                try {
+                    $logTime = new DateTime($log['timestamp'], new DateTimeZone('Asia/Manila'));
 
-                $courseDisplay = $log['course'] ?? 'N/A';
-                $yearLevelSectionDisplay = $log['year_level_section'] ?? 'N/A';
-
-                $formattedLogs[] = [
-                    'date' => $logTime->format("Y-m-d"),
-                    'day' => $logTime->format("l"),
-                    'studentName' => $log['full_name'],
-                    'studentNumber' => $log['student_number'],
-                    'time' => $logTime->format("H:i:s"),
-                    'status' => "Present",
-                    'course' => $courseDisplay,
-                    'year_level_section' => $yearLevelSectionDisplay
-                ];
+                    $formattedLogs[] = [
+                        'date' => $logTime->format("Y-m-d"),
+                        'day' => $logTime->format("l"),
+                        'studentName' => $log['full_name'] ?? 'N/A',
+                        'studentNumber' => $log['student_number'] ?? 'N/A',
+                        'time' => $logTime->format("H:i:s"),
+                        'status' => "Present",
+                        'course' => $log['course'] ?? 'N/A',
+                        'year_level_section' => $log['year_level_section'] ?? 'N/A'
+                    ];
+                } catch (Exception $dateTimeEx) {
+                    error_log("DateTime error for log ID: " . ($log['id'] ?? 'unknown') . " - " . $dateTimeEx->getMessage());
+                    continue; // Skip malformed logs
+                }
             }
 
-            return $this->jsonResponse($formattedLogs);
+            return $this->json($formattedLogs);
         } catch (Exception $e) {
-            return $this->errorResponse($e->getMessage());
+            error_log("AttendanceController::fetchLogsAjax Error: " . $e->getMessage());
+            // Return a special object that JS will handle
+            return $this->json([
+                "success" => false,
+                "message" => $e->getMessage(),
+                "data" => []
+            ]);
         }
     }
 }

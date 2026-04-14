@@ -288,8 +288,21 @@ function initializeAttendanceLogs() {
 
         try {
             const res = await fetch(url);
+            console.log("Fetch response status:", res.status);
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             const data = await res.json();
+            console.log("Fetched logs:", data);
+
+            let logsToProcess = [];
+            if (Array.isArray(data)) {
+                logsToProcess = data;
+            } else if (data && data.success === false) {
+                console.error("API Error:", data.message);
+                if (typeof showErrorToast !== 'undefined') showErrorToast("Data Load Failed", data.message || "Could not fetch attendance data.");
+                throw new Error(data.message || "API returned success:false");
+            } else if (data && Array.isArray(data.data)) {
+                logsToProcess = data.data;
+            }
             
             // 4. Implement Minimum Delay and Close Modal
             if (showLoading) {
@@ -301,9 +314,9 @@ function initializeAttendanceLogs() {
             // 5. Close Loading Modal (SUCCESS)
             if (showLoading && typeof Swal !== 'undefined') Swal.close();
             
-            let filteredData = data;
+            let filteredData = logsToProcess;
             if (dateToFilter) {
-                filteredData = data.filter(log => log.date === dateToFilter);
+                filteredData = logsToProcess.filter(log => log.date === dateToFilter);
             }
             currentGroupedLogs = groupLogs(filteredData);
             currentPage = 1;
@@ -362,24 +375,28 @@ function initializeAttendanceLogs() {
     }); 
 
     // Pagination buttons
-    prevPageBtn.addEventListener('click', e => {
-        e.preventDefault();
-        if (currentPage > 1) {
-            currentPage--;
-            renderTable();
-            renderPagination();
-        }
-    });
+    if (prevPageBtn) {
+        prevPageBtn.addEventListener('click', e => {
+            e.preventDefault();
+            if (currentPage > 1) {
+                currentPage--;
+                renderTable();
+                renderPagination();
+            }
+        });
+    }
 
-    nextPageBtn.addEventListener('click', e => {
-        e.preventDefault();
-        const pageCount = Math.ceil(currentGroupedLogs.length / rowsPerPage);
-        if (currentPage < pageCount) {
-            currentPage++;
-            renderTable();
-            renderPagination();
-        }
-    });
+    if (nextPageBtn) {
+        nextPageBtn.addEventListener('click', e => {
+            e.preventDefault();
+            const pageCount = Math.ceil(currentGroupedLogs.length / rowsPerPage);
+            if (currentPage < pageCount) {
+                currentPage++;
+                renderTable();
+                renderPagination();
+            }
+        });
+    }
 
     // Modal (unchanged)
     function closeCheckinsModal() {

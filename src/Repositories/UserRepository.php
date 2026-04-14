@@ -553,24 +553,55 @@ class UserRepository
   public function findByStudentNumberWithDetails(string $studentNumber): ?array
   {
     try {
+      error_log("UserRepository::findByStudentNumberWithDetails - Searching for: " . $studentNumber);
+      
+      // Try searching by student_number in students table
       $stmt = $this->db->prepare("
             SELECT 
                 u.user_id, u.username, u.password, u.first_name, u.middle_name, u.last_name, u.suffix, 
-                u.profile_picture, s.student_number, s.course_id, s.year_level, s.section, s.campus,
+                u.profile_picture, s.student_number, s.course_id, s.year_level, s.section,
                 s.profile_updated, c.course_title, c.course_code
             FROM students s
             JOIN users u ON s.user_id = u.user_id
             LEFT JOIN courses c ON s.course_id = c.course_id
             WHERE UPPER(s.student_number) = UPPER(:studentNumber)
             AND u.deleted_at IS NULL
+            AND s.deleted_at IS NULL
             LIMIT 1
         ");
       $stmt->execute(['studentNumber' => $studentNumber]);
       $result = $stmt->fetch(\PDO::FETCH_ASSOC);
 
+      // If not found, try searching by username in users table specifically for student roles
+      if (!$result) {
+          error_log("UserRepository::findByStudentNumberWithDetails - Not found in students table, trying users.username: " . $studentNumber);
+          $stmt = $this->db->prepare("
+                SELECT 
+                    u.user_id, u.username, u.password, u.first_name, u.middle_name, u.last_name, u.suffix, 
+                    u.profile_picture, s.student_number, s.course_id, s.year_level, s.section,
+                    s.profile_updated, c.course_title, c.course_code
+                FROM users u
+                JOIN students s ON u.user_id = s.user_id
+                LEFT JOIN courses c ON s.course_id = c.course_id
+                WHERE UPPER(u.username) = UPPER(:studentNumber)
+                AND u.role = 'student'
+                AND u.deleted_at IS NULL
+                AND s.deleted_at IS NULL
+                LIMIT 1
+          ");
+          $stmt->execute(['studentNumber' => $studentNumber]);
+          $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+      }
+
+      if (!$result) {
+          error_log("UserRepository::findByStudentNumberWithDetails - No result found for: " . $studentNumber);
+      } else {
+          error_log("UserRepository::findByStudentNumberWithDetails - Student found: " . ($result['first_name'] ?? '') . " " . ($result['last_name'] ?? ''));
+      }
+
       return $result ?: null;
     } catch (\PDOException $e) {
-      error_log("[UserRepository::findByStudentNumberWithDetails] " . $e->getMessage());
+      error_log("[UserRepository::findByStudentNumberWithDetails] SQL Error: " . $e->getMessage());
       return null;
     }
   }
