@@ -48,6 +48,13 @@ class Controller
         }
     }
 
+    protected function hasPermission(string $module): bool
+    {
+        $role = $_SESSION['role'] ?? 'guest';
+        $permissions = $_SESSION['user_permissions'] ?? [];
+        return RoleHelper::hasAccess($role, $permissions, [$module]);
+    }
+
     protected function getCampusFilter(): ?int
     {
         $role = $_SESSION['role'] ?? 'guest';

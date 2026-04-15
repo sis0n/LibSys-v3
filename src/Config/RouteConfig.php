@@ -172,9 +172,10 @@ class RouteConfig
     $router->post('api/admin/userManagement/bulkImport', 'UserManagementController@bulkImport', ['user management']);
     $router->get('api/admin/userManagement/getAllCourses', 'DataController@getAllCourses', ['user management']);
     $router->get('api/admin/userManagement/getColleges', 'DataController@getColleges', ['user management']);
-    $router->get('api/admin/restoreUser/fetch', 'RestoreUserController@getDeletedUsersJson', ['restore users']);
-    $router->post('api/admin/restoreUser/restore', 'RestoreUserController@restore', ['restore users']);
-    $router->post('api/admin/restoreUser/delete/{id}', 'RestoreUserController@archive', ['restore users']);
+    $router->get('restoreUser', 'RestoreUserController@index', ['restore users']);
+    $router->get('api/restoreUser/fetch', 'RestoreUserController@getDeletedUsersJson', ['restore users']);
+    $router->post('api/restoreUser/restore', 'RestoreUserController@restore', ['restore users']);
+    $router->post('api/restoreUser/delete/{id}', 'RestoreUserController@archive', ['restore users']);
     $router->get('api/admin/dashboard/getData', 'DashboardController@getData', ['reports', 'librarian', 'admin']);
     $router->post('api/admin/reports/generate-report', 'DomPdfTemplateController@generateLibraryReport', ['reports', 'librarian', 'admin']);
 
@@ -224,27 +225,6 @@ class RouteConfig
     $router->post('api/superadmin/returning/checkBook', 'ReturningController@checkBookStatus', ['superadmin']);
     $router->post('api/superadmin/returning/markReturned', 'ReturningController@returnBook', ['superadmin']);
     $router->post('api/superadmin/returning/extend', 'ReturningController@extendDueDate', ['superadmin']);
-    $router->get('api/superadmin/restoreUser/fetch', 'RestoreUserController@getDeletedUsersJson', ['superadmin']);
-    $router->post('api/superadmin/restoreUser/restore', 'RestoreUserController@restore', ['superadmin']);
-    $router->post('api/superadmin/restoreUser/delete/{id}', 'RestoreUserController@archive', ['superadmin']);
-
-    $router->get('api/superadmin/backup/export/zip/{table}', 'BackupController@exportBothFormats', ['superadmin']);
-    $router->get('api/superadmin/backup/database/full', 'BackupController@initiateBackup', ['superadmin']);
-    $router->get('api/superadmin/backup/secure_download/{filename}', 'BackupController@downloadBackup', ['superadmin']);
-    $router->get('api/superadmin/backup/logs', 'BackupController@listBackupLogs', ['superadmin']);
-    $router->post('api/superadmin/backup/restore/{filename}', 'BackupController@restoreBackup', ['superadmin']);
-    $router->post('api/superadmin/backup/delete/{filename}', 'BackupController@deleteBackup', ['superadmin']);
-    $router->post('api/superadmin/backup/upload_restore', 'BackupController@uploadAndRestore', ['superadmin']);
-    $router->get('api/superadmin/dashboard/getData', 'DashboardController@getData', ['superadmin']);
-    $router->get('api/superadmin/transactionHistory/json', 'TransactionHistoryController@getTransactionsJson', ['superadmin']);
-    $router->get('api/superadmin/borrowingForm/manualBorrow', 'ManualBorrowingController@manualBorrow', ['superadmin']);
-    $router->get('api/superadmin/borrowingForm/getEquipments', 'ManualBorrowingController@getEquipments', ['superadmin']);
-    $router->get('api/superadmin/borrowingForm/getCollaterals', 'ManualBorrowingController@getCollaterals', ['superadmin']);
-    $router->post('api/superadmin/borrowingForm/checkUser', 'ManualBorrowingController@checkUser');
-    $router->post('api/superadmin/borrowingForm/create', 'ManualBorrowingController@create');
-    $router->get('api/superadmin/myProfile/get', 'UserProfileController@getProfile', ['superadmin']);
-    $router->post('api/superadmin/myProfile/update', 'UserProfileController@updateProfile', ['superadmin']);
-    $router->post('api/superadmin/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['superadmin']);
     $router->get('api/superadmin/libraryPolicies/getAll', 'LibraryPolicyController@getAll', ['superadmin']);
     $router->post('api/superadmin/libraryPolicies/update', 'LibraryPolicyController@update', ['superadmin']);
     $router->get('api/campuses/active', 'CampusController@getActive', ['superadmin', 'admin', 'librarian']);

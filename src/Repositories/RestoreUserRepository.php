@@ -15,7 +15,7 @@ class RestoreUserRepository
     $this->db = Database::getInstance()->getConnection();
   }
 
-  public function getDeletedUsers(): array
+  public function getDeletedUsers(?int $campusId = null): array
   {
     $sql = "SELECT 
                     u.user_id as id, 
@@ -23,6 +23,7 @@ class RestoreUserRepository
                     u.username, 
                     u.role, 
                     u.email,
+                    u.campus_id,
                     s.contact, 
                     u.created_at as created_date,
                     u.deleted_at as deleted_date,
@@ -31,10 +32,20 @@ class RestoreUserRepository
                 FROM users u
                 LEFT JOIN users librarian ON u.deleted_by = librarian.user_id 
                 LEFT JOIN students s ON u.user_id = s.user_id 
-                WHERE u.deleted_at IS NOT NULL AND u.is_archived = 0 
-                ORDER BY u.deleted_at DESC";
+                WHERE u.deleted_at IS NOT NULL AND u.is_archived = 0";
+
+    if ($campusId !== null) {
+      $sql .= " AND u.campus_id = :campus_id";
+    }
+
+    $sql .= " ORDER BY u.deleted_at DESC";
+
     try {
-      $stmt = $this->db->query($sql);
+      $stmt = $this->db->prepare($sql);
+      if ($campusId !== null) {
+        $stmt->bindValue(':campus_id', $campusId, PDO::PARAM_INT);
+      }
+      $stmt->execute();
       return $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
       error_log("Error fetching soft-deleted users: " . $e->getMessage());

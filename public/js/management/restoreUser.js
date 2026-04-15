@@ -83,6 +83,7 @@ async function showConfirmationModal(title, text, confirmText = "Confirm", icon 
 }
 // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+const API_BASE = `${BASE_URL_JS}/api/restoreUser`;
 
 document.addEventListener('DOMContentLoaded', () => {
     const userSearchInput = document.getElementById('userSearchInput');
@@ -150,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showLoadingState(); // Keep default table loading temporarily
 
         try {
-            const response = await fetch('api/admin/restoreUser/fetch');
+            const response = await fetch(`${API_BASE}/fetch`);
             if (!response.ok) throw new Error("Failed to fetch data.");
             
             const data = await response.json();
@@ -263,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 restoreBtn.classList.add('opacity-50');
                 
                 try {
-                    const response = await fetch('api/admin/restoreUser/restore', {
+                    const response = await fetch(`${API_BASE}/restore`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -297,55 +298,57 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const archiveBtn = newRow.querySelector('.archive-btn');
-            archiveBtn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                
-                const isConfirmed = await showConfirmationModal(
-                    "Confirm Archiving",
-                    `ARCHIVE ${user.fullname || user.username}? This will permanently remove the deletion record from this list.`,
-                    "Yes, Archive"
-                );
-                if (!isConfirmed) return;
-                
-                // 🟠 START LOADING FOR ARCHIVE (MINIMAL DELAY - 500ms)
-                showLoadingModal("Archiving Record...", `Permanently archiving deletion record.`);
-                const archiveStartTime = Date.now();
-                
-                archiveBtn.disabled = true;
-                archiveBtn.classList.add('opacity-50');
-                
-                try {
-                    const response = await fetch(`api/admin/restoreUser/delete/${user.id}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfTokenInput ? csrfTokenInput.value : ''
+            if (archiveBtn) {
+                archiveBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    
+                    const isConfirmed = await showConfirmationModal(
+                        "Confirm Archiving",
+                        `ARCHIVE ${user.fullname || user.username}? This will permanently remove the deletion record from this list.`,
+                        "Yes, Archive"
+                    );
+                    if (!isConfirmed) return;
+                    
+                    // 🟠 START LOADING FOR ARCHIVE (MINIMAL DELAY - 500ms)
+                    showLoadingModal("Archiving Record...", `Permanently archiving deletion record.`);
+                    const archiveStartTime = Date.now();
+                    
+                    archiveBtn.disabled = true;
+                    archiveBtn.classList.add('opacity-50');
+                    
+                    try {
+                        const response = await fetch(`${API_BASE}/delete/${user.id}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfTokenInput ? csrfTokenInput.value : ''
+                            }
+                        });
+                        const result = await response.json();
+                        
+                        // CLOSE LOADING
+                        const archiveElapsed = Date.now() - archiveStartTime;
+                        const minModalDisplay = 500; // 500ms minimal processing time
+                        if (archiveElapsed < minModalDisplay) await new Promise(r => setTimeout(r, minModalDisplay - archiveElapsed));
+                        if (typeof Swal != 'undefined') Swal.close();
+                        
+                        if (result.success) {
+                            showSuccessToast('Archived Successfully', result.message);
+                            fetchDeletedUsers();
+                        } else {
+                            showErrorToast('Archiving Failed', result.message);
+                            archiveBtn.disabled = false;
+                            archiveBtn.classList.remove('opacity-50');
                         }
-                    });
-                    const result = await response.json();
-                    
-                    // CLOSE LOADING
-                    const archiveElapsed = Date.now() - archiveStartTime;
-                    const minModalDisplay = 500; // 500ms minimal processing time
-                    if (archiveElapsed < minModalDisplay) await new Promise(r => setTimeout(r, minModalDisplay - archiveElapsed));
-                    if (typeof Swal != 'undefined') Swal.close();
-                    
-                    if (result.success) {
-                        showSuccessToast('Archived Successfully', result.message);
-                        fetchDeletedUsers();
-                    } else {
-                        showErrorToast('Archiving Failed', result.message);
+                    } catch (error) {
+                        if (typeof Swal != 'undefined') Swal.close();
+                        console.error('Error archiving user:', error);
+                        showErrorToast('Archiving Error', 'An error occurred during archiving.');
                         archiveBtn.disabled = false;
                         archiveBtn.classList.remove('opacity-50');
                     }
-                } catch (error) {
-                    if (typeof Swal != 'undefined') Swal.close();
-                    console.error('Error archiving user:', error);
-                    showErrorToast('Archiving Error', 'An error occurred during archiving.');
-                    archiveBtn.disabled = false;
-                    archiveBtn.classList.remove('opacity-50');
-                }
-            });
+                });
+            }
 
             deletedUsersTableBody.appendChild(newRow);
         });

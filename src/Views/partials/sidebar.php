@@ -217,10 +217,17 @@ $baseUrl = \BASE_URL;
                 </div>
                 <?php endif; ?>
 
-                <!-- Backup & Policies (Superadmin only) -->
-                <?php if ($isSuperAdmin): ?>
-                <div class="sidebar-dropdown" data-pages='["backup", "restoreUser"]'>
-                    <button class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, ["backup", "restoreUser"])) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
+                <!-- Backup & Policies -->
+                <?php 
+                    $backupItems = [];
+                    if ($isSuperAdmin) $backupItems[] = ["url" => "backup", "icon" => "ph ph-floppy-disk", "label" => "Backup"];
+                    if ($hasPermission(RoleHelper::MOD_RESTORE_USER)) $backupItems[] = ["url" => "restoreUser", "icon" => "ph ph-user-gear", "label" => "Restore User"];
+                    
+                    if (!empty($backupItems)):
+                        $backupPages = array_column($backupItems, 'url');
+                ?>
+                <div class="sidebar-dropdown" data-pages='<?= json_encode($backupPages) ?>'>
+                    <button class="sidebar-dropdown-toggle flex items-center justify-between w-full gap-x-3 px-3 py-2 rounded-lg transition <?= (in_array($currentPage, $backupPages)) ? 'bg-orange-100 text-orange-900 font-semibold' : 'hover:bg-orange-100 text-orange-900' ?>">
                         <span class="flex items-center gap-x-3">
                             <i class="ph ph-database text-2xl"></i>
                             <span class="text-base">Backup & Restore</span>
@@ -228,17 +235,17 @@ $baseUrl = \BASE_URL;
                         <i class="ph ph-caret-down text-xl dropdown-icon transition-transform"></i>
                     </button>
                     <div class="pl-5 pt-1 space-y-1 hidden ml-4">
-                        <a href="<?= $baseUrl ?>/backup" class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'backup' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-floppy-disk text-xl"></i>
-                            <span class="text-base text-sm">Backup</span>
+                        <?php foreach ($backupItems as $item): ?>
+                        <a href="<?= $baseUrl ?>/<?= $item['url'] ?>" class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === $item['url'] ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
+                            <i class="<?= $item['icon'] ?> text-xl"></i>
+                            <span class="text-base text-sm"><?= $item['label'] ?></span>
                         </a>
-                        <a href="<?= $baseUrl ?>/restoreUser" class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'restoreUser' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
-                            <i class="ph ph-user-gear text-xl"></i>
-                            <span class="text-base text-sm">Restore User</span>
-                        </a>
+                        <?php endforeach; ?>
                     </div>
                 </div>
+                <?php endif; ?>
 
+                <?php if ($isSuperAdmin): ?>
                 <a href="<?= $baseUrl ?>/libraryPolicies"
                     class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= $currentPage === 'libraryPolicies' ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">
                     <i class="ph ph-scroll text-2xl"></i>
