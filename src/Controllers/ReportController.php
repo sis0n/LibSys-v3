@@ -8,6 +8,14 @@ use Exception;
 
 class ReportController extends Controller
 {
+    public function index()
+    {
+        $this->view('management/reports/index', [
+            'title' => 'Library Reports',
+            'currentPage' => 'reports'
+        ]);
+    }
+
     public function getCirculatedBooksReport()
     {
         try {
@@ -152,12 +160,14 @@ class ReportController extends Controller
     {
         try {
             $filter = $_GET['filter'] ?? 'month';
+            $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
             $dashboardRepo = new \App\Repositories\DashboardRepository();
-            $data = $repository->getActivityReport($filter);
-            $breakdown = $dashboardRepo->getVisitorBreakdown($filter);
+            $data = $repository->getActivityReport($filter, $campusId);
+            $breakdown = $dashboardRepo->getVisitorBreakdown($filter, $campusId);
             
             return $this->jsonResponse([
+                'success' => true,
                 'activityData' => $data,
                 'visitorBreakdown' => $breakdown
             ]);
@@ -170,12 +180,14 @@ class ReportController extends Controller
     {
         try {
             $filter = $_GET['filter'] ?? 'month';
+            $campusId = $this->getCampusFilter();
             $repository = new ReportRepository();
             $dashboardRepo = new \App\Repositories\DashboardRepository();
             $response = [
-                'topVisitors' => $repository->getTopVisitors(),
-                'activityData' => $repository->getActivityReport($filter),
-                'visitorBreakdown' => $dashboardRepo->getVisitorBreakdown($filter),
+                'success' => true,
+                'topVisitors' => $repository->getTopVisitors(5, $campusId),
+                'activityData' => $repository->getActivityReport($filter, $campusId),
+                'visitorBreakdown' => $dashboardRepo->getVisitorBreakdown($filter, $campusId),
             ];
             return $this->jsonResponse($response);
         } catch (\Exception $e) {

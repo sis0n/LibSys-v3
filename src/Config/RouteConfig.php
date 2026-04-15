@@ -99,22 +99,26 @@ class RouteConfig
     $router->post('api/librarian/returning/extend', 'ReturningController@extendDueDate', ['returning', 'librarian', 'admin']);
     $router->post('api/librarian/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['returning', 'librarian', 'admin']);
     $router->get('api/librarian/transactionHistory/json', 'TransactionHistoryController@getTransactionsJson', ['transaction history', 'librarian', 'admin']);
-    $router->get('api/librarian/reports/circulated-books', 'ReportController@getCirculatedBooksReport', ['reports', 'librarian', 'admin']);
-    $router->get('api/librarian/reports/circulated-equipments', 'ReportController@getCirculatedEquipmentsReport', ['reports', 'librarian', 'admin']);
-    $router->get('api/librarian/reports/top-visitors', 'ReportController@getTopVisitors', ['reports', 'librarian', 'admin']);
-    $router->get('api/librarian/reports/top-borrowers', 'ReportController@getTopBorrowers', ['reports', 'librarian', 'admin']);
-    $router->get('api/librarian/reports/most-borrowed-books', 'ReportController@getMostBorrowedBooks', ['reports', 'librarian', 'admin']);
-    $router->get('api/librarian/reports/deleted-books', 'ReportController@getDeletedBooks', ['reports', 'librarian', 'admin']);
-    $router->get('api/librarian/reports/lost-damaged-books', 'ReportController@getLostDamagedBooksReport', ['reports', 'librarian', 'admin']);
-    $router->get('api/librarian/reports/library-visits-department', 'ReportController@getLibraryVisitsByDepartment', ['reports', 'librarian', 'admin']);
-    $router->get('api/librarian/reports/getActivityReport', 'ReportController@getActivityReport', ['reports', 'librarian', 'admin']);
-    $router->get('api/librarian/reports/getGraphData', 'ReportController@getReportGraphData', ['reports', 'librarian', 'admin']);
+    
+    // Unified Reports Routes
+    $router->get('reports', 'ReportController@index', ['reports']);
+    $router->get('api/reports/circulated-books', 'ReportController@getCirculatedBooksReport', ['reports']);
+    $router->get('api/reports/circulated-equipments', 'ReportController@getCirculatedEquipmentsReport', ['reports']);
+    $router->get('api/reports/top-visitors', 'ReportController@getTopVisitors', ['reports']);
+    $router->get('api/reports/top-borrowers', 'ReportController@getTopBorrowers', ['reports']);
+    $router->get('api/reports/most-borrowed-books', 'ReportController@getMostBorrowedBooks', ['reports']);
+    $router->get('api/reports/deleted-books', 'ReportController@getDeletedBooks', ['reports']);
+    $router->get('api/reports/lost-damaged-books', 'ReportController@getLostDamagedBooksReport', ['reports']);
+    $router->get('api/reports/library-visits-department', 'ReportController@getLibraryVisitsByDepartment', ['reports']);
+    $router->get('api/reports/getActivityReport', 'ReportController@getActivityReport', ['reports']);
+    $router->get('api/reports/getGraphData', 'ReportController@getReportGraphData', ['reports']);
+    $router->post('api/reports/generate-report', 'DomPdfTemplateController@generateLibraryReport', ['reports']);
+
     $router->get('api/librarian/borrowingForm/manualBorrow', 'ManualBorrowingController@manualBorrow', ['borrowing form']);
     $router->post('api/librarian/borrowingForm/checkUser', 'ManualBorrowingController@checkUser', ['borrowing form']);
     $router->post('api/librarian/borrowingForm/create', 'ManualBorrowingController@create', ['borrowing form']);
     $router->get('api/librarian/borrowingForm/getEquipments', 'ManualBorrowingController@getEquipments', ['borrowing form']);
     $router->get('api/librarian/borrowingForm/getCollaterals', 'ManualBorrowingController@getCollaterals', ['borrowing form']);
-    $router->post('api/librarian/reports/generate-report', 'DomPdfTemplateController@generateLibraryReport', ['reports', 'librarian', 'admin']);
     $router->get('api/librarian/dashboard/getData', 'DashboardController@getData', ['reports', 'librarian', 'admin']);
 
 
@@ -150,16 +154,6 @@ class RouteConfig
     $router->post('api/admin/returning/markReturned', 'ReturningController@returnBook', ['returning', 'librarian', 'admin']);
     $router->post('api/admin/returning/extend', 'ReturningController@extendDueDate', ['returning', 'librarian', 'admin']);
     $router->post('api/admin/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['returning', 'librarian', 'admin']);
-    $router->get('api/admin/reports/circulated-books', 'ReportController@getCirculatedBooksReport', ['reports', 'librarian', 'admin']);
-    $router->get('api/admin/reports/circulated-equipments', 'ReportController@getCirculatedEquipmentsReport', ['reports', 'librarian', 'admin']);
-    $router->get('api/admin/reports/top-visitors', 'ReportController@getTopVisitors', ['reports', 'librarian', 'admin']);
-    $router->get('api/admin/reports/top-borrowers', 'ReportController@getTopBorrowers', ['reports', 'librarian', 'admin']);
-    $router->get('api/admin/reports/most-borrowed-books', 'ReportController@getMostBorrowedBooks', ['reports', 'librarian', 'admin']);
-    $router->get('api/admin/reports/deleted-books', 'ReportController@getDeletedBooks', ['reports', 'librarian', 'admin']);
-    $router->get('api/admin/reports/lost-damaged-books', 'ReportController@getLostDamagedBooksReport', ['reports', 'librarian', 'admin']);
-    $router->get('api/admin/reports/library-visits-department', 'ReportController@getLibraryVisitsByDepartment', ['reports', 'librarian', 'admin']);
-    $router->get('api/admin/reports/getGraphData', 'ReportController@getReportGraphData', ['reports', 'librarian', 'admin']);
-    $router->get('api/admin/reports/getActivityReport', 'ReportController@getActivityReport', ['reports', 'librarian', 'admin']);
     $router->get('api/admin/myProfile/get', 'UserProfileController@getProfile', ['admin']);
     $router->post('api/admin/myProfile/update', 'UserProfileController@updateProfile', ['admin']);
     $router->get('api/librarian/myProfile/get', 'UserProfileController@getProfile', ['librarian']);
@@ -248,17 +242,6 @@ class RouteConfig
     $router->get('api/superadmin/borrowingForm/getCollaterals', 'ManualBorrowingController@getCollaterals', ['superadmin']);
     $router->post('api/superadmin/borrowingForm/checkUser', 'ManualBorrowingController@checkUser');
     $router->post('api/superadmin/borrowingForm/create', 'ManualBorrowingController@create');
-    $router->get('api/superadmin/reports/circulated-books', 'ReportController@getCirculatedBooksReport', ['superadmin', 'reports']);
-    $router->get('api/superadmin/reports/circulated-equipments', 'ReportController@getCirculatedEquipmentsReport', ['superadmin', 'reports']);
-    $router->get('api/superadmin/reports/top-visitors', 'ReportController@getTopVisitors', ['superadmin', 'reports']);
-    $router->get('api/superadmin/reports/top-borrowers', 'ReportController@getTopBorrowers', ['superadmin', 'reports']);
-    $router->get('api/superadmin/reports/most-borrowed-books', 'ReportController@getMostBorrowedBooks', ['superadmin', 'reports']);
-    $router->get('api/superadmin/reports/deleted-books', 'ReportController@getDeletedBooks', ['superadmin', 'reports']);
-    $router->get('api/superadmin/reports/lost-damaged-books', 'ReportController@getLostDamagedBooksReport', ['superadmin', 'reports']);
-    $router->get('api/superadmin/reports/library-visits-department', 'ReportController@getLibraryVisitsByDepartment', ['superadmin', 'reports']);
-    $router->get('api/superadmin/reports/getActivityReport', 'ReportController@getActivityReport', ['superadmin', 'reports']);
-    $router->get('api/superadmin/reports/getReportGraphData', 'ReportController@getReportGraphData', ['superadmin', 'reports']);
-    $router->post('api/superadmin/reports/generate-report', 'DomPdfTemplateController@generateLibraryReport', ['superadmin', 'reports']);
     $router->get('api/superadmin/myProfile/get', 'UserProfileController@getProfile', ['superadmin']);
     $router->post('api/superadmin/myProfile/update', 'UserProfileController@updateProfile', ['superadmin']);
     $router->post('api/superadmin/returning/sendOverdueEmail', 'ReturningController@sendOverdueEmail', ['superadmin']);

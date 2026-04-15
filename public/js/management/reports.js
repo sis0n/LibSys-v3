@@ -19,6 +19,7 @@ function showLoadingModal(message = "Processing request...", subMessage = "Pleas
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+    const API_BASE = `${BASE_URL}/api/reports`;
     const customDateModal = document.getElementById('customDateModal');
     const confirmDateRangeBtn = document.getElementById('confirmDateRange');
     const cancelDateRangeBtn = document.getElementById('cancelDateRange');
@@ -37,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4"><i class="ph ph-spinner animate-spin text-lg mr-2"></i>Loading...</td></tr>';
         try {
-            const response = await fetch(`${BASE_URL}/api/admin/reports/circulated-books?filter=${filter}`);
+            const response = await fetch(`${API_BASE}/circulated-books?filter=${filter}`);
             const result = await response.json();
             tbody.innerHTML = '';
             if (result.data && result.data.length > 0) {
@@ -70,7 +71,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4"><i class="ph ph-spinner animate-spin text-lg mr-2"></i>Loading...</td></tr>';
         try {
-            const response = await fetch(`${BASE_URL}/api/admin/reports/circulated-equipments?filter=${filter}`);
+            const response = await fetch(`${API_BASE}/circulated-equipments?filter=${filter}`);
             const result = await response.json();
             tbody.innerHTML = '';
             if (result.data && result.data.length > 0) {
@@ -103,7 +104,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4"><i class="ph ph-spinner animate-spin text-lg mr-2"></i>Loading...</td></tr>';
         try {
-            const response = await fetch(`${BASE_URL}/api/admin/reports/deleted-books?filter=${filter}`);
+            const response = await fetch(`${API_BASE}/deleted-books?filter=${filter}`);
             const result = await response.json();
             tbody.innerHTML = '';
             if (result.success && result.data && result.data.length > 0) {
@@ -135,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4"><i class="ph ph-spinner animate-spin text-lg mr-2"></i>Loading...</td></tr>';
         try {
-            const response = await fetch(`${BASE_URL}/api/admin/reports/library-visits-department?filter=${filter}`);
+            const response = await fetch(`${API_BASE}/library-visits-department?filter=${filter}`);
             const result = await response.json();
             tbody.innerHTML = '';
             if (result.success && result.data && result.data.length > 0) {
@@ -168,7 +169,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4"><i class="ph ph-spinner animate-spin text-lg mr-2"></i>Loading...</td></tr>';
         try {
-            const response = await fetch(`${BASE_URL}/api/admin/reports/top-visitors?filter=${filter}`);
+            const response = await fetch(`${API_BASE}/top-visitors?filter=${filter}`);
             const result = await response.json();
             tbody.innerHTML = '';
             if (result.success && result.data && result.data.length > 0) {
@@ -204,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4"><i class="ph ph-spinner animate-spin text-lg mr-2"></i>Loading...</td></tr>';
         try {
-            const response = await fetch(`${BASE_URL}/api/admin/reports/top-borrowers?filter=${filter}`);
+            const response = await fetch(`${API_BASE}/top-borrowers?filter=${filter}`);
             const result = await response.json();
             tbody.innerHTML = '';
             if (result.success && result.data && result.data.length > 0) {
@@ -236,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4"><i class="ph ph-spinner animate-spin text-lg mr-2"></i>Loading...</td></tr>';
         try {
-            const response = await fetch(`${BASE_URL}/api/admin/reports/most-borrowed-books?filter=${filter}`);
+            const response = await fetch(`${API_BASE}/most-borrowed-books?filter=${filter}`);
             const result = await response.json();
             tbody.innerHTML = '';
             if (result.success && result.data && result.data.length > 0) {
@@ -270,7 +271,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!tbody) return;
         tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4"><i class="ph ph-spinner animate-spin text-lg mr-2"></i>Loading...</td></tr>';
         try {
-            const response = await fetch(`${BASE_URL}/api/admin/reports/lost-damaged-books?filter=${filter}`);
+            const response = await fetch(`${API_BASE}/lost-damaged-books?filter=${filter}`);
             const result = await response.json();
             tbody.innerHTML = '';
             if (result.success && result.data && result.data.length > 0) {
@@ -302,7 +303,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const breakdownTbody = document.getElementById('department-breakdown-tbody');
         const weeklyCtx = document.getElementById('weeklyActivityChart')?.getContext('2d');
         try {
-            const res = await fetch(`${BASE_URL}/api/admin/reports/getActivityReport?filter=${filter}`);
+            const res = await fetch(`${API_BASE}/getActivityReport?filter=${filter}`);
             const result = await res.json();
             if (!result.success) return false;
 
@@ -355,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function () {
             populateCirculatedBooks(filter),
             populateCirculatedEquipments(filter),
             populateDeletedBooks(filter),
-            populateLibraryVisitByDepartment(),
+            populateLibraryVisitByDepartment(filter),
             populateTopVisitors(filter),
             populateTopBorrowers(filter),
             populateMostBorrowedBooks(filter),
@@ -390,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 customDateModal.classList.add('hidden');
                 const form = document.createElement('form');
                 form.method = 'POST';
-                form.action = `${BASE_URL}/api/admin/reports/generate-report`;
+                form.action = `${API_BASE}/generate-report`;
                 form.target = '_blank';
                 [['start_date', start], ['end_date', end]].forEach(([n, v]) => {
                     const i = document.createElement('input');

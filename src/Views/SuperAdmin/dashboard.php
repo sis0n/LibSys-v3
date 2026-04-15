@@ -33,7 +33,7 @@ $fullName = $_SESSION['user_data']['fullname'] ?? $_SESSION['role'] ?? 'Admin';
         <i class="ph ph-swap text-xl mr-2 align-middle"></i>
         Returning Books
       </a>
-      <a href="topVisitor" class="flex items-center justify-center bg-white border border-gray-200 text-gray-800 font-semibold py-4 px-6 rounded-lg shadow hover:bg-orange-500 hover:text-white hover:border-orange-500 transition w-full sm:w-56 text-left">
+      <a href="reports" class="flex items-center justify-center bg-white border border-gray-200 text-gray-800 font-semibold py-4 px-6 rounded-lg shadow hover:bg-orange-500 hover:text-white hover:border-orange-500 transition w-full sm:w-56 text-left">
         <i class="ph ph-activity text-xl mr-2 align-middle"></i>
         Analytics
       </a>

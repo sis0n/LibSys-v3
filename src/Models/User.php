@@ -49,7 +49,7 @@ class User
             'returning' => 'returning',
             'borrowing form' => 'borrowingForm',
             'attendance logs' => 'attendanceLogs',
-            'reports' => 'topVisitor',
+            'reports' => 'reports',
             'transaction history' => 'transactionHistory',
             'backup' => 'backup',
             'restore books' => 'restoreBooks',

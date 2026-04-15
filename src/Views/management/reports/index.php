@@ -54,7 +54,7 @@
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                     <i class="ph ph-chart-line text-blue-500 text-xl"></i>
-                    Activity
+                    Weekly Activity
                 </h3>
                 <span class="timeframe-badge text-[10px] bg-blue-100 text-blue-700 font-black uppercase tracking-wider px-3 py-1 rounded-full">This Month</span>
             </div>
@@ -287,6 +287,6 @@
 
 </main>
 <script>
-const BASE_URL = "<?= BASE_URL ?>";
+    const BASE_URL = "<?= BASE_URL ?>";
 </script>
-<script src="<?= BASE_URL ?>/js/admin/reports.js"></script>
+<script src="<?= BASE_URL ?>/js/management/reports.js"></script>

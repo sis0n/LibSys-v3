@@ -68,7 +68,7 @@ class ViewController extends Controller
           'returning' => 'returning',
           'borrowing form' => 'borrowingForm',
           'attendance logs' => 'attendanceLogs',
-          'reports' => 'topVisitor',
+          'reports' => 'reports',
           'transaction history' => 'transactionHistory',
         ];
 
@@ -116,7 +116,7 @@ class ViewController extends Controller
       'returning' => 'returning',
       'borrowingForm' => 'borrowing form',
       'attendanceLogs' => 'attendance logs',
-      'topVisitor' => 'reports',
+      'reports' => 'reports',
       'transactionHistory' => 'transaction history',
       'backup' => 'backup',
       'restoreBooks' => 'restore books',

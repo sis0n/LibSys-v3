@@ -37,7 +37,8 @@ class ReportRepository
                 $whereClause = "AND YEAR(bt.borrowed_at) = YEAR(CURDATE())";
             }
 
-            $campusWhere = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+            $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+            $params = $campusId !== null ? ['campus_id' => $campusId] : [];
 
             $borrowerJoin = $this->getBorrowerJoinSql();
 
@@ -87,7 +88,7 @@ class ReportRepository
                 WHERE bti.status IN ('borrowed', 'returned', 'overdue') AND bti.book_id IS NOT NULL $whereClause $campusWhere;
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute();
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getCirculatedBooksSummary: " . $e->getMessage());
@@ -107,7 +108,8 @@ class ReportRepository
                 $whereClause = "AND YEAR(bt.borrowed_at) = YEAR(CURDATE())";
             }
 
-            $campusWhere = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+            $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+            $params = $campusId !== null ? ['campus_id' => $campusId] : [];
             $borrowerJoin = $this->getBorrowerJoinSql();
 
             $sql = "
@@ -156,7 +158,7 @@ class ReportRepository
                 WHERE bti.status IN ('borrowed', 'returned', 'overdue') AND bti.equipment_id IS NOT NULL $whereClause $campusWhere;
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute();
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getCirculatedEquipmentsSummary: " . $e->getMessage());
@@ -176,8 +178,10 @@ class ReportRepository
                 $whereClause = "YEAR(a.first_scan_at) = YEAR(CURDATE())";
             }
 
+            $params = [];
             if ($campusId !== null) {
-                $whereClause .= " AND u.campus_id = " . (int)$campusId;
+                $whereClause .= " AND u.campus_id = :campus_id";
+                $params['campus_id'] = $campusId;
             }
 
             $sql = "
@@ -196,7 +200,7 @@ class ReportRepository
                 LIMIT 10;
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute();
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getTopVisitorsFiltered: " . $e->getMessage());
@@ -216,8 +220,10 @@ class ReportRepository
                 $whereClause = "YEAR(bt.borrowed_at) = YEAR(CURDATE())";
             }
 
+            $params = [];
             if ($campusId !== null) {
-                $whereClause .= " AND u.campus_id = " . (int)$campusId;
+                $whereClause .= " AND u.campus_id = :campus_id";
+                $params['campus_id'] = $campusId;
             }
 
             $sql = "
@@ -237,7 +243,7 @@ class ReportRepository
                 LIMIT 10;
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute();
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getTopBorrowers: " . $e->getMessage());
@@ -257,8 +263,10 @@ class ReportRepository
                 $whereClause .= " AND YEAR(bt.borrowed_at) = YEAR(CURDATE())";
             }
 
+            $params = [];
             if ($campusId !== null) {
-                $whereClause .= " AND u.campus_id = " . (int)$campusId;
+                $whereClause .= " AND u.campus_id = :campus_id";
+                $params['campus_id'] = $campusId;
             }
 
             $borrowerJoin = $this->getBorrowerJoinSql();
@@ -279,7 +287,7 @@ class ReportRepository
                 LIMIT 10;
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute();
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getMostBorrowedBooks: " . $e->getMessage());
@@ -290,7 +298,8 @@ class ReportRepository
     public function getLibraryVisitsByDepartment(string $filter = 'month', ?int $campusId = null)
     {
         try {
-            $campusWhere = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+            $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+            $params = $campusId !== null ? ['campus_id' => $campusId] : [];
 
             $sql = "
                 WITH DepartmentVisits AS (
@@ -328,7 +337,7 @@ class ReportRepository
                 FROM DepartmentVisits;
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute();
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getLibraryVisitsByDepartment: " . $e->getMessage());
@@ -348,8 +357,10 @@ class ReportRepository
                 $whereClause = "AND YEAR(deleted_at) = YEAR(CURDATE())";
             }
 
+            $params = [];
             if ($campusId !== null) {
-                $whereClause .= " AND campus_id = " . (int)$campusId;
+                $whereClause .= " AND campus_id = :campus_id";
+                $params['campus_id'] = $campusId;
             }
 
             $sql = "
@@ -363,7 +374,7 @@ class ReportRepository
                 GROUP BY YEAR(deleted_at)
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute();
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getDeletedBooksReport: " . $e->getMessage());
@@ -383,7 +394,8 @@ class ReportRepository
                 $whereClause = "AND YEAR(bti.returned_at) = YEAR(CURDATE())";
             }
 
-            $campusWhere = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
+            $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+            $params = $campusId !== null ? ['campus_id' => $campusId] : [];
             $borrowerJoin = $this->getBorrowerJoinSql();
 
             $sql = "
@@ -424,7 +436,7 @@ class ReportRepository
                 WHERE bti.status IN ('lost', 'damaged') AND bti.book_id IS NOT NULL $whereClause $campusWhere;
             ";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute();
+            $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
             error_log("ReportRepository error in getLostDamagedBooksSummary: " . $e->getMessage());
@@ -592,18 +604,22 @@ class ReportRepository
     public function getLibraryResourcesData(?int $campusId = null)
     {
         try {
-            $campusWhere = $campusId !== null ? " AND campus_id = " . (int)$campusId : "";
+            $campusWhere = $campusId !== null ? " AND campus_id = :campus_id" : "";
+            $params = $campusId !== null ? ['campus_id' => $campusId] : [];
 
             // Count active books (available or borrowed, not deactivated)
-            $stmtBooks = $this->db->query("SELECT COUNT(*) FROM books WHERE is_active = 1 $campusWhere");
+            $stmtBooks = $this->db->prepare("SELECT COUNT(*) FROM books WHERE is_active = 1 $campusWhere");
+            $stmtBooks->execute($params);
             $totalBooks = $stmtBooks->fetchColumn();
 
             // Count available books specifically
-            $stmtAvail = $this->db->query("SELECT COUNT(*) FROM books WHERE is_active = 1 AND availability = 'available' $campusWhere");
+            $stmtAvail = $this->db->prepare("SELECT COUNT(*) FROM books WHERE is_active = 1 AND availability = 'available' $campusWhere");
+            $stmtAvail->execute($params);
             $availableBooks = $stmtAvail->fetchColumn();
 
             // Count active equipments (not deactivated)
-            $stmtEquip = $this->db->query("SELECT COUNT(*) FROM equipments WHERE is_active = 1 $campusWhere");
+            $stmtEquip = $this->db->prepare("SELECT COUNT(*) FROM equipments WHERE is_active = 1 $campusWhere");
+            $stmtEquip->execute($params);
             $totalEquip = $stmtEquip->fetchColumn();
 
             return [
@@ -797,6 +813,8 @@ class ReportRepository
     {
         try {
             $campusWhere = $campusId !== null ? " AND u.campus_id = :campus_id" : "";
+            $params = ['startDate' => $startDate, 'endDate' => $endDate];
+            if ($campusId !== null) $params['campus_id'] = $campusId;
 
             $sql = "
                 WITH DepartmentVisits AS (
@@ -825,8 +843,6 @@ class ReportRepository
                 FROM DepartmentVisits;
             ";
             $stmt = $this->db->prepare($sql);
-            $params = ['startDate' => $startDate, 'endDate' => $endDate];
-            if ($campusId !== null) $params['campus_id'] = $campusId;
             $stmt->execute($params);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (Exception $e) {
@@ -838,8 +854,10 @@ class ReportRepository
     public function getTopVisitors(int $limit = 5, ?int $campusId = null): array
     {
         $where = "WHERE DATE(a.first_scan_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+        $params = ['limit' => $limit];
         if ($campusId !== null) {
             $where .= " AND u.campus_id = :campus_id";
+            $params['campus_id'] = $campusId;
         }
 
         $sql = "
