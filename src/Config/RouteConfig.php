@@ -314,6 +314,7 @@ class RouteConfig
     $router->get('returning', 'ReturningController@index', ['returning']);
     $router->get('transactionHistory', 'TransactionHistoryController@index', ['transaction history']);
     $router->get('attendanceLogs', 'AttendanceController@index', ['attendance logs']);
+    $router->get('overdue', 'OverdueController@index', ['overdue tracking']);
 
     // Unified API Routes
     $router->get('api/bookManagement/fetch', 'BookManagementController@fetch', ['book management']);
@@ -330,8 +331,10 @@ class RouteConfig
     $router->post('api/equipmentManagement/store', 'EquipmentManagementController@store', ['equipment management']);
     $router->post('api/equipmentManagement/update', 'EquipmentManagementController@update', ['equipment management']);
     $router->post('api/equipmentManagement/destroy/{id}', 'EquipmentManagementController@destroy', ['equipment management']);
-    $router->post('api/equipmentManagement/delete-multiple', 'EquipmentManagementController@deleteMultiple', ['equipment management']);
+    $router->get('api/equipmentManagement/delete-multiple', 'EquipmentManagementController@deleteMultiple', ['equipment management']);
 
+    $router->get('api/overdue/getTableData', 'OverdueController@getTableData', ['overdue tracking']);
+    $router->post('api/overdue/sendReminder', 'OverdueController@sendReminder', ['overdue tracking']);
 
     $router->get('{action}', 'ViewController@handleGenericPage');
     $router->get('{action}/{id}', 'ViewController@handleGenericPage');

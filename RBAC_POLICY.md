@@ -25,7 +25,6 @@
 | Overdue Tracking     | ✅ Full    | ✅ Full       | ✅ Campus Only   | ✅ Campus Only    |
 | Reports              | ✅ Full    | ✅ Full       | ✅ Campus Only   | ✅ Campus Only    |
 | Transaction History  | ✅ Full    | ✅ Full       | ✅ Campus Only   | ✅ Campus Only    |
-
 | Audit Trail          | ✅ Full    | ❌            | ❌               | ❌                |
 | Backup               | ✅ Full    | ❌            | ❌               | ❌                |
 | Restore User         | ✅ Full    | ✅ Full       | ❌               | ❌                |

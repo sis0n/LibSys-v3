@@ -18,7 +18,7 @@ class OverdueController extends Controller
 
     public function index()
     {
-        $this->view('superadmin/overdue', [
+        $this->view('management/overdue/index', [
             'title' => 'Overdue Tracking',
             'currentPage' => 'overdue'
         ]);

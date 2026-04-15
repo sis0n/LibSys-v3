@@ -15,22 +15,24 @@ class UserManagementController extends Controller
     {
         parent::__construct();
 
-        // RBAC: Restricted roles for User Management
-        $role = $_SESSION['role'] ?? '';
-        if (RoleHelper::isLibrarian($role) || !RoleHelper::isStaff($role) || RoleHelper::compareNormalize($role) === RoleHelper::compareNormalize(RoleHelper::SCANNER)) {
-            // Check if user has explicit 'user management' permission
-            $userId = $_SESSION['user_id'] ?? null;
-            if ($userId) {
-                $userPermissionsRepo = new \App\Repositories\UserPermissionModuleRepository();
-                if (!$userPermissionsRepo->hasAccess($userId, 'user management')) {
-                    http_response_code(403);
-                    die("Forbidden: Access denied.");
-                }
-            } else {
-                http_response_code(403);
-                die("Forbidden: Access denied.");
+        $role = strtolower($_SESSION['role'] ?? '');
+        $userId = $_SESSION['user_id'] ?? null;
+
+        // RBAC: HARD BLOCK for Librarians and non-staff
+        if ($role === 'librarian' || !RoleHelper::isStaff($role) || $role === 'scanner') {
+            $this->view('errors/403', ['title' => 'Access Denied'], false);
+            exit;
+        }
+
+        // Additional check for Admins to ensure they have the module permission
+        if (!RoleHelper::isSuperadmin($role)) {
+            $userPermissionsRepo = new \App\Repositories\UserPermissionModuleRepository();
+            if (!$userPermissionsRepo->hasAccess($userId, 'user management')) {
+                $this->view('errors/403', ['title' => 'Access Denied'], false);
+                exit;
             }
         }
+
         $this->userService = new UserService();
     }
 

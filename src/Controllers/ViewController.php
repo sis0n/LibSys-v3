@@ -215,6 +215,11 @@ class ViewController extends Controller
         exit;
     }
 
+    if ($action === 'overdue') {
+        header('Location: ' . BASE_URL . '/overdue');
+        exit;
+    }
+
     if (in_array($action, ['bookManagement', 'equipmentManagement', 'libraryPolicies', 'bulkDeleteQueue'])) {      $campusRepo = new \App\Repositories\CampusRepository();
       $allCampuses = $campusRepo->getAllCampuses();
       $data['campuses'] = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);
