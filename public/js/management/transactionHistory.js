@@ -1,3 +1,6 @@
+// --- API Base Configuration ---
+const API_BASE = typeof API_BASE_PATH !== 'undefined' ? API_BASE_PATH : `${BASE_URL_JS}/api/transactionHistory/getTableData`;
+
 // --- SweetAlert Helper Functions ---
 function showErrorToast(title, body = "An error occurred during processing.") {
     if (typeof Swal == "undefined") return alert(title);
@@ -83,8 +86,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (paginationContainer) paginationContainer.classList.add('hidden');
         
         try {
-            const fetchUrl = typeof API_BASE_PATH !== 'undefined' ? API_BASE_PATH : `${BASE_URL_JS}/api/admin/transactionHistory/json`;
-            const response = await fetch(fetchUrl);
+            const response = await fetch(API_BASE);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             
             const rawData = await response.json();

@@ -19,7 +19,7 @@ class TransactionHistoryController extends Controller
     public function index()
     {
         $role = strtolower($_SESSION['role'] ?? '');
-        $apiBasePath = BASE_URL . '/api/' . ($role === 'superadmin' ? 'superadmin' : ($role === 'admin' ? 'admin' : 'librarian')) . '/transactionHistory/json';
+        $apiBasePath = BASE_URL . '/api/transactionHistory/getTableData';
 
         $this->view('management/transactionHistory/index', [
             'title' => 'Transaction History',
@@ -28,12 +28,12 @@ class TransactionHistoryController extends Controller
         ]);
     }
 
-    public function getTransactionsJson()
+    public function getTableData()
     {
         try {
             $status = strtolower($_GET['status'] ?? 'all');
             $date   = $_GET['date'] ?? null;
-            $campusId = $this->getCampusFilter();
+            $campusId = $this->getCampusFilter(); // Use getCampusFilter for campus isolation
 
             if ($status === 'pending') {
                 return $this->jsonResponse([]);
@@ -42,7 +42,8 @@ class TransactionHistoryController extends Controller
             $transactions = $this->historyService->getAdminTransactions($status, $date, $campusId);
             return $this->jsonResponse($transactions);
         } catch (Exception $e) {
-            return $this->errorResponse($e->getMessage());
+            error_log("TransactionHistoryController Error: " . $e->getMessage()); // Log the error
+            return $this->errorResponse('Failed to fetch transactions.', 500);
         }
     }
 }

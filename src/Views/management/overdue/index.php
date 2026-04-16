@@ -96,6 +96,6 @@
 
 <script>
     // Define the unified API base path for this module
-    const OVERDUE_API_BASE = "<?= BASE_URL ?>/api/overdue";
+    const OVERDUE_API_BASE = `${BASE_URL_JS}/api/overdue`;
 </script>
 <script src="<?= BASE_URL ?>/js/management/overdue.js" defer></script>

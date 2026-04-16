@@ -57,8 +57,6 @@
 </div>
 
 <script>
-    // These should be passed from the Controller
-    const USER_ROLE = <?= json_encode($user_role ?? 'admin') ?>;
-    const QR_SCANNER_API_BASE = 'api/' + (USER_ROLE === 'superadmin' ? 'superadmin' : (USER_ROLE === 'librarian' ? 'librarian' : 'admin')) + '/qrScanner';
+    const QR_SCANNER_API_BASE = `${BASE_URL_JS}/api/qrScanner`;
 </script>
 <script src="<?= BASE_URL ?>/js/management/qrScanner.js" defer></script>

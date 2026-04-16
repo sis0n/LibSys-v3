@@ -137,6 +137,4 @@
   </div>
 </div>
 
-<script src="<?= BASE_URL ?>/js/superadmin/changePassword.js" defer></script>
-
-</body>
+<script src="<?= BASE_URL ?>/js/management/changePassword.js" defer></script>

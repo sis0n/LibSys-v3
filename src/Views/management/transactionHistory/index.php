@@ -198,4 +198,4 @@
 <script>
     const API_BASE_PATH = "<?= $apiBasePath ?>";
 </script>
-<script src="<?= BASE_URL ?>/js/management/transactionHistory/transactionHistory.js" defer></script>
+<script src="<?= BASE_URL ?>/js/management/transactionHistory.js" defer></script>

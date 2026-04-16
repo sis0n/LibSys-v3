@@ -671,6 +671,6 @@
     const USER_ROLE = <?= json_encode($user_role) ?>;
     const PERMISSIONS = <?= json_encode($permissions) ?>;
     const FILTERS = <?= json_encode($filters) ?>;
-    const API_BASE_PATH = 'api/' + (USER_ROLE === 'superadmin' ? 'superadmin' : 'admin') + '/userManagement';
+    const API_BASE_PATH = `${BASE_URL_JS}/api/userManagement`;
 </script>
 <script src="<?= BASE_URL ?>/js/management/userManagement.js" defer></script>

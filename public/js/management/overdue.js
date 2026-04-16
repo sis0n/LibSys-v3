@@ -6,8 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const refreshBtn = document.getElementById('refresh-btn');
     const bulkNotifyBtn = document.getElementById('bulk-notify-btn');
 
-    // Use the base URL defined in the view, fallback to superadmin if not set
-    const API_BASE = typeof OVERDUE_API_BASE !== 'undefined' ? OVERDUE_API_BASE : `${BASE_URL_JS}/api/superadmin/overdue`;
+    const API_BASE = typeof OVERDUE_API_BASE !== 'undefined' ? OVERDUE_API_BASE : `${BASE_URL_JS}/api/overdue`;
 
     let masterData = [];
     let notifiedTodayCount = 0;

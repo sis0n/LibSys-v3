@@ -16,6 +16,22 @@ class UserProfileController extends Controller
         $this->profileService = new UserProfileService();
     }
 
+    public function index()
+    {
+        $this->view('management/profile/index', [
+            'title' => 'My Profile',
+            'currentPage' => 'myProfile'
+        ]);
+    }
+
+    public function changePasswordPage()
+    {
+        $this->view('management/profile/changePassword', [
+            'title' => 'Change Password',
+            'currentPage' => 'changePassword'
+        ]);
+    }
+
     public function getProfile()
     {
         try {
