@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 04, 2026 at 12:50 PM
+-- Generation Time: Apr 16, 2026 at 02:58 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -109,6 +109,7 @@ CREATE TABLE `books` (
   `subject` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `availability` enum('available','borrowed','damaged','lost') DEFAULT 'available',
+  `borrowing_duration_override` int(11) DEFAULT NULL,
   `quantity` int(11) NOT NULL DEFAULT 1,
   `cover` varchar(255) DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT 1,
@@ -800,7 +801,7 @@ CREATE TABLE `users` (
   `email` varchar(100) DEFAULT NULL,
   `campus_id` int(11) DEFAULT NULL,
   `profile_picture` varchar(255) DEFAULT NULL,
-  `role` enum('superadmin','admin','campus_admin','librarian','scanner','student','faculty','staff') DEFAULT NULL,
+  `role` enum('superadmin','admin','librarian','scanner','student','faculty','staff') DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT 1,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `deleted_at` timestamp NULL DEFAULT NULL,
@@ -854,14 +855,17 @@ ALTER TABLE `attendance`
 ALTER TABLE `attendance_logs`
   ADD PRIMARY KEY (`id`),
   ADD KEY `student_id` (`user_id`),
-  ADD KEY `course_id` (`course_id`);
+  ADD KEY `course_id` (`course_id`),
+  ADD KEY `idx_attendance_timestamp` (`timestamp`);
 
 --
 -- Indexes for table `audit_logs`
 --
 ALTER TABLE `audit_logs`
   ADD PRIMARY KEY (`log_id`),
-  ADD KEY `user_id` (`user_id`);
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `idx_audit_created_at` (`created_at`),
+  ADD KEY `idx_audit_action` (`action`);
 
 --
 -- Indexes for table `backup_log`
@@ -875,7 +879,9 @@ ALTER TABLE `backup_log`
 ALTER TABLE `books`
   ADD PRIMARY KEY (`book_id`),
   ADD UNIQUE KEY `unique_accession_campus` (`accession_number`,`campus_id`),
-  ADD KEY `fk_books_campus` (`campus_id`);
+  ADD KEY `fk_books_campus` (`campus_id`),
+  ADD KEY `idx_book_is_active` (`is_active`),
+  ADD KEY `idx_book_availability` (`availability`);
 
 --
 -- Indexes for table `borrow_transactions`
@@ -890,7 +896,8 @@ ALTER TABLE `borrow_transactions`
   ADD KEY `fk_borrow_transactions_collateral` (`collateral_id`),
   ADD KEY `idx_borrowed_at` (`borrowed_at`),
   ADD KEY `idx_status` (`status`),
-  ADD KEY `idx_due_date` (`due_date`);
+  ADD KEY `idx_due_date` (`due_date`),
+  ADD KEY `idx_librarian_id` (`librarian_id`);
 
 --
 -- Indexes for table `borrow_transaction_items`
@@ -1030,7 +1037,8 @@ ALTER TABLE `migrations`
 --
 ALTER TABLE `notification_logs`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `borrowing_item_id` (`borrowing_item_id`);
+  ADD KEY `borrowing_item_id` (`borrowing_item_id`),
+  ADD KEY `idx_notif_sent_at` (`sent_at`);
 
 --
 -- Indexes for table `oauth_access_tokens`
@@ -1114,7 +1122,9 @@ ALTER TABLE `students`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`user_id`),
-  ADD KEY `fk_user_campus` (`campus_id`);
+  ADD KEY `fk_user_campus` (`campus_id`),
+  ADD KEY `idx_user_role` (`role`),
+  ADD KEY `idx_user_is_active` (`is_active`);
 
 --
 -- Indexes for table `user_module_permissions`
@@ -1139,19 +1149,19 @@ ALTER TABLE `user_permissions`
 -- AUTO_INCREMENT for table `attendance`
 --
 ALTER TABLE `attendance`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `attendance_logs`
 --
 ALTER TABLE `attendance_logs`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=38;
 
 --
 -- AUTO_INCREMENT for table `audit_logs`
 --
 ALTER TABLE `audit_logs`
-  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=884;
+  MODIFY `log_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1117;
 
 --
 -- AUTO_INCREMENT for table `backup_log`
@@ -1163,19 +1173,19 @@ ALTER TABLE `backup_log`
 -- AUTO_INCREMENT for table `books`
 --
 ALTER TABLE `books`
-  MODIFY `book_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=97695;
+  MODIFY `book_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=130698;
 
 --
 -- AUTO_INCREMENT for table `borrow_transactions`
 --
 ALTER TABLE `borrow_transactions`
-  MODIFY `transaction_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=122;
+  MODIFY `transaction_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=135;
 
 --
 -- AUTO_INCREMENT for table `borrow_transaction_items`
 --
 ALTER TABLE `borrow_transaction_items`
-  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=151;
+  MODIFY `item_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=164;
 
 --
 -- AUTO_INCREMENT for table `bulk_delete_requests`
@@ -1199,7 +1209,7 @@ ALTER TABLE `campuses`
 -- AUTO_INCREMENT for table `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `cart_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=187;
+  MODIFY `cart_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=201;
 
 --
 -- AUTO_INCREMENT for table `collaterals`
@@ -1229,13 +1239,13 @@ ALTER TABLE `deleted_books`
 -- AUTO_INCREMENT for table `equipments`
 --
 ALTER TABLE `equipments`
-  MODIFY `equipment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `equipment_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `faculty`
 --
 ALTER TABLE `faculty`
-  MODIFY `faculty_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `faculty_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `guests`
@@ -1283,25 +1293,25 @@ ALTER TABLE `reports`
 -- AUTO_INCREMENT for table `staff`
 --
 ALTER TABLE `staff`
-  MODIFY `staff_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `staff_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `students`
 --
 ALTER TABLE `students`
-  MODIFY `student_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=196814;
+  MODIFY `student_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=266827;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=361743;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=431775;
 
 --
 -- AUTO_INCREMENT for table `user_module_permissions`
 --
 ALTER TABLE `user_module_permissions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=563;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=646;
 
 --
 -- AUTO_INCREMENT for table `user_permissions`

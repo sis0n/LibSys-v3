@@ -278,7 +278,11 @@ class BookService
         fclose($handle);
         $this->auditRepo->log($adminId, 'BULK_IMPORT', 'BOOKS', null, "Bulk imported $imported books.");
         
-        return ['imported' => $imported];
+        return [
+            'success' => true,
+            'imported_count' => $imported,
+            'error_count' => 0 // Book import logic currently skips invalid rows without logging specific errors
+        ];
     }
 
     /**

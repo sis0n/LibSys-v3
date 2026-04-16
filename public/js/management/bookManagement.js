@@ -54,6 +54,16 @@ function initEventListeners() {
     const importForm = document.getElementById('bulkImportForm');
     if (importForm) {
         importForm.addEventListener('submit', handleBulkImport);
+        
+        // Auto-trigger submission when a file is selected
+        const csvFileInput = document.getElementById('csvFile');
+        if (csvFileInput) {
+            csvFileInput.addEventListener('change', () => {
+                if (csvFileInput.files.length > 0) {
+                    importForm.dispatchEvent(new Event('submit'));
+                }
+            });
+        }
     }
 
     // Multi-select

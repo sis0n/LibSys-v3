@@ -1,81 +1,49 @@
 window.addEventListener("DOMContentLoaded", () => {
     // Utility functions (Toasts, Modals)
-    function showSuccessToast(title, body = "Successfully processed.") {
-        if (typeof Swal == "undefined") return alert(title);
+    function showSuccessToast(title, body = "") {
         Swal.fire({
+            icon: 'success',
+            title: title,
+            text: body,
             toast: true,
-            position: "bottom-end",
+            position: 'top-end',
             showConfirmButton: false,
-            timer: 3000,
-            width: "360px",
-            background: "transparent",
-            html: `<div class="flex flex-col text-left"><div class="flex items-center gap-3 mb-2"><div class="flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-600"><i class="ph ph-check-circle text-lg"></i></div><div><h3 class="text-[15px] font-semibold text-green-600">${title}</h3><p class="text-[13px] text-gray-700 mt-0.5">${body}</p></div></div></div>`,
-            customClass: {
-                popup: "!rounded-xl !shadow-md !border-2 !border-green-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#f0fff5] shadow-[0_0_8px_#22c55e70]",
-            },
+            timer: 3000
         });
     }
 
-    function showErrorToast(title, body = "Please check the input details.") {
-        if (typeof Swal == "undefined") return alert(title);
+    function showErrorToast(title, body = "") {
         Swal.fire({
+            icon: 'error',
+            title: title,
+            text: body,
             toast: true,
-            position: "bottom-end",
+            position: 'top-end',
             showConfirmButton: false,
-            timer: 4000,
-            width: "360px",
-            background: "transparent",
-            html: `<div class="flex flex-col text-left"><div class="flex items-center gap-3 mb-2"><div class="flex items-center justify-center w-10 h-10 rounded-full bg-red-100 text-red-600"><i class="ph ph-x-circle text-lg"></i></div><div><h3 class="text-[15px] font-semibold text-red-600">${title}</h3><p class="text-[13px] text-gray-700 mt-0.5">${body}</p></div></div></div>`,
-            customClass: {
-                popup: "!rounded-xl !shadow-md !border-2 !border-red-400 !p-4 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ff6b6b70]",
-            },
+            timer: 4000
         });
     }
 
-    function showLoadingModal(message = "Processing request...", subMessage = "Please wait.") {
-        if (typeof Swal == "undefined") return;
+    function showLoadingModal(title = "Processing...", text = "Please wait.") {
         Swal.fire({
-            background: "transparent",
-            html: `
-                <div class="flex flex-col items-center justify-center gap-2">
-                    <div class="animate-spin rounded-full h-10 w-10 border-4 border-orange-200 border-t-orange-600"></div>
-                    <p class="text-gray-700 text-[14px]">${message}<br><span class="text-sm text-gray-500">${subMessage}</span></p>
-                </div>
-            `,
+            title: title,
+            text: text,
             allowOutsideClick: false,
-            showConfirmButton: false,
-            customClass: {
-                popup: "!rounded-xl !shadow-md !border-2 !border-orange-400 !p-6 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] shadow-[0_0_8px_#ffb34770]",
-            },
+            didOpen: () => {
+                Swal.showLoading();
+            }
         });
     }
 
     async function showConfirmationModal(title, text, confirmText = "Confirm") {
-        if (typeof Swal == "undefined") return confirm(title);
         const result = await Swal.fire({
-            background: "transparent",
-            buttonsStyling: false,
-            width: '450px',
-            html: `
-                <div class="flex flex-col text-center">
-                    <div class="flex justify-center mb-3">
-                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 text-orange-600">
-                            <i class="ph ph-warning-circle text-3xl"></i>
-                        </div>
-                    </div>
-                    <h3 class="text-xl font-semibold text-gray-800">${title}</h3>
-                    <p class="text-[14px] text-gray-700 mt-1">${text}</p>
-                </div>
-            `,
+            title: title,
+            text: text,
+            icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: confirmText,
-            cancelButtonText: "Cancel",
-            customClass: {
-                popup: "!rounded-xl !shadow-lg !p-6 !bg-white !border-2 !border-orange-400 shadow-[0_0_15px_#ffb34780]",
-                confirmButton: "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700 !mx-2 !font-semibold !text-base",
-                cancelButton: "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300 !mx-2 !font-semibold !text-base",
-                actions: "!mt-4"
-            },
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: confirmText
         });
         return result.isConfirmed;
     }
@@ -270,6 +238,51 @@ window.addEventListener("DOMContentLoaded", () => {
         container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
             cb.checked = userModules.some(m => m.toLowerCase().trim() === cb.value.toLowerCase().trim());
         });
+    }
+
+    // Bulk Import Logic
+    if (fileInput) {
+        fileInput.addEventListener("change", () => {
+            if (fileInput.files.length > 0) {
+                bulkImportForm.dispatchEvent(new Event("submit"));
+            }
+        });
+    }
+
+    if (bulkImportForm) {
+        bulkImportForm.onsubmit = async (e) => {
+            e.preventDefault();
+            if (!fileInput.files.length) return;
+
+            const formData = new FormData(bulkImportForm);
+            showLoadingModal("Importing users...", "Please wait while we process the CSV file.");
+
+            try {
+                const res = await fetch(`${API_BASE}/bulkImport`, {
+                    method: "POST",
+                    body: formData,
+                });
+                const result = await res.json();
+                Swal.close();
+
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Import Complete',
+                        html: `Successfully imported: <strong>${result.imported_count}</strong><br>Errors: <strong>${result.error_count}</strong>`,
+                    });
+                    closeModal(modal);
+                    loadUsers(1);
+                } else {
+                    showErrorToast("Import Failed", result.message || "An error occurred during import.");
+                }
+            } catch (err) {
+                Swal.close();
+                showErrorToast("Error", "Network error occurred.");
+            } finally {
+                fileInput.value = ""; // Reset file input
+            }
+        };
     }
 
     // Modal Events
