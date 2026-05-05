@@ -1,3 +1,10 @@
+<?php
+/**
+ * @var string $apiBasePath
+ * @var string $title
+ * @var string $currentPage
+ */
+?>
 <div class="min-h-screen">
     <div class="mb-8">
         <h2 class="text-2xl font-bold text-gray-800">Returning</h2>
@@ -151,6 +158,7 @@
                     <div><p id="modal-student-id-label" class="text-[10px] text-gray-500 uppercase font-bold">ID Number</p><p id="modal-student-id" class="text-sm font-medium text-gray-700 font-mono"></p></div>
                     <div class="col-span-2"><p id="modal-borrower-course-label" class="text-[10px] text-gray-500 uppercase font-bold">Course / Department</p><p id="modal-borrower-course" class="text-sm font-medium text-gray-700"></p></div>
                     <div><p id="modal-year-section-label" class="text-[10px] text-gray-500 uppercase font-bold">Year & Section</p><p id="modal-borrower-year-section" class="text-sm font-medium text-gray-700"></p></div>
+                    <div><p class="text-[10px] text-gray-500 uppercase font-bold">Borrower Campus</p><p id="modal-borrower-campus" class="text-sm font-medium text-gray-700"></p></div>
                     <div><p class="text-[10px] text-red-500 uppercase font-bold">Due Date</p><p id="modal-due-date" class="text-sm font-bold text-red-600"></p></div>
                 </div>
             </div>

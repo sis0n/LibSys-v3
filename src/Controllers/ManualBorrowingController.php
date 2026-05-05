@@ -18,8 +18,7 @@ class ManualBorrowingController extends Controller
 
     public function index()
     {
-        $role = strtolower($_SESSION['role'] ?? '');
-        $apiBasePath = BASE_URL . '/api/' . ($role === 'superadmin' ? 'superadmin' : ($role === 'admin' ? 'admin' : 'librarian')) . '/borrowingForm';
+        $apiBasePath = BASE_URL . '/api/borrowingForm';
 
         $this->view('management/borrowingForm/index', [
             'title' => 'Borrowing Form',

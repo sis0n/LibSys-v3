@@ -191,6 +191,16 @@ class RouteConfig
     $router->post('api/superadmin/studentPromotion/promote', 'StudentPromotionController@promote', ['superadmin']);
     $router->post('api/superadmin/studentPromotion/deactivate', 'StudentPromotionController@deactivate', ['superadmin']);
     $router->post('api/superadmin/studentPromotion/activate', 'StudentPromotionController@activate', ['superadmin']);
+    
+    // Backup API
+    $router->get('api/superadmin/backup/logs', 'BackupController@listBackupLogs', ['superadmin']);
+    $router->get('api/superadmin/backup/database/full', 'BackupController@initiateBackup', ['superadmin']);
+    $router->get('api/superadmin/backup/export/zip/{tableName}', 'BackupController@exportBothFormats', ['superadmin']);
+    $router->get('api/superadmin/backup/secure_download/{filename}', 'BackupController@downloadBackup', ['superadmin']);
+    $router->post('api/superadmin/backup/delete/{filename}', 'BackupController@deleteBackup', ['superadmin']);
+    $router->post('api/superadmin/backup/restore/{filename}', 'BackupController@restoreBackup', ['superadmin']);
+    $router->post('api/superadmin/backup/upload_restore', 'BackupController@uploadAndRestore', ['superadmin']);
+
     $router->get('api/campuses/all', 'DataController@getAllCampuses');
     $router->get('api/data/getAllCourses', 'DataController@getAllCourses');
     $router->get('api/data/getColleges', 'DataController@getColleges');

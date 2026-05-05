@@ -111,21 +111,19 @@ class ReturningRepository
   public function findItemByIdentifier($identifier): ?array
   {
     try {
-      // 1. First, look for ACTIVE BORROWINGS (borrowed or overdue)
-      
-      // Query for Book
       $sqlBook = "
           SELECT 
               bti.item_id as borrowing_id, bti.transaction_id, bti.book_id, bti.status as bti_status,
               bt.borrowed_at, bt.due_date,
-              u.first_name, u.last_name, u.email,
+              u.first_name, u.last_name, u.email, u.campus_id as borrower_campus_id,
               s.student_number, s.year_level, s.section,
               f.unique_faculty_id,
-              st.employee_id,
+              st.employee_id, st.position,
               c.course_code, c.course_title,
-              cl.college_code,
+              cl.college_code, cl.college_name,
               b.title as item_title, b.author, b.accession_number as identifier, b.call_number, b.book_isbn, b.campus_id as home_campus_id,
               camp.campus_name as home_campus_name,
+              bcamp.campus_name as borrower_campus_name,
               'Book' as item_type
           FROM borrow_transaction_items bti
           JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
@@ -137,23 +135,24 @@ class ReturningRepository
           LEFT JOIN courses c ON s.course_id = c.course_id
           LEFT JOIN colleges cl ON f.college_id = cl.college_id
           LEFT JOIN campuses camp ON camp.campus_id = b.campus_id
+          LEFT JOIN campuses bcamp ON bcamp.campus_id = u.campus_id
           WHERE b.accession_number = ?
           AND bti.status IN ('borrowed', 'overdue')
       ";
 
-      // Query for Equipment
       $sqlEquip = "
           SELECT 
               bti.item_id as borrowing_id, bti.transaction_id, bti.equipment_id, bti.status as bti_status,
               bt.borrowed_at, bt.due_date,
-              u.first_name, u.last_name, u.email,
+              u.first_name, u.last_name, u.email, u.campus_id as borrower_campus_id,
               s.student_number, s.year_level, s.section,
               f.unique_faculty_id,
-              st.employee_id,
+              st.employee_id, st.position,
               c.course_code, c.course_title,
-              cl.college_code,
+              cl.college_code, cl.college_name,
               e.equipment_name as item_title, NULL as author, e.asset_tag as identifier, NULL as call_number, NULL as book_isbn, e.campus_id as home_campus_id,
               camp.campus_name as home_campus_name,
+              bcamp.campus_name as borrower_campus_name,
               'Equipment' as item_type
           FROM borrow_transaction_items bti
           JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
@@ -165,6 +164,7 @@ class ReturningRepository
           LEFT JOIN courses c ON s.course_id = c.course_id
           LEFT JOIN colleges cl ON f.college_id = cl.college_id
           LEFT JOIN campuses camp ON camp.campus_id = e.campus_id
+          LEFT JOIN campuses bcamp ON bcamp.campus_id = u.campus_id
           WHERE (e.asset_tag = ? OR e.equipment_id = ?)
           AND bti.status IN ('borrowed', 'overdue')
       ";
@@ -185,7 +185,9 @@ class ReturningRepository
           $borrowerName = trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''));
           
           $idNumber = $row['student_number'] ?? $row['unique_faculty_id'] ?? $row['employee_id'] ?? 'N/A';
-          $dept = $row['course_code'] ?? $row['college_code'] ?? 'N/A';
+          
+          $dept = $row['course_code'] ?? $row['college_name'] ?? $row['position'] ?? 'N/A';
+          
           $yearSec = isset($row['year_level']) ? ($row['year_level'] . ' ' . $row['section']) : 'N/A';
 
           $matches[] = [
@@ -195,6 +197,7 @@ class ReturningRepository
             'author' => $row['author'] ?? null,
             'accession_number' => $row['identifier'],
             'borrower_name' => $borrowerName,
+            'borrower_campus_name' => $row['borrower_campus_name'] ?? 'N/A',
             'id_number' => $idNumber,
             'course_or_department' => $dept,
             'student_year_section' => $yearSec,
@@ -215,7 +218,6 @@ class ReturningRepository
         ];
       }
 
-      // 2. If no active borrowings, check if the item exists at all (Available)
       $stmt = $this->db->prepare("
           SELECT b.*, camp.campus_name as home_campus_name 
           FROM books b 
@@ -236,7 +238,6 @@ class ReturningRepository
         ];
       }
 
-      // Check equipment availability
       $stmt = $this->db->prepare("
           SELECT e.*, camp.campus_name as home_campus_name 
           FROM equipments e 

@@ -189,7 +189,7 @@ window.addEventListener("DOMContentLoaded", () => {
         if (!select) return;
         select.innerHTML = '<option value="">Loading Courses...</option>';
         try {
-            const res = await fetch(`${API_BASE}/getAllCourses`);
+            const res = await fetch(`${BASE_URL_JS}/api/data/getAllCourses`);
             const data = await res.json();
             select.innerHTML = '<option value="">Select Course/Program</option>';
             if (data.success && data.courses) {
@@ -304,6 +304,12 @@ window.addEventListener("DOMContentLoaded", () => {
         const container = document.getElementById("editPermissionsContainer");
         if (container) togglePermissionsUI(container, val);
         setActiveOption("editRoleDropdownMenu", el);
+    };
+
+    window.selectEditStatus = (el, val) => {
+        const valEl = document.getElementById("editStatusDropdownValue");
+        if (valEl) valEl.textContent = val;
+        setActiveOption("editStatusDropdownMenu", el);
     };
 
     // Main Actions

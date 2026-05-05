@@ -439,6 +439,20 @@ class UserService
     }
 
     /**
+     * Grant edit access to multiple student profiles
+     */
+    public function allowMultipleEdit(array $userIds): int
+    {
+        $count = 0;
+        foreach ($userIds as $id) {
+            if ($this->setEditAccess((int)$id, true)) {
+                $count++;
+            }
+        }
+        return $count;
+    }
+
+    /**
      * Handle bulk deletion with approval logic
      */
     public function bulkDelete(array $userIds, ?string $reason, int $adminId, string $adminRole): array

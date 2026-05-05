@@ -303,7 +303,10 @@ document.addEventListener("DOMContentLoaded", function () {
           <div class="flex flex-col">
             <span class="font-bold text-gray-800 text-lg">${match.borrower_name}</span>
             <span class="text-sm text-gray-600 font-mono">${match.id_number} • ${match.course_or_department}</span>
-            <span class="text-xs text-orange-600 mt-1 font-bold italic">Borrowed from: ${match.home_campus_name}</span>
+            <div class="flex flex-col gap-0.5 mt-1">
+                <span class="text-xs text-blue-600 font-bold italic">Borrower Campus: ${match.borrower_campus_name}</span>
+                <span class="text-xs text-orange-600 font-bold italic">Item Home Campus: ${match.home_campus_name}</span>
+            </div>
           </div>
           <div class="flex items-center gap-3">
              <span class="text-[10px] bg-white border border-orange-200 px-2 py-1 rounded text-gray-500 uppercase font-bold">${match.availability}</span>
@@ -335,6 +338,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("modal-student-id").textContent = data.id_number;
     document.getElementById("modal-borrower-course").textContent = data.course_or_department;
     document.getElementById("modal-borrower-year-section").textContent = data.student_year_section;
+    document.getElementById("modal-borrower-campus").textContent = data.borrower_campus_name;
     document.getElementById("modal-due-date").textContent = data.due_date;
 
     // Handle visibility based on item type

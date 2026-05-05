@@ -103,10 +103,17 @@ class UserProfileService
             
             if ($role === 'student') {
                 $finalRegForm = $currentProfile['registration_form'] ?? null;
+                
+                // Explicit removal check
+                if (isset($data['remove_rf']) && $data['remove_rf'] == '1') {
+                    $finalRegForm = null;
+                }
+
                 if (isset($files['reg_form']) && $files['reg_form']['error'] === 0) {
                     $storageService->validatePDF($files['reg_form']);
                     $finalRegForm = $storageService->saveFile($files['reg_form'], "reg_form", "rf");
                 }
+                
                 $roleData = array_merge($roleData, [
                     'course_id' => $data['course_id'],
                     'year_level' => $data['year_level'],

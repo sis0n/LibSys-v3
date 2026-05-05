@@ -201,9 +201,9 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <input type="file" id="regFormUpload" name="reg_form" accept="application/pdf" class="hidden" disabled />
-                        <button type="button" id="uploadBtn" onclick="document.getElementById('regFormUpload').click()"
-                            class="px-3 py-1.5 text-xs rounded-md border border-gray-300 bg-white hover:bg-gray-100 transition hidden">Upload</button>
+                        <input type="file" id="regFormUpload" name="reg_form" accept="application/pdf" class="sr-only" disabled />
+                        <label for="regFormUpload" id="uploadBtn"
+                            class="cursor-pointer px-3 py-1.5 text-xs rounded-md border border-gray-300 bg-white hover:bg-gray-100 transition hidden text-center">Upload</label>
                         <a id="viewRegForm" href="#" target="_blank"
                             class="px-3 py-1.5 text-xs rounded-md border border-gray-300 bg-white hover:bg-gray-100 transition hidden">View</a>
                         <button type="button" id="removeRegForm"
@@ -226,11 +226,13 @@
                         class="font-medium text-gray-800 bg-gray-50 border-gray-200 border rounded-md px-2 py-1 w-full"
                         disabled>
                 </div>
-                <div class="min-w-[200px]">
-                    <label class="text-sm text-gray-500" id="deptLabel" for="department">Department</label>
-                    <input type="text" id="department" name="department"
+                <div class="min-w-[200px]" id="deptWrapper">
+                    <label class="text-sm text-gray-500" id="deptLabel" for="collegeId">Department</label>
+                    <select id="collegeId" name="college_id"
                         class="font-medium text-gray-800 bg-gray-50 border-gray-200 border rounded-md px-2 py-1 w-full"
                         disabled>
+                        <option value="" disabled selected>Select Department</option>
+                    </select>
                 </div>
                 <div id="positionWrapper" class="min-w-[200px] hidden">
                     <label class="text-sm text-gray-500" for="position">Position</label>

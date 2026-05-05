@@ -50,11 +50,11 @@ class ReturningService
         if ($result['status'] === 'borrowed') {
             if (isset($result['matches'])) {
                 foreach ($result['matches'] as &$match) {
-                    $match['is_cross_campus'] = ($match['home_campus_id'] != $currentLibrarianCampusId);
+                    $match['is_cross_campus'] = ($currentLibrarianCampusId !== null && $match['home_campus_id'] != $currentLibrarianCampusId);
                     $match['current_librarian_campus_id'] = $currentLibrarianCampusId;
                 }
             } else if (isset($result['details'])) {
-                $result['details']['is_cross_campus'] = ($result['details']['home_campus_id'] != $currentLibrarianCampusId);
+                $result['details']['is_cross_campus'] = ($currentLibrarianCampusId !== null && $result['details']['home_campus_id'] != $currentLibrarianCampusId);
                 $result['details']['current_librarian_campus_id'] = $currentLibrarianCampusId;
             }
         }

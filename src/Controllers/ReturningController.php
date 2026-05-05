@@ -21,8 +21,7 @@ class ReturningController extends Controller
 
     public function index()
     {
-        $role = strtolower($_SESSION['role'] ?? '');
-        $apiBasePath = BASE_URL . '/api/' . ($role === 'superadmin' ? 'superadmin' : ($role === 'admin' ? 'admin' : 'librarian')) . '/returning';
+        $apiBasePath = BASE_URL . '/api/returning';
 
         $this->view('management/returning/index', [
             'title' => 'Returning',

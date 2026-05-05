@@ -217,6 +217,20 @@ class UserManagementController extends Controller
         }
     }
 
+    public function allowMultipleEdit()
+    {
+        try {
+            $data = json_decode(file_get_contents("php://input"), true);
+            $userIds = $data['user_ids'] ?? [];
+            if (empty($userIds)) throw new Exception('No users selected.');
+
+            $count = $this->userService->allowMultipleEdit($userIds);
+            return $this->jsonResponse(['message' => "Successfully granted edit access to $count students."]);
+        } catch (Exception $e) {
+            return $this->errorResponse($e->getMessage());
+        }
+    }
+
     public function bulkImport()
     {
         try {

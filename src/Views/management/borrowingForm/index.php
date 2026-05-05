@@ -1,3 +1,10 @@
+<?php
+/**
+ * @var string $apiBasePath
+ * @var string $title
+ * @var string $currentPage
+ */
+?>
 <main class="min-h-screen">
     <div class="mb-6">
         <h2 class="text-2xl font-bold mb-4">Borrowing Form</h2>

@@ -24,6 +24,33 @@ const showLoadingModal = (message = "Processing request...", subMessage = "Pleas
     });
 };
 
+async function showConfirmationModal(title, text, confirmText = "Confirm", icon = "ph-warning-circle") {
+    if (typeof Swal == "undefined") return confirm(title);
+    const result = await Swal.fire({
+        background: "transparent",
+        html: `
+            <div class="flex flex-col text-center">
+                <div class="flex justify-center mb-3">
+                    <div class="flex items-center justify-center w-14 h-14 rounded-full bg-orange-100 text-orange-600">
+                        <i class="ph ${icon} text-2xl"></i>
+                    </div>
+                </div>
+                <h3 class="text-[17px] font-semibold text-orange-700">${title}</h3>
+                <p class="text-[14px] text-gray-700 mt-1">${text}</p>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: confirmText,
+        cancelButtonText: "Cancel",
+        customClass: {
+            popup: "!rounded-xl !shadow-md !p-6 !bg-gradient-to-b !from-[#fffdfb] !to-[#fff6ef] !border-2 !border-orange-400 shadow-[0_0_8px_#ffb34770]",
+            confirmButton: "!bg-orange-600 !text-white !px-5 !py-2.5 !rounded-lg hover:!bg-orange-700",
+            cancelButton: "!bg-gray-200 !text-gray-800 !px-5 !py-2.5 !rounded-lg hover:!bg-gray-300",
+        },
+    });
+    return result.isConfirmed;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     const role = window.USER_ROLE.toLowerCase();
     const API_BASE = `${window.BASE_URL}/api/profile`;
@@ -38,6 +65,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const uploadOverlay = document.getElementById("uploadOverlay");
     const uploadLabel = document.getElementById("uploadLabel");
     const uploadInput = document.getElementById("uploadProfile");
+    const regFormUpload = document.getElementById("regFormUpload");
+    const removeRegFormBtn = document.getElementById("removeRegForm");
+    const uploadRfBtn = document.getElementById("uploadBtn");
     
     const cropModal = document.getElementById("cropModal");
     const cropImage = document.getElementById("cropImage");
@@ -45,6 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let originalData = {};
     let isEditing = false;
+    let isRfRemoved = false;
 
     // Sections
     const studentSection = document.getElementById("studentDetailsSection");
@@ -60,6 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (data.success && data.profile) {
                 const p = data.profile;
                 originalData = p;
+                isRfRemoved = false;
                 renderProfile(p);
             }
         } catch (err) {
@@ -118,12 +150,14 @@ document.addEventListener("DOMContentLoaded", () => {
             setVal("section", p.section);
             loadCourseOptions(p.course_id);
             
+            const viewBtn = document.getElementById("viewRegForm");
             if (p.registration_form) {
-                const viewBtn = document.getElementById("viewRegForm");
                 if (viewBtn) {
                     viewBtn.href = `${window.STORAGE_URL}/${p.registration_form.replace(/^\//, "")}`;
                     viewBtn.classList.remove("hidden");
                 }
+            } else {
+                viewBtn?.classList.add("hidden");
             }
             
             const badge = document.getElementById("verificationBadge");
@@ -131,9 +165,17 @@ document.addEventListener("DOMContentLoaded", () => {
         } else if (['staff', 'faculty'].includes(role)) {
             employmentSection.classList.remove("hidden");
             setVal("employeeId", p.employee_id || p.unique_faculty_id);
-            setVal("department", p.department || p.college_code);
-            if (role === 'staff') {
-                document.getElementById("positionWrapper")?.classList.remove("hidden");
+            
+            const deptWrapper = document.getElementById("deptWrapper");
+            const positionWrapper = document.getElementById("positionWrapper");
+
+            if (role === 'faculty') {
+                deptWrapper?.classList.remove("hidden");
+                positionWrapper?.classList.add("hidden");
+                loadCollegeOptions(p.college_id);
+            } else {
+                deptWrapper?.classList.add("hidden");
+                positionWrapper?.classList.remove("hidden");
                 setVal("position", p.position);
             }
         }
@@ -147,6 +189,23 @@ document.addEventListener("DOMContentLoaded", () => {
             editProfileBtn.classList.remove("hidden");
             lockedInfo?.classList.add("hidden");
         }
+    }
+
+    async function loadCollegeOptions(currentId) {
+        const select = document.getElementById("collegeId");
+        if (!select) return;
+        try {
+            const res = await fetch(`${window.BASE_URL}/api/data/getColleges`);
+            const data = await res.json();
+            select.innerHTML = '<option value="" disabled selected>Select Department</option>';
+            if (data.colleges) {
+                data.colleges.forEach(c => {
+                    const opt = new Option(`${c.college_code} - ${c.college_name}`, c.college_id);
+                    select.add(opt);
+                });
+                if (currentId) select.value = currentId;
+            }
+        } catch (e) {}
     }
 
     async function loadCourseOptions(currentId) {
@@ -168,8 +227,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function toggleEdit(editing) {
         isEditing = editing;
-        const inputs = profileForm.querySelectorAll('input:not([disabled]), select:not([disabled])');
-        const allToggleable = profileForm.querySelectorAll('input, select');
+        const allToggleable = profileForm.querySelectorAll('input, select, textarea');
         
         allToggleable.forEach(input => {
             if (['studentNumber', 'employeeId', 'campusName'].includes(input.id)) return;
@@ -185,16 +243,55 @@ document.addEventListener("DOMContentLoaded", () => {
         uploadLabel.classList.toggle("hidden", !editing);
         
         if (role === 'student') {
-            document.getElementById("uploadBtn")?.classList.toggle("hidden", !editing || originalData.registration_form);
-            document.getElementById("removeRegForm")?.classList.toggle("hidden", !editing || !originalData.registration_form);
+            updateRfButtons();
         }
 
-        if (!editing) loadProfile();
+        if (!editing) {
+            loadProfile();
+            isRfRemoved = false;
+        }
+    }
+
+    function updateRfButtons() {
+        const hasOriginalRf = originalData.registration_form && !isRfRemoved;
+        const hasNewRf = regFormUpload && regFormUpload.files.length > 0;
+
+        if (uploadRfBtn) {
+            uploadRfBtn.classList.toggle("hidden", !isEditing || hasOriginalRf);
+            uploadRfBtn.textContent = hasNewRf ? "Change Selected File" : "Upload";
+        }
+        if (removeRegFormBtn) {
+            removeRegFormBtn.classList.toggle("hidden", !isEditing || !hasOriginalRf);
+        }
     }
 
     editProfileBtn?.addEventListener("click", () => toggleEdit(true));
     cancelProfileBtn?.addEventListener("click", async () => {
         if (await showConfirmationModal("Discard changes?", "Unsaved changes will be lost.")) toggleEdit(false);
+    });
+
+    removeRegFormBtn?.addEventListener("click", () => {
+        isRfRemoved = true;
+        updateRfButtons();
+        showProfileToast("ph-info", "File Removed", "The existing registration form will be deleted upon saving.", "warning");
+    });
+
+    regFormUpload?.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.type !== "application/pdf") {
+                showProfileToast("ph-x", "Invalid File", "Please select a PDF file.", "error");
+                e.target.value = "";
+                return;
+            }
+            if (file.size > 1024 * 1024) {
+                showProfileToast("ph-x", "File too large", "File must be below 1MB.", "error");
+                e.target.value = "";
+                return;
+            }
+            updateRfButtons();
+            showProfileToast("ph-check", "File Selected", `Selected: ${file.name}`, "success");
+        }
     });
 
     profileForm.onsubmit = async (e) => {
@@ -204,6 +301,9 @@ document.addEventListener("DOMContentLoaded", () => {
         showLoadingModal("Saving...");
         const formData = new FormData(profileForm);
         if (croppedBlob) formData.append("profile_image", croppedBlob, "profile.png");
+        if (isRfRemoved && !regFormUpload.files.length) {
+            formData.append("remove_rf", "1");
+        }
 
         try {
             const res = await fetch(`${API_BASE}/update`, { method: "POST", body: formData });
@@ -213,9 +313,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 showProfileToast("ph-check-circle", "Success", "Profile updated.", "success");
                 toggleEdit(false);
             } else {
+                Swal.close();
                 showProfileToast("ph-x-circle", "Error", data.message || "Update failed.", "error");
             }
-        } catch (e) { Swal.close(); }
+        } catch (e) { 
+            Swal.close(); 
+            showProfileToast("ph-x-circle", "Error", "A server error occurred.", "error");
+        }
     };
 
     // Image Upload & Crop
@@ -241,6 +345,11 @@ document.addEventListener("DOMContentLoaded", () => {
             profileIcon.classList.add("hidden");
             cropModal.classList.add("hidden");
         });
+    });
+
+    document.getElementById("cancelCrop")?.addEventListener("click", () => {
+        cropModal.classList.add("hidden");
+        uploadInput.value = "";
     });
 
     loadProfile();

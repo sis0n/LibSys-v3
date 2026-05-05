@@ -296,8 +296,6 @@
                                 <?php if ($user_role === 'superadmin'): ?>
                                 <div class="user-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
                                     onclick="selectUserRole(this, 'Admin')">Admin</div>
-                                <div class="user-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
-
                                 <?php endif; ?>
                                 <div class="user-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
                                     onclick="selectUserRole(this, 'Faculty')">Faculty</div>
@@ -531,8 +529,6 @@
                                     onclick="selectEditRole(this, 'Librarian')">Librarian</div>
                                 <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
                                     onclick="selectEditRole(this, 'Admin')">Admin</div>
-                                <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
-
                                 <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
                                     onclick="selectEditRole(this, 'Faculty')">Faculty</div>
                                 <div class="edit-role-item px-3 py-2 hover:bg-orange-100 cursor-pointer text-sm"
