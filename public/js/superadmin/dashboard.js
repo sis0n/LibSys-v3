@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   async function loadDashboardData() {
     try {
-      const response = await fetch(`api/superadmin/dashboard/getData`);
+      const response = await fetch(`api/dashboard/getData`);
       const result = await response.json();
 
       if (result.success) {

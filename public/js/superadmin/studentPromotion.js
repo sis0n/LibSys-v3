@@ -464,7 +464,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function loadCourseOptions() {
         try {
-            const res = await fetch(`api/superadmin/userManagement/getAllCourses`);
+            const res = await fetch(`api/data/getAllCourses`);
             const data = await res.json();
             if (data.success) {
                 const select = document.getElementById("courseFilter");

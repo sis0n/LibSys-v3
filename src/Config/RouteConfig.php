@@ -156,7 +156,7 @@ class RouteConfig
     $router->post('api/overdue/sendReminder', 'OverdueController@sendReminder', ['overdue tracking']);
 
     // Dashboard & History
-    $router->get('api/dashboard/getData', 'DashboardController@getData', ['reports', 'librarian', 'admin']);
+    $router->get('api/dashboard/getData', 'DashboardController@getData', ['reports', 'superadmin']);
     $router->get('api/transactionHistory/getTableData', 'TransactionHistoryController@getTableData', ['transaction history']);
 
     // Reports
