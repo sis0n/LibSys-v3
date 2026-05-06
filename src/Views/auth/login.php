@@ -75,6 +75,19 @@
     </div>
 
     <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const lockoutData = <?= json_encode($lockout_data ?? null) ?>;
+        if (lockoutData && lockoutData.remaining > 0) {
+            const form = document.querySelector("form");
+            const inputs = form.querySelectorAll('input, button');
+            inputs.forEach(el => el.disabled = true);
+            
+            setTimeout(() => {
+                inputs.forEach(el => el.disabled = false);
+            }, lockoutData.remaining * 1000);
+        }
+    });
+
     function togglePassword(id, btn) {
         const input = document.getElementById(id);
         const icon = btn.querySelector("i");
@@ -95,6 +108,7 @@
 
         const form = e.target;
         const formData = new FormData(form);
+        const username = form.querySelector('#username').value;
 
         try {
             const response = await fetch(form.action, {
@@ -110,20 +124,26 @@
                 let alertMessage = result.message || "Invalid username or password. Please try again.";
                 let iconClass = "ph ph-x-circle text-red-600 text-3xl";
 
-                // Handle Rate Limiting / Lockout
-                if (result.message && result.message.includes("Too many failed login attempts")) {
+                const errors = result.errors || {};
+
+                if (errors.error_type === 'lockout') {
                     alertTitle = "Timeout";
-                    alertMessage = "Masyadong maraming requests. Please wait for 2 minutes.";
+                    alertMessage = result.message;
                     iconClass = "ph ph-timer text-orange-600 text-3xl";
                     
-                    // Lock UI for 2 minutes
                     const inputs = form.querySelectorAll('input, button');
                     inputs.forEach(el => el.disabled = true);
                     
-                    setTimeout(() => {
-                        inputs.forEach(el => el.disabled = false);
-                    }, 120000); // 2 minutes
-                } else if (result.error_type === 'deactivated') {
+                    if (errors.remaining && errors.remaining > 0) {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('username', username);
+                        window.history.replaceState({}, '', url);
+
+                        setTimeout(() => {
+                            inputs.forEach(el => el.disabled = false);
+                        }, errors.remaining * 1000);
+                    }
+                } else if (errors.error_type === 'deactivated') {
                     alertTitle = "Account Suspended";
                     alertMessage = "Your account has been suspended by the administrator.";
                     iconClass = "ph ph-warning-circle text-orange-600 text-3xl"; 
@@ -136,13 +156,13 @@
                         rgba(0,0,0,0.3)
                         backdrop-filter: blur(6px)
                     `,
-                    timer: 3000, // Gawin nating 3 segundo para mabasa ang message
+                    timer: 3000,
                     didOpen: () => {
                         const progressBar = Swal.getHtmlContainer().querySelector(
                             "#progress-bar");
                         let width = 100;
                         timerInterval = setInterval(() => {
-                            width -= 100 / 30; // 3s / 100ms = 30 intervals
+                            width -= 100 / 30;
                             if (progressBar) {
                                 progressBar.style.width = width + "%";
                             }

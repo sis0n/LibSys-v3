@@ -30,10 +30,54 @@ class AuthController extends Controller
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
+
+        $lockoutData = null;
+        if (isset($_GET['username'])) {
+            $lockoutData = $this->getLockoutInfo($_GET['username']);
+        }
+
         $this->view("auth/login", [
             "title" => "Login Page",
-            "csrf_token" => $_SESSION['csrf_token']
+            "csrf_token" => $_SESSION['csrf_token'],
+            "lockout_data" => $lockoutData
         ], false);
+    }
+
+    private function getLockoutInfo(string $username): ?array
+    {
+        try {
+            $repo = new \App\Repositories\LoginAttemptRepository();
+            $count = $repo->countAttempts($username);
+            if ($count >= 4) {
+                $last = $repo->getLastAttempt($username);
+                $dbTime = $repo->getCurrentDatabaseTime();
+                if ($last) {
+                    $passed = strtotime($dbTime) - strtotime($last);
+                    $wait = $this->calculateWaitTime($count);
+                    if ($passed < $wait) {
+                        return [
+                            'remaining' => $wait - $passed,
+                            'message' => ($count === 4) ? "Please wait a moment before trying again." : "Too many failed attempts. Please try again later."
+                        ];
+                    }
+                }
+            }
+        } catch (\Exception $e) {}
+        return null;
+    }
+
+    private function calculateWaitTime(int $failCount): int
+    {
+        return match (true) {
+            $failCount === 4 => 30,
+            $failCount === 5 => 300,
+            $failCount === 6 => 900,
+            $failCount === 7 => 1800,
+            $failCount === 8 => 3600,
+            $failCount === 9 => 10800,
+            $failCount >= 10 => 86400,
+            default => 0,
+        };
     }
 
     public function login()
@@ -65,7 +109,6 @@ class AuthController extends Controller
                 $_SESSION[$key] = $value;
             }
 
-            // Log the success via AuditLog directly or via Service if preferred
             (new \App\Services\AuditLogService())->log($_SESSION['user_id'], 'LOGIN', 'AUTH', null, 'User logged in successfully.');
 
             $this->jsonResponse([
@@ -73,7 +116,16 @@ class AuthController extends Controller
                 'redirect' => $result['redirect']
             ]);
         } catch (\Exception $e) {
-            $statusCode = $e->getCode() === 403 ? 403 : 200; // Keep 200 for normal error messages in AJAX
+            if ($e->getCode() === 429) {
+                $data = json_decode($e->getMessage(), true);
+                $this->errorResponse($data['message'], 429, [
+                    'status' => 'error',
+                    'error_type' => 'lockout',
+                    'remaining' => $data['remaining']
+                ]);
+            }
+
+            $statusCode = $e->getCode() === 403 ? 403 : 200;
             $this->errorResponse($e->getMessage(), $statusCode, [
                 'status' => 'error',
                 'error_type' => ($e->getCode() === 403) ? 'deactivated' : 'auth_failed'
