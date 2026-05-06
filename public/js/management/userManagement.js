@@ -1,5 +1,4 @@
 window.addEventListener("DOMContentLoaded", () => {
-    // Utility functions (Toasts, Modals)
     function showSuccessToast(title, body = "") {
         Swal.fire({
             icon: 'success',
@@ -48,7 +47,6 @@ window.addEventListener("DOMContentLoaded", () => {
         return result.isConfirmed;
     }
 
-    // Constants & Global State
     const API_BASE = API_BASE_PATH;
     const modal = document.getElementById("importModal");
     const openBtn = document.getElementById("bulkImportBtn");
@@ -65,31 +63,20 @@ window.addEventListener("DOMContentLoaded", () => {
     const cancelEditUserBtn = document.getElementById("cancelEditUser");
     const bulkImportForm = document.getElementById("bulkImportForm");
     const fileInput = document.getElementById("csvFile");
-    const importMessage = document.getElementById("importMessage");
     const modulesSection = document.getElementById("modulesSection");
-    const multiSelectBtn = document.getElementById("multiSelectBtn");
-    const multiSelectActions = document.getElementById("multiSelectActions");
-    const selectAllBtn = document.getElementById("selectAllBtn");
-    const cancelSelectionBtn = document.getElementById("cancelSelectionBtn");
-    const multiDeleteBtn = document.getElementById("multiDeleteBtn");
-    const multiAllowEditBtn = document.getElementById("multiAllowEditBtn");
-    const selectionCount = document.getElementById("selectionCount");
     const userRoleValueEl = document.getElementById("userRoleDropdownValue");
 
     let users = [];
     let selectedRole = "All Roles";
     let selectedStatus = "All Status";
-    let selectedCampus = null; // Smart Filter for Superadmin/Global Admin
+    let selectedCampus = null; 
     let currentEditingUserId = null;
-    let isMultiSelectMode = false;
-    let selectedUsers = new Set();
     let currentPage = 1;
     const limit = 10;
     let totalUsers = 0;
     let totalPages = 1;
     let isLoading = false;
 
-    // Load state from session storage
     try {
         const savedPage = sessionStorage.getItem('userManagementPage');
         if (savedPage) {
@@ -98,7 +85,6 @@ window.addEventListener("DOMContentLoaded", () => {
         }
     } catch (e) { console.error(e); }
 
-    // Table Rendering & Pagination
     function updateUserCounts(usersLength, totalCountNum, page, perPage) {
         const resultsIndicator = document.getElementById("resultsIndicator");
         if (resultsIndicator) {
@@ -172,18 +158,11 @@ window.addEventListener("DOMContentLoaded", () => {
             if (pageStr === '...') return;
             const pageNum = parseInt(pageStr, 10);
             if (pageNum !== currentPage) {
-                if (isMultiSelectMode && selectedUsers.size > 0) {
-                    const ok = await showConfirmationModal("Clear Selection?", "Navigating will clear your selection. Continue?");
-                    if (!ok) return;
-                    selectedUsers.clear();
-                    updateMultiSelectButtons();
-                }
                 loadUsers(pageNum);
             }
         };
     }
 
-    // Role-specific field handling
     async function loadCourses(targetSelectId, selectedValue = null) {
         const select = document.getElementById(targetSelectId);
         if (!select) return;
@@ -222,7 +201,6 @@ window.addEventListener("DOMContentLoaded", () => {
         container.classList.toggle("hidden", !isPrivileged);
         if (!isPrivileged) return;
 
-        // Internal permission wrappers
         const wrappers = {
             'user management': container.querySelector('[id*="UserManagementModuleWrapper"]'),
             'restore users': container.querySelector('[id*="RestoreUserModuleWrapper"]'),
@@ -240,7 +218,6 @@ window.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Bulk Import Logic
     if (fileInput) {
         fileInput.addEventListener("change", () => {
             if (fileInput.files.length > 0) {
@@ -280,12 +257,11 @@ window.addEventListener("DOMContentLoaded", () => {
                 Swal.close();
                 showErrorToast("Error", "Network error occurred.");
             } finally {
-                fileInput.value = ""; // Reset file input
+                fileInput.value = ""; 
             }
         };
     }
 
-    // Modal Events
     function closeModal(el) {
         el?.classList.add("hidden");
         document.body.classList.remove("overflow-hidden");
@@ -312,7 +288,6 @@ window.addEventListener("DOMContentLoaded", () => {
         setActiveOption("editStatusDropdownMenu", el);
     };
 
-    // Main Actions
     async function loadUsers(page = 1, showSpinner = true) {
         if (isLoading) return;
         isLoading = true;
@@ -380,40 +355,16 @@ window.addEventListener("DOMContentLoaded", () => {
         if (!userTableBody) return;
         userTableBody.innerHTML = "";
 
-        // Multi-select header sync
-        const headerRow = document.querySelector('thead tr');
-        if (headerRow) {
-            const existing = headerRow.querySelector('.multi-select-header');
-            if (isMultiSelectMode && !existing) {
-                const th = document.createElement('th');
-                th.className = 'px-4 py-3 multi-select-header';
-                headerRow.prepend(th);
-            } else if (!isMultiSelectMode && existing) {
-                existing.remove();
-            }
-        }
-
         if (!usersToRender.length) {
-            const cols = headerRow?.children.length || 6;
-            userTableBody.innerHTML = `<tr><td colspan="${cols}" class="text-center py-10 text-gray-500">No users found.</td></tr>`;
+            userTableBody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-gray-500">No users found.</td></tr>`;
             return;
         }
 
         usersToRender.forEach(user => {
             const row = document.createElement("tr");
-            const isSelected = selectedUsers.has(user.user_id);
             const isActive = user.is_active == 1;
             
-            row.className = `transition-colors ${isSelected ? "bg-orange-100" : (isActive ? "bg-white" : "bg-gray-50 text-gray-500")}`;
-            if (isMultiSelectMode) {
-                row.classList.add("cursor-pointer");
-                row.onclick = () => {
-                    if (selectedUsers.has(user.user_id)) selectedUsers.delete(user.user_id);
-                    else selectedUsers.add(user.user_id);
-                    renderTable(users);
-                    updateMultiSelectButtons();
-                };
-            }
+            row.className = `transition-colors ${isActive ? "bg-white" : "bg-gray-50 text-gray-500"}`;
 
             const name = [user.first_name, user.middle_name, user.last_name].filter(Boolean).join(' ');
             const roleBadge = getRoleBadge(user.role, user.campus_id);
@@ -428,16 +379,14 @@ window.addEventListener("DOMContentLoaded", () => {
             }
 
             row.innerHTML = `
-                ${isMultiSelectMode ? `<td class="px-4 py-3"><input type="checkbox" class="accent-orange-500" ${isSelected ? "checked" : ""}></td>` : ""}
                 <td class="px-4 py-3"><strong>${name}</strong><br><small>${user.username}</small></td>
                 <td class="px-4 py-3">${user.email || 'N/A'}</td>
                 <td class="px-4 py-3">${roleBadge}</td>
                 <td class="px-4 py-3"><span class="statusToggle cursor-pointer">${statusBadge}</span></td>
                 <td class="px-4 py-3">${new Date(user.created_at).toLocaleDateString()}</td>
-                <td class="px-4 py-3">${isMultiSelectMode ? "" : `<div class="flex gap-2">${actions}</div>`}</td>
+                <td class="px-4 py-3"><div class="flex gap-2">${actions}</div></td>
             `;
 
-            // Row actions
             row.querySelector('.editBtn')?.addEventListener('click', (e) => { e.stopPropagation(); openEditModal(user); });
             row.querySelector('.deleteBtn')?.addEventListener('click', (e) => { e.stopPropagation(); deleteUser(user); });
             row.querySelector('.statusToggle')?.addEventListener('click', (e) => { e.stopPropagation(); toggleStatus(user); });
@@ -518,7 +467,6 @@ window.addEventListener("DOMContentLoaded", () => {
         } catch (e) { Swal.close(); }
     }
 
-    // Event Listeners
     if (openBtn) openBtn.onclick = () => modal?.classList.remove("hidden");
     if (closeBtn) closeBtn.onclick = () => closeModal(modal);
     if (cancelBtn) cancelBtn.onclick = () => closeModal(modal);
@@ -594,7 +542,6 @@ window.addEventListener("DOMContentLoaded", () => {
         } catch (e) { Swal.close(); }
     };
 
-    // Helper UI functions
     function setActiveOption(containerId, el) {
         document.querySelectorAll(`#${containerId} div`).forEach(i => i.classList.remove("bg-orange-50", "font-semibold"));
         el?.classList.add("bg-orange-50", "font-semibold");
@@ -622,63 +569,6 @@ window.addEventListener("DOMContentLoaded", () => {
         return `<span class="${color} text-white px-2 py-1 rounded text-xs">${status}</span>`;
     }
 
-    function updateMultiSelectButtons() {
-        const count = selectedUsers.size;
-        if (selectionCount) selectionCount.textContent = count;
-        multiSelectBtn?.classList.toggle('hidden', isMultiSelectMode);
-        multiSelectActions?.classList.toggle('hidden', !isMultiSelectMode);
-        multiDeleteBtn?.classList.toggle('hidden', count === 0);
-        multiAllowEditBtn?.classList.toggle('hidden', count === 0);
-    }
-
-    if (multiDeleteBtn) multiDeleteBtn.onclick = async () => {
-        const ids = [...selectedUsers];
-        if (!ids.length) return;
-        const ok = await showConfirmationModal(`Delete ${ids.length} Users?`, "This action cannot be undone.");
-        if (!ok) return;
-        showLoadingModal("Deleting...");
-        try {
-            const res = await fetch(`${API_BASE}/deleteMultiple`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_ids: ids })
-            });
-            const data = await res.json();
-            Swal.close();
-            if (data.success) {
-                showSuccessToast("Deleted");
-                isMultiSelectMode = false;
-                selectedUsers.clear();
-                updateMultiSelectButtons();
-                loadUsers(1, false);
-            }
-        } catch (e) { Swal.close(); }
-    };
-
-    if (multiAllowEditBtn) multiAllowEditBtn.onclick = async () => {
-        const ids = [...selectedUsers];
-        if (!ids.length) return;
-        const ok = await showConfirmationModal(`Allow Edit for ${ids.length} students?`, "Continue?");
-        if (!ok) return;
-        showLoadingModal("Processing...");
-        try {
-            const res = await fetch(`${API_BASE}/allowMultipleEdit`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_ids: ids })
-            });
-            const data = await res.json();
-            Swal.close();
-            if (data.success) {
-                showSuccessToast("Granted");
-                isMultiSelectMode = false;
-                selectedUsers.clear();
-                updateMultiSelectButtons();
-                loadUsers(currentPage, false);
-            }
-        } catch (e) { Swal.close(); }
-    };
-
     let searchTimeout;
     if (searchInput) {
         searchInput.oninput = () => {
@@ -690,18 +580,7 @@ window.addEventListener("DOMContentLoaded", () => {
         };
     }
 
-    if (selectAllBtn) selectAllBtn.onclick = () => {
-        const allVisibleIds = users.map(u => u.user_id);
-        const allSelected = allVisibleIds.every(id => selectedUsers.has(id));
-        if (allSelected) allVisibleIds.forEach(id => selectedUsers.delete(id));
-        else allVisibleIds.forEach(id => selectedUsers.add(id));
-        renderTable(users);
-        updateMultiSelectButtons();
-    };
-
-    // Init
     loadUsers(currentPage);
-    // Simple dropdown toggle setup
     ["roleDropdownBtn", "statusDropdownBtn", "campusDropdownBtn", "userRoleDropdownBtn", "editRoleDropdownBtn", "editStatusDropdownBtn"].forEach(id => {
         const btn = document.getElementById(id);
         const menu = btn?.nextElementSibling;

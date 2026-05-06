@@ -7,37 +7,12 @@
         <p class="text-gray-700">Manage library equipment, availability, and inventory.</p>
     </div>
     <div class="flex gap-2 text-sm">
-        <?php if ($permissions['multi_delete'] ?? false): ?>
-        <button
-            class="px-4 py-2 border border-orange-200 text-orange-700 font-bold rounded-lg hover:bg-orange-50 transition shadow-sm flex items-center gap-2"
-            id="multiSelectBtn">
-            <i class="ph ph-list-checks"></i>
-            Multi-Select
-        </button>
-        <div id="multiSelectActions" class="hidden flex items-center gap-2 animate-fadeIn">
-            <span class="text-xs font-bold text-orange-700 bg-orange-100 px-3 py-2 rounded-lg border border-orange-200 shadow-sm">
-                <span id="selectionCount">0</span> selected
-            </span>
-            <button id="selectAllBtn" class="px-3 py-2 bg-white border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50 transition font-bold text-xs shadow-sm flex items-center gap-1.5">
-                <i class="ph ph-check-square"></i> Select All
-            </button>
-            <button id="multiDeleteBtn" class="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-bold text-xs shadow-sm flex items-center gap-1.5">
-                <i class="ph ph-trash"></i> Delete
-            </button>
-            <button id="cancelSelectionBtn" class="px-3 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition font-bold text-xs shadow-sm flex items-center gap-1.5">
-                <i class="ph ph-x"></i> Cancel
-            </button>
-        </div>
-        <?php endif; ?>
-
-        <?php if ($permissions['add'] ?? false): ?>
         <button
             class="px-4 py-2 bg-orange-500 text-white font-medium rounded-lg border border-orange-600 hover:bg-orange-600 gap-2 inline-flex items-center shadow-sm transition-all"
             id="openAddEqBtn">
             <i class="ph ph-plus"></i>
             Add New Equipment
         </button>
-        <?php endif; ?>
     </div>
 </div>
 
@@ -103,7 +78,6 @@
         <table class="min-w-full text-sm text-gray-700">
             <thead class="bg-orange-100 text-left text-gray-800">
                 <tr>
-                    <th id="multi-select-header" class="py-3 px-4 font-medium hidden w-10 text-center"></th>
                     <th class="py-3 px-4 font-medium text-left">Equipment Name</th>
                     <th class="py-3 px-4 font-medium text-left">Campus</th>
                     <th class="py-3 px-4 font-medium text-left">Asset Tag</th>
@@ -115,7 +89,7 @@
             </thead>
             <tbody id="eqTableBody" class="divide-y divide-orange-100 bg-white">
                 <tr>
-                    <td colspan="8" class="py-10 text-center text-gray-500">
+                    <td colspan="7" class="py-10 text-center text-gray-500">
                         <i class="ph ph-spinner animate-spin text-2xl"></i>
                     </td>
                 </tr>
@@ -129,7 +103,6 @@
 </div>
 
 <!-- Add Equipment Modal -->
-<?php if ($permissions['add'] ?? false): ?>
 <div id="addEqModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4">
     <div class="bg-white rounded-xl shadow-lg border border-gray-200 w-full max-w-md animate-fadeIn text-left">
         <div class="flex justify-between items-start p-6 border-b border-gray-100">
@@ -176,7 +149,6 @@
         </form>
     </div>
 </div>
-<?php endif; ?>
 
 <!-- Edit Equipment Modal -->
 <div id="editEqModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 hidden p-4 text-left">

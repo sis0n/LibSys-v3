@@ -6,8 +6,6 @@ let eqPage = 1;
 let eqSearch = '';
 let eqCampus = '';
 let eqStatus = '';
-let selectedEq = new Set();
-let isEqMultiSelect = false;
 
 const EQ_API_BASE = `${BASE_URL_JS}/api/equipmentManagement`;
 
@@ -46,19 +44,6 @@ function initEqEventListeners() {
     if (editForm) {
         editForm.addEventListener('submit', handleEditEq);
     }
-
-    // Multi-select
-    const multiBtn = document.getElementById('multiSelectBtn');
-    if (multiBtn) multiBtn.onclick = toggleEqMultiSelect;
-
-    const selectAllBtn = document.getElementById('selectAllBtn');
-    if (selectAllBtn) selectAllBtn.onclick = toggleEqSelectAll;
-
-    const cancelBtn = document.getElementById('cancelSelectionBtn');
-    if (cancelBtn) cancelBtn.onclick = exitEqMultiSelect;
-
-    const multiDeleteBtn = document.getElementById('multiDeleteBtn');
-    if (multiDeleteBtn) multiDeleteBtn.onclick = handleEqMultiDelete;
 
     // Dropdowns
     setupEqDropdown('eqStatusDropdownBtn', 'eqStatusDropdownMenu');
@@ -101,7 +86,7 @@ async function loadEquipment() {
     const tbody = document.getElementById('eqTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = `<tr><td colspan="8" class="py-10 text-center text-gray-500"><i class="ph ph-spinner animate-spin text-2xl"></i></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" class="py-10 text-center text-gray-500"><i class="ph ph-spinner animate-spin text-2xl"></i></td></tr>`;
 
     try {
         const params = new URLSearchParams({
@@ -118,7 +103,7 @@ async function loadEquipment() {
             renderEquipment(data.equipments);
             renderEqPagination(data.totalCount);
         } else {
-            tbody.innerHTML = `<tr><td colspan="8" class="py-10 text-center text-gray-500">No equipment found.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="py-10 text-center text-gray-500">No equipment found.</td></tr>`;
             document.getElementById('eqPaginationControls').classList.add('hidden');
         }
         
@@ -126,7 +111,7 @@ async function loadEquipment() {
         if (indicator) indicator.textContent = `Showing ${data.totalCount || 0} items total`;
     } catch (error) {
         console.error('Error loading equipment:', error);
-        tbody.innerHTML = `<tr><td colspan="8" class="py-10 text-center text-red-500">Failed to load data.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="7" class="py-10 text-center text-red-500">Failed to load data.</td></tr>`;
     }
 }
 
@@ -135,14 +120,9 @@ function renderEquipment(items) {
     tbody.innerHTML = '';
 
     items.forEach(item => {
-        const isSelected = selectedEq.has(item.equipment_id.toString());
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-orange-50/50 transition-colors cursor-pointer';
+        tr.className = 'hover:bg-orange-50/50 transition-colors';
         tr.innerHTML = `
-            <td class="py-3 px-4 text-center ${isEqMultiSelect ? '' : 'hidden'} multi-select-cell">
-                <input type="checkbox" class="eq-checkbox w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" 
-                    value="${item.equipment_id}" ${isSelected ? 'checked' : ''}>
-            </td>
             <td class="py-3 px-4 font-medium text-gray-900">${item.equipment_name}</td>
             <td class="py-3 px-4 text-gray-600">${item.campus_name}</td>
             <td class="py-3 px-4 font-mono text-xs text-orange-600 font-bold">${item.asset_tag}</td>
@@ -166,22 +146,6 @@ function renderEquipment(items) {
                 </div>
             </td>
         `;
-
-        if (isEqMultiSelect) {
-            tr.onclick = (e) => {
-                if (e.target.type !== 'checkbox') {
-                    const cb = tr.querySelector('.eq-checkbox');
-                    cb.checked = !cb.checked;
-                    cb.dispatchEvent(new Event('change'));
-                }
-            };
-            const cb = tr.querySelector('.eq-checkbox');
-            cb.onchange = () => {
-                if (cb.checked) selectedEq.add(cb.value);
-                else selectedEq.delete(cb.value);
-                updateEqSelectionCount();
-            };
-        }
 
         tbody.appendChild(tr);
     });
@@ -289,67 +253,6 @@ async function deleteEq(id, name) {
                 loadEquipment();
             } else { Swal.fire('Error', 'Action failed', 'error'); }
         } catch (e) { Swal.fire('Error', 'Network error', 'error'); }
-    }
-}
-
-// Multi-select
-function toggleEqMultiSelect() {
-    isEqMultiSelect = true;
-    document.getElementById('multiSelectBtn').classList.add('hidden');
-    document.getElementById('multiSelectActions').classList.remove('hidden');
-    document.getElementById('multi-select-header').classList.remove('hidden');
-    selectedEq.clear();
-    updateEqSelectionCount();
-    loadEquipment();
-}
-
-function exitEqMultiSelect() {
-    isEqMultiSelect = false;
-    document.getElementById('multiSelectBtn').classList.remove('hidden');
-    document.getElementById('multiSelectActions').classList.add('hidden');
-    document.getElementById('multi-select-header').classList.add('hidden');
-    selectedEq.clear();
-    loadEquipment();
-}
-
-function updateEqSelectionCount() {
-    const count = selectedEq.size;
-    document.getElementById('selectionCount').textContent = count;
-}
-
-function toggleEqSelectAll() {
-    const cbs = document.querySelectorAll('.eq-checkbox');
-    const allSet = Array.from(cbs).every(cb => cb.checked);
-    cbs.forEach(cb => {
-        cb.checked = !allSet;
-        if (cb.checked) selectedEq.add(cb.value);
-        else selectedEq.delete(cb.value);
-    });
-    updateEqSelectionCount();
-}
-
-async function handleEqMultiDelete() {
-    if (selectedEq.size === 0) return;
-    const res = await Swal.fire({
-        title: 'Batch Deactivate?',
-        text: `Deactivate ${selectedEq.size} selected items?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, deactivate all'
-    });
-    if (res.isConfirmed) {
-        try {
-            const response = await fetch(`${EQ_API_BASE}/delete-multiple`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ equipment_ids: Array.from(selectedEq) })
-            });
-            if (response.ok) {
-                Swal.fire('Success', 'Batch deactivation complete.', 'success');
-                exitEqMultiSelect();
-            }
-        } catch (e) { Swal.fire('Error', 'Batch operation failed', 'error'); }
     }
 }
 

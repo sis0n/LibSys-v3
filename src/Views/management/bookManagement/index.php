@@ -4,7 +4,6 @@
         <p class="text-gray-700">Manage library books, availability, and inventory.</p>
     </div>
     <div class="flex gap-2 text-sm">
-        <?php if ($permissions['bulk_import'] ?? false): ?>
         <button
             class="inline-flex items-center bg-white font-medium border border-orange-200 justify-center px-4 py-2 rounded-lg hover:bg-gray-100 px-4 gap-2 shadow-sm transition-all"
             id="bulkImportBtn">
@@ -42,9 +41,7 @@
                 </div>
             </div>
         </div>
-        <?php endif; ?>
 
-        <?php if ($permissions['add'] ?? false): ?>
         <button
             class="px-4 py-2 bg-orange-500 text-white font-medium rounded-lg border hover:bg-orange-600 gap-2 inline-flex items-center shadow-sm"
             id="openAddBookBtn">
@@ -156,7 +153,6 @@
                 </div>
             </div>
         </div>
-        <?php endif; ?>
     </div>
 </div>
 
@@ -216,41 +212,12 @@
         <h4 id="resultsIndicator" class="text-sm text-gray-600 font-medium">
             Loading...
         </h4>
-
-        <div class="inline-flex items-center gap-2">
-            <?php if ($permissions['multi_delete'] ?? false): ?>
-            <div id="multiSelectActions" class="hidden items-center gap-2">
-                <button id="multiDeleteBtn" title="Delete selected books"
-                    class="items-center gap-2 bg-red-600 text-white rounded-lg px-3 py-2 text-sm font-medium hover:bg-red-700 transition shadow-sm flex">
-                    <i class="ph ph-trash text-base"></i>
-                    Delete (<span id="selectionCount">0</span>)
-                </button>
-                <div class="h-6 border-l border-gray-300 mx-2"></div>
-                <button id="selectAllBtn" title="Select-all"
-                    class="inline-flex items-center gap-2 border border-orange-200 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 transition shadow-sm">
-                    <i class="ph ph-check-square-offset text-base"></i>
-                    Select All
-                </button>
-                <button id="cancelSelectionBtn" title="Cancel multi-select"
-                    class="inline-flex items-center gap-2 border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 transition shadow-sm">
-                    <i class="ph ph-x text-base"></i>
-                    Cancel
-                </button>
-            </div>
-            <button id="multiSelectBtn" title="Multi-select"
-                class="inline-flex items-center gap-2 border border-orange-200 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 transition shadow-sm">
-                <i class="ph ph-list-checks text-base"></i>
-                Multiple Select
-            </button>
-            <?php endif; ?>
-        </div>
     </div>
 
     <div class="overflow-x-auto border border-orange-200 rounded-lg shadow-sm bg-white">
         <table class="min-w-full text-sm text-gray-700">
             <thead class="bg-orange-100 text-left text-gray-800 border-b border-orange-200">
                 <tr>
-                    <th id="multi-select-header" class="py-3 px-4 font-medium hidden w-10 text-center"></th>
                     <th class="py-3 px-4 font-medium">Book Title</th>
                     <th class="py-3 px-4 font-medium text-center">Campus</th>
                     <th class="py-3 px-4 font-medium">Author</th>

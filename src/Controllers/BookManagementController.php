@@ -31,13 +31,6 @@ class BookManagementController extends Controller
         $data = [
             'title' => 'Book Management',
             'currentPage' => 'bookManagement',
-            'permissions' => [
-                'add' => true,
-                'edit' => true,
-                'delete' => $role === 'superadmin' || $role === 'admin',
-                'bulk_import' => $role === 'superadmin' || $role === 'admin',
-                'multi_delete' => $role === 'superadmin' || $role === 'admin'
-            ],
             'filters' => [
                 'campus_locked' => !$isPrivileged,
                 'default_campus' => $campusId
@@ -132,20 +125,6 @@ class BookManagementController extends Controller
             $campusIdFilter = $this->getCampusFilter();
             $this->bookService->deactivateBook((int)$id, $adminId, $campusIdFilter);
             return $this->jsonResponse(['message' => 'Book deactivated successfully!']);
-        } catch (Exception $e) {
-            return $this->errorResponse($e->getMessage());
-        }
-    }
-
-    public function deleteMultiple()
-    {
-        try {
-            $data = json_decode(file_get_contents("php://input"), true);
-            $adminId = $_SESSION['user_id'] ?? null;
-            if (!$adminId) throw new Exception('Authentication required.');
-
-            $result = $this->bookService->deleteMultiple($data['book_ids'] ?? [], $adminId);
-            return $this->jsonResponse($result);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
         }

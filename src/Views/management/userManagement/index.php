@@ -4,22 +4,18 @@
         <p class="text-gray-700">Manage students, librarians, and system access.</p>
     </div>
     <div class="flex gap-2 text-sm">
-        <?php if ($permissions['bulk_import']): ?>
         <button
             class="inline-flex items-center bg-white font-medium border border-orange-200 justify-center px-4 py-2 rounded-lg hover:bg-gray-100 px-4 gap-2"
             id="bulkImportBtn">
             <i class="ph ph-upload-simple"></i>
             Bulk Import
         </button>
-        <?php endif; ?>
-        <?php if ($permissions['add']): ?>
         <button
             class="px-4 py-2 bg-orange-500 text-white font-medium rounded-lg border hover:bg-orange-600 gap-2 inline-flex items-center"
             id="addUserBtn">
             <i class="ph ph-plus"></i>
             Add User
         </button>
-        <?php endif; ?>
     </div>
 </div>
 
@@ -102,47 +98,6 @@
         <h4 id="resultsIndicator" class="text-sm text-gray-600">
             Loading...
         </h4>
-
-        <div class="inline-flex items-center gap-2">
-            <div id="multiSelectActions" class="hidden items-center gap-2">
-                <?php if ($permissions['delete']): ?>
-                <button id="multiDeleteBtn" title="Delete selected users"
-                    class=" hidden inline-flex items-center gap-2 bg-red-600 text-white rounded-lg px-3 py-2 text-sm font-medium hover:bg-red-700 transition">
-                    <i class="ph ph-trash text-base"></i>
-                    Delete (<span id="selectionCount">0</span>)
-                </button>
-                <?php endif; ?>
-                
-                <?php if ($permissions['allow_edit']): ?>
-                <button id="multiAllowEditBtn" title="Allow edit for selected students"
-                    class="hidden inline-flex items-center gap-2 bg-blue-600 text-white rounded-lg px-3 py-2 text-sm font-medium hover:bg-blue-700 transition">
-                    <i class="ph ph-user-plus text-base"></i>
-                    Allow Edit
-                </button>
-                <?php endif; ?>
-
-                <div class="h-6 border-l border-gray-300 mx-2"></div>
-
-                <button id="selectAllBtn" title="Select-all"
-                    class="inline-flex items-center gap-2 border border-orange-200 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 transition">
-                    <i class="ph ph-check-square-offset text-base"></i>
-                    Select All
-                </button>
-                <button id="cancelSelectionBtn" title="Cancel multi-select"
-                    class="inline-flex items-center gap-2 border border-gray-300 text-gray-700 rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100 transition">
-                    <i class="ph ph-x text-base"></i>
-                    Cancel
-                </button>
-            </div>
-
-            <?php if ($permissions['multi_select']): ?>
-            <button id="multiSelectBtn" title="Multi-select"
-                class="inline-flex items-center gap-2 border border-orange-200 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-orange-50 transition">
-                <i class="ph ph-list-checks text-base"></i>
-                Multiple Select
-            </button>
-            <?php endif; ?>
-        </div>
     </div>
 
     <div class="overflow-x-auto rounded-lg border border-orange-200">
@@ -175,7 +130,6 @@
 </div>
 
 <!-- Modals (Import, Add, Edit) - Reused from Superadmin with some role-based tweaks -->
-<?php if ($permissions['bulk_import']): ?>
 <div id="importModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
     <div
         class="bg-[var(--color-card)] rounded-xl shadow-lg border border-[var(--color-border)] w-full max-w-md p-6 animate-fadeIn">
@@ -207,9 +161,7 @@
         </div>
     </div>
 </div>
-<?php endif; ?>
 
-<?php if ($permissions['add']): ?>
 <div id="addUserModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
     <div
         class="rounded-xl overflow-hidden shadow-lg border border-[var(--color-border)] bg-[var(--color-card)] w-full max-w-lg animate-fadeIn">
@@ -337,7 +289,6 @@
                     </div>
                 </div>
 
-                <?php if ($permissions['manage_permissions']): ?>
                 <div id="modulesSection" class="hidden">
                     <h3 class="font-medium text-[var(--color-ring)] mb-2 flex items-center gap-2">
                         <i class="ph ph-shield-check text-[var(--color-ring)]"></i> Permissions
@@ -384,7 +335,6 @@
                         <?php endforeach; ?>
                     </div>
                 </div>
-                <?php endif; ?>
             </div>
 
             <div class="flex justify-end gap-2 p-4 bg-white sticky bottom-0">
@@ -402,9 +352,7 @@
 
     </div>
 </div>
-<?php endif; ?>
 
-<?php if ($permissions['edit']): ?>
 <div id="editUserModal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
     <div
         class="rounded-xl overflow-hidden shadow-lg border border-[var(--color-border)] bg-[var(--color-card)] w-full max-w-lg animate-fadeIn">
@@ -600,7 +548,6 @@
                 </div>
             </div>
 
-            <?php if ($permissions['manage_permissions']): ?>
             <div id="editPermissionsContainer" class="hidden">
                 <h3 class="font-medium text-[var(--color-ring)] mb-2 flex items-center gap-2">
                     <i class="ph ph-shield-check text-[var(--color-ring)]"></i> Permissions
@@ -646,7 +593,6 @@
                     <?php endforeach; ?>
                 </div>
             </div>
-            <?php endif; ?>
 
             <div class="flex justify-end gap-3 mt-6">
                 <button id="saveEditUser"
@@ -661,11 +607,9 @@
         </div>
     </div>
 </div>
-<?php endif; ?>
 
 <script>
     const USER_ROLE = <?= json_encode($user_role) ?>;
-    const PERMISSIONS = <?= json_encode($permissions) ?>;
     const FILTERS = <?= json_encode($filters) ?>;
     const API_BASE_PATH = `${BASE_URL_JS}/api/userManagement`;
 </script>

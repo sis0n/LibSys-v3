@@ -52,15 +52,6 @@ class UserManagementController extends Controller
             'title' => 'User Management',
             'currentPage' => 'userManagement',
             'campuses' => $activeCampuses,
-            'permissions' => [
-                'add' => true,
-                'edit' => true,
-                'delete' => RoleHelper::isSuperadmin($role) || RoleHelper::isAdmin($role),
-                'bulk_import' => RoleHelper::isSuperadmin($role) || RoleHelper::isAdmin($role),
-                'multi_select' => true,
-                'allow_edit' => true,
-                'manage_permissions' => RoleHelper::isSuperadmin($role) || RoleHelper::isAdmin($role),
-            ],
             'filters' => [
                 'campus_locked' => !$isPrivileged,
                 'default_campus' => $campusId
@@ -149,28 +140,6 @@ class UserManagementController extends Controller
         }
     }
 
-    public function deleteMultipleUsers()
-    {
-        try {
-            $data = json_decode(file_get_contents("php://input"), true);
-            $adminId = $_SESSION['user_id'] ?? null;
-            $adminRole = RoleHelper::compareNormalize($_SESSION['role'] ?? '');
-
-            if (!$adminId) throw new Exception('Unauthorized');
-
-            $result = $this->userService->bulkDelete(
-                $data['user_ids'] ?? [], 
-                $data['reason'] ?? null, 
-                $adminId, 
-                $adminRole
-            );
-
-            return $this->jsonResponse($result);
-        } catch (Exception $e) {
-            return $this->errorResponse($e->getMessage());
-        }
-    }
-
     public function toggleStatus($id)
     {
         try {
@@ -212,20 +181,6 @@ class UserManagementController extends Controller
             } else {
                 return $this->errorResponse('Failed to grant edit access.');
             }
-        } catch (Exception $e) {
-            return $this->errorResponse($e->getMessage());
-        }
-    }
-
-    public function allowMultipleEdit()
-    {
-        try {
-            $data = json_decode(file_get_contents("php://input"), true);
-            $userIds = $data['user_ids'] ?? [];
-            if (empty($userIds)) throw new Exception('No users selected.');
-
-            $count = $this->userService->allowMultipleEdit($userIds);
-            return $this->jsonResponse(['message' => "Successfully granted edit access to $count students."]);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
         }

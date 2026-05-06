@@ -92,16 +92,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const campusCodeInput = document.getElementById("campus_code");
     const closeButtons = document.querySelectorAll(".close-modal");
 
-    // Multi-select elements
-    const multiSelectBtn = document.getElementById("multiSelectBtn");
-    const multiSelectActions = document.getElementById("multiSelectActions");
-    const selectAllBtn = document.getElementById("selectAllBtn");
-    const cancelSelectionBtn = document.getElementById("cancelSelectionBtn");
-    const selectionCount = document.getElementById("selectionCount");
-
     let allCampuses = [];
-    let isMultiSelectMode = false;
-    let selectedCampuses = new Set();
 
     // Load Campuses
     async function loadCampuses() {
@@ -122,71 +113,22 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function renderTable(campuses) {
-        const resultsIndicator = document.getElementById("resultsIndicator");
         if (resultsIndicator) {
             resultsIndicator.innerHTML = `Showing <span class="font-medium text-gray-800">${campuses.length}</span> ${campuses.length === 1 ? 'campus' : 'campuses'}`;
         }
 
-        // Handle multi-select header
-        const headerRow = document.querySelector('thead tr');
-        if (headerRow) {
-            const firstHeader = headerRow.querySelector('th');
-            if (isMultiSelectMode) {
-                if (!firstHeader.classList.contains('multi-select-header')) {
-                    const th = document.createElement('th');
-                    th.className = 'px-4 py-3 font-medium multi-select-header';
-                    headerRow.insertBefore(th, firstHeader);
-                }
-            } else {
-                if (firstHeader && firstHeader.classList.contains('multi-select-header')) {
-                    firstHeader.remove();
-                }
-            }
-        }
-
         if (campuses.length === 0) {
-            const colspan = isMultiSelectMode ? 7 : 6;
-            campusTableBody.innerHTML = `<tr><td colspan="${colspan}" class="px-4 py-8 text-center text-gray-500">No campuses found.</td></tr>`;
+            campusTableBody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No campuses found.</td></tr>`;
             return;
         }
 
         campusTableBody.innerHTML = "";
         campuses.forEach((campus, i) => {
-            const isSelected = selectedCampuses.has(campus.campus_id);
             const status = campus.is_active == 1 ? 'Active' : 'Inactive';
             const row = document.createElement("tr");
-            row.className = `transition-colors ${isSelected ? "bg-orange-100" : (status === 'Inactive' ? "bg-gray-50 text-gray-500" : "hover:bg-orange-50/30")} group`;
-            if (isMultiSelectMode) {
-                row.classList.add("cursor-pointer");
-                row.dataset.campusId = campus.campus_id;
-            }
-
-            let checkboxCell = '';
-            if (isMultiSelectMode) {
-                checkboxCell = `
-                    <td class="px-4 py-3">
-                        <input type="checkbox" class="campus-checkbox accent-orange-500 pointer-events-none" data-campus-id="${campus.campus_id}" ${isSelected ? "checked" : ""}>
-                    </td>
-                `;
-            }
-
-            let actionsCellHTML = `
-                <td class="px-4 py-3">
-                    <div class="flex items-center gap-2">
-                        <button onclick="editCampus(${campus.campus_id}, '${campus.campus_name.replace(/'/g, "\\'")}', '${campus.campus_code}')" 
-                            class="flex items-center gap-1 border border-orange-200 text-gray-600 px-2 py-1.5 rounded-md text-xs font-medium hover:bg-orange-50 transition" title="Edit">
-                            <i class="ph ph-note-pencil text-base"></i><span>Edit</span>
-                        </button>
-                    </div>
-                </td>
-            `;
-
-            if (isMultiSelectMode) {
-                actionsCellHTML = `<td class="px-4 py-3"></td>`;
-            }
+            row.className = `transition-colors ${status === 'Inactive' ? "bg-gray-50 text-gray-500" : "hover:bg-orange-50/30"} group`;
 
             row.innerHTML = `
-                ${checkboxCell}
                 <td class="px-4 py-3 text-gray-500 font-medium">${i + 1}</td>
                 <td class="px-4 py-3 font-semibold text-gray-800">${campus.campus_name}</td>
                 <td class="px-4 py-3 font-mono text-orange-600 font-medium">${campus.campus_code}</td>
@@ -196,7 +138,14 @@ document.addEventListener("DOMContentLoaded", function () {
                     </span>
                 </td>
                 <td class="px-4 py-3 text-gray-600 text-xs italic">${formatDate(campus.created_at)}</td>
-                ${actionsCellHTML}
+                <td class="px-4 py-3">
+                    <div class="flex items-center gap-2">
+                        <button onclick="editCampus(${campus.campus_id}, '${campus.campus_name.replace(/'/g, "\\'")}', '${campus.campus_code}')" 
+                            class="flex items-center gap-1 border border-orange-200 text-gray-600 px-2 py-1.5 rounded-md text-xs font-medium hover:bg-orange-50 transition" title="Edit">
+                            <i class="ph ph-note-pencil text-base"></i><span>Edit</span>
+                        </button>
+                    </div>
+                </td>
             `;
 
             campusTableBody.appendChild(row);
@@ -229,77 +178,6 @@ document.addEventListener("DOMContentLoaded", function () {
             c.campus_id.toString().includes(searchTerm)
         );
         renderTable(filtered);
-    });
-
-    // Multi-select Actions
-    function updateMultiSelectButtons() {
-        if (isMultiSelectMode) {
-            multiSelectBtn.classList.add('hidden');
-            multiSelectActions.classList.remove('hidden');
-            multiSelectActions.classList.add('inline-flex');
-        } else {
-            multiSelectBtn.classList.remove('hidden');
-            multiSelectActions.classList.add('hidden');
-            multiSelectActions.classList.remove('inline-flex');
-        }
-
-        if (selectionCount) selectionCount.textContent = selectedCampuses.size;
-
-        const allVisibleIds = allCampuses.map(c => c.campus_id);
-        const allSelected = allVisibleIds.length > 0 && allVisibleIds.every(id => selectedCampuses.has(id));
-
-        if (allSelected) {
-            selectAllBtn.innerHTML = `<i class="ph ph-check-square-offset text-base"></i> Deselect All`;
-        } else {
-            selectAllBtn.innerHTML = `<i class="ph ph-check-square-offset text-base"></i> Select All`;
-        }
-    }
-
-    if (multiSelectBtn) {
-        multiSelectBtn.addEventListener('click', () => {
-            isMultiSelectMode = true;
-            updateMultiSelectButtons();
-            renderTable(allCampuses);
-        });
-    }
-
-    if (cancelSelectionBtn) {
-        cancelSelectionBtn.addEventListener('click', () => {
-            isMultiSelectMode = false;
-            selectedCampuses.clear();
-            updateMultiSelectButtons();
-            renderTable(allCampuses);
-        });
-    }
-
-    if (selectAllBtn) {
-        selectAllBtn.addEventListener('click', () => {
-            const allVisibleIds = allCampuses.map(c => c.campus_id);
-            const allSelected = allVisibleIds.length > 0 && allVisibleIds.every(id => selectedCampuses.has(id));
-
-            if (allSelected) {
-                allVisibleIds.forEach(id => selectedCampuses.delete(id));
-            } else {
-                allVisibleIds.forEach(id => selectedCampuses.add(id));
-            }
-            renderTable(allCampuses);
-            updateMultiSelectButtons();
-        });
-    }
-
-    campusTableBody.addEventListener("click", (e) => {
-        if (!isMultiSelectMode) return;
-        const row = e.target.closest("tr");
-        if (!row || e.target.closest('.status-badge')) return;
-
-        const campusId = parseInt(row.dataset.campusId);
-        if (selectedCampuses.has(campusId)) {
-            selectedCampuses.delete(campusId);
-        } else {
-            selectedCampuses.add(campusId);
-        }
-        renderTable(allCampuses);
-        updateMultiSelectButtons();
     });
 
     // Modal helpers

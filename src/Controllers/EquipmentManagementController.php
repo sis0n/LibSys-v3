@@ -31,12 +31,6 @@ class EquipmentManagementController extends Controller
         $data = [
             'title' => 'Equipment Management',
             'currentPage' => 'equipmentManagement',
-            'permissions' => [
-                'add' => true,
-                'edit' => true,
-                'delete' => $role === 'superadmin' || $role === 'admin',
-                'multi_delete' => $role === 'superadmin' || $role === 'admin'
-            ],
             'filters' => [
                 'campus_locked' => !$isPrivileged,
                 'default_campus' => $campusId
@@ -110,37 +104,6 @@ class EquipmentManagementController extends Controller
             
             $this->equipmentService->deactivateEquipment((int)$id, $adminId, $campusIdFilter);
             return $this->jsonResponse(['message' => 'Equipment deactivated successfully']);
-        } catch (Exception $e) {
-            return $this->errorResponse($e->getMessage());
-        }
-    }
-
-    public function deleteMultiple()
-    {
-        try {
-            $data = json_decode(file_get_contents("php://input"), true);
-            $adminId = $_SESSION['user_id'] ?? null;
-            $campusIdFilter = $this->getCampusFilter();
-
-            if (!$adminId) throw new Exception('Authentication required.');
-
-            $deletedCount = 0;
-            $errors = [];
-            foreach ($data['equipment_ids'] ?? [] as $id) {
-                try {
-                    $this->equipmentService->deactivateEquipment((int)$id, $adminId, $campusIdFilter);
-                    $deletedCount++;
-                } catch (Exception $e) {
-                    $errors[] = $e->getMessage();
-                }
-            }
-
-            return $this->jsonResponse([
-                'success' => $deletedCount > 0,
-                'message' => "Successfully deactivated $deletedCount equipment(s).",
-                'deleted_count' => $deletedCount,
-                'errors' => $errors
-            ]);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage());
         }

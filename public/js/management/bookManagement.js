@@ -1,14 +1,12 @@
 /**
  * Unified Book Management JS
- * Role-agnostic logic for handling Book CRUD, Bulk Import, and Multi-Select.
+ * Role-agnostic logic for handling Book CRUD, Bulk Import.
  */
 
 let currentPage = 1;
 let currentSearch = '';
 let currentCampus = 0;
 let currentStatus = '';
-let selectedBooks = new Set();
-let isMultiSelectMode = false;
 
 const API_BASE = `${BASE_URL_JS}/api/bookManagement`;
 
@@ -64,27 +62,6 @@ function initEventListeners() {
                 }
             });
         }
-    }
-
-    // Multi-select
-    const multiSelectBtn = document.getElementById('multiSelectBtn');
-    if (multiSelectBtn) {
-        multiSelectBtn.addEventListener('click', toggleMultiSelectMode);
-    }
-
-    const selectAllBtn = document.getElementById('selectAllBtn');
-    if (selectAllBtn) {
-        selectAllBtn.addEventListener('click', toggleSelectAll);
-    }
-
-    const multiDeleteBtn = document.getElementById('multiDeleteBtn');
-    if (multiDeleteBtn) {
-        multiDeleteBtn.addEventListener('click', handleMultiDelete);
-    }
-
-    const cancelSelectionBtn = document.getElementById('cancelSelectionBtn');
-    if (cancelSelectionBtn) {
-        cancelSelectionBtn.addEventListener('click', exitMultiSelectMode);
     }
 
     // Image Previews
@@ -155,7 +132,7 @@ async function loadBooks() {
     const tbody = document.getElementById('bookTableBody');
     if (!tbody) return;
 
-    tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-gray-500"><i class="ph ph-spinner animate-spin text-2xl"></i></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-gray-500"><i class="ph ph-spinner animate-spin text-2xl"></i></td></tr>`;
 
     try {
         const params = new URLSearchParams({
@@ -172,14 +149,14 @@ async function loadBooks() {
             renderBooks(data.books);
             renderPagination(data.totalCount);
         } else {
-            tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-gray-500">No books found.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-gray-500">No books found.</td></tr>`;
             document.getElementById('paginationControls').classList.add('hidden');
         }
         
         updateResultsIndicator(data.totalCount || 0);
     } catch (error) {
         console.error('Error loading books:', error);
-        tbody.innerHTML = `<tr><td colspan="6" class="py-10 text-center text-red-500">Failed to load books.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-red-500">Failed to load books.</td></tr>`;
     }
 }
 
@@ -188,14 +165,9 @@ function renderBooks(books) {
     tbody.innerHTML = '';
 
     books.forEach(book => {
-        const isSelected = selectedBooks.has(book.book_id.toString());
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-orange-50/50 transition-colors';
         tr.innerHTML = `
-            <td class="py-3 px-4 text-center ${isMultiSelectMode ? '' : 'hidden'} multi-select-cell">
-                <input type="checkbox" class="book-checkbox w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500" 
-                    value="${book.book_id}" ${isSelected ? 'checked' : ''}>
-            </td>
             <td class="py-3 px-4 font-medium text-gray-900">${book.title}</td>
             <td class="py-3 px-4 text-center">
                 <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded-md text-xs font-semibold uppercase tracking-wider">
@@ -223,22 +195,6 @@ function renderBooks(books) {
                 </div>
             </td>
         `;
-
-        if (isMultiSelectMode) {
-            tr.onclick = (e) => {
-                if (e.target.type !== 'checkbox') {
-                    const cb = tr.querySelector('.book-checkbox');
-                    cb.checked = !cb.checked;
-                    cb.dispatchEvent(new Event('change'));
-                }
-            };
-            const cb = tr.querySelector('.book-checkbox');
-            cb.onchange = () => {
-                if (cb.checked) selectedBooks.add(cb.value);
-                else selectedBooks.delete(cb.value);
-                updateSelectionCount();
-            };
-        }
 
         tbody.appendChild(tr);
     });
@@ -578,69 +534,5 @@ async function handleBulkImport(e) {
         }
     } catch (error) {
         Swal.fire('Error', 'Network error occurred', 'error');
-    }
-}
-
-// Multi-select Logic
-function toggleMultiSelectMode() {
-    isMultiSelectMode = true;
-    document.getElementById('multiSelectBtn').classList.add('hidden');
-    document.getElementById('multiSelectActions').classList.remove('hidden');
-    document.getElementById('multi-select-header').classList.remove('hidden');
-    selectedBooks.clear();
-    updateSelectionCount();
-    loadBooks();
-}
-
-function exitMultiSelectMode() {
-    isMultiSelectMode = false;
-    document.getElementById('multiSelectBtn').classList.remove('hidden');
-    document.getElementById('multiSelectActions').classList.add('hidden');
-    document.getElementById('multi-select-header').classList.add('hidden');
-    selectedBooks.clear();
-    loadBooks();
-}
-
-function updateSelectionCount() {
-    const count = selectedBooks.size;
-    document.getElementById('selectionCount').textContent = count;
-    document.getElementById('multiDeleteBtn').classList.toggle('hidden', count === 0);
-}
-
-function toggleSelectAll() {
-    const checkboxes = document.querySelectorAll('.book-checkbox');
-    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-    
-    checkboxes.forEach(cb => {
-        cb.checked = !allChecked;
-        if (cb.checked) selectedBooks.add(cb.value);
-        else selectedBooks.delete(cb.value);
-    });
-    updateSelectionCount();
-}
-
-async function handleMultiDelete() {
-    const count = selectedBooks.size;
-    const result = await Swal.fire({
-        title: 'Batch Deactivate?',
-        text: `Are you sure you want to deactivate ${count} selected books?`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Yes, deactivate all!'
-    });
-
-    if (result.isConfirmed) {
-        try {
-            const response = await fetch(`${API_BASE}/delete-multiple`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ book_ids: Array.from(selectedBooks) })
-            });
-            const data = await response.json();
-            
-            Swal.fire('Completed', data.message, 'success');
-            exitMultiSelectMode();
-        } catch (e) { Swal.fire('Error', 'Batch operation failed', 'error'); }
     }
 }

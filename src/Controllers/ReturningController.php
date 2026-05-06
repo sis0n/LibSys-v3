@@ -72,7 +72,7 @@ class ReturningController extends Controller
     public function returnBook()
     {
         try {
-            $data = $this->getPostData();
+            $data = $this->getPostData(); 
             $itemId = $data['borrowing_id'] ?? null;
             $condition = $data['condition'] ?? 'good';
             $librarianId = $_SESSION['user_id'] ?? null;
