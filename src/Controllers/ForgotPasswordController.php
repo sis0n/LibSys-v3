@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Repositories\UserRepository;
 use App\Repositories\PasswordResetRepository;
+use App\Repositories\LoginAttemptRepository;
 use App\Services\MailService;
 
 class ForgotPasswordController extends Controller
@@ -12,6 +13,7 @@ class ForgotPasswordController extends Controller
   protected UserRepository $userRepo;
   protected PasswordResetRepository $tokenRepo;
   protected MailService $mailService;
+  protected LoginAttemptRepository $attemptRepo;
 
   public function __construct()
   {
@@ -22,6 +24,7 @@ class ForgotPasswordController extends Controller
     $this->userRepo = new UserRepository();
     $this->tokenRepo = new PasswordResetRepository();
     $this->mailService = new MailService();
+    $this->attemptRepo = new LoginAttemptRepository();
   }
 
   public function index()
@@ -63,17 +66,29 @@ class ForgotPasswordController extends Controller
 
     $user = $this->userRepo->findByIdentifier($identifier);
 
+    // Rate limiting for Sending OTP
+    $limitIdentifier = "SEND_OTP_" . $identifier;
+    $maxSends = 3;
+    $windowMinutes = 30;
+
+    $sendCount = $this->attemptRepo->countAttempts($limitIdentifier, $windowMinutes);
+    if ($sendCount >= $maxSends) {
+        return $this->errorResponse("Too many requests. Please try again after $windowMinutes minutes.", 429);
+    }
+
     $allowedRoles = ['superadmin', 'student', 'faculty', 'staff'];
 
     if ($user && !empty($user['email']) && in_array(strtolower($user['role'] ?? ''), $allowedRoles)) {
         $email = $user['email'];
         $_SESSION['reset_user_id'] = $user['user_id'];
         $_SESSION['reset_last_name'] = $user['last_name'];
+        $_SESSION['reset_identifier'] = $identifier;
         
         $result = $this->_sendCode($email, $user['last_name']);
 
         if ($result) {
           $_SESSION['reset_email'] = $email;
+          $this->attemptRepo->recordAttempt($limitIdentifier);
         }
     }
 
@@ -177,14 +192,29 @@ class ForgotPasswordController extends Controller
 
     $email = $_SESSION['reset_email'] ?? null;
     $lastName = $_SESSION['reset_last_name'] ?? 'User';
+    $identifier = $_SESSION['reset_identifier'] ?? $email;
 
     if (!$email) {
       return $this->errorResponse('Session expired. Please start over.', 400);
     }
 
-    $this->_sendCode($email, $lastName);
+    // Rate limiting for Resending OTP
+    $limitIdentifier = "SEND_OTP_" . $identifier;
+    $maxSends = 3;
+    $windowMinutes = 30;
 
-    return $this->jsonResponse(['message' => 'A new code has been sent to your email.']);
+    $sendCount = $this->attemptRepo->countAttempts($limitIdentifier, $windowMinutes);
+    if ($sendCount >= $maxSends) {
+        return $this->errorResponse("Too many requests. Please try again after $windowMinutes minutes.", 429);
+    }
+
+    $success = $this->_sendCode($email, $lastName);
+    if ($success) {
+        $this->attemptRepo->recordAttempt($limitIdentifier);
+        return $this->jsonResponse(['message' => 'A new code has been sent to your email.']);
+    }
+
+    return $this->errorResponse('Failed to send code. Please try again later.');
   }
 
   public function checkOTP()
@@ -200,14 +230,26 @@ class ForgotPasswordController extends Controller
       return $this->errorResponse('Invalid request. Please try again.', 400);
     }
 
-    $token = $this->tokenRepo->findToken($otp);
+    // Rate limiting for OTP verification
+    $limitIdentifier = "OTP_VERIFY_" . $email;
+    $maxAttempts = 5;
+    $lockoutMinutes = 15;
 
-    if (!$token) {
-      return $this->errorResponse('Invalid code. Please try again.');
+    $failedAttempts = $this->attemptRepo->countAttempts($limitIdentifier, $lockoutMinutes);
+    if ($failedAttempts >= $maxAttempts) {
+        return $this->errorResponse("Too many failed attempts. Please try again after $lockoutMinutes minutes.", 429);
     }
 
-    if (strtolower($token['email']) !== strtolower($email)) {
-      return $this->errorResponse('Invalid code. Code mismatch.');
+    $token = $this->tokenRepo->findToken($otp);
+
+    if (!$token || strtolower($token['email']) !== strtolower($email)) {
+      $this->attemptRepo->recordAttempt($limitIdentifier);
+      $remaining = $maxAttempts - ($failedAttempts + 1);
+      $msg = "Invalid code. Please try again.";
+      if ($remaining > 0) $msg .= " $remaining attempts remaining.";
+      else $msg = "Too many failed attempts. Your account is locked for $lockoutMinutes minutes.";
+      
+      return $this->errorResponse($msg);
     }
 
     if (strtotime($token['expires_at']) < time()) {
@@ -217,6 +259,7 @@ class ForgotPasswordController extends Controller
     $_SESSION['otp_verified'] = true;
 
     $this->tokenRepo->deleteToken($email);
+    $this->attemptRepo->clearAttempts($limitIdentifier);
 
     return $this->jsonResponse();
   }

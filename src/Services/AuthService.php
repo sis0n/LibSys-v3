@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Repositories\AuthRepository;
 use App\Repositories\UserRepository;
 use App\Repositories\AuditLogRepository;
+use App\Repositories\LoginAttemptRepository;
 use App\Models\User;
 use Exception;
 
@@ -13,23 +14,37 @@ class AuthService
     private AuthRepository $authRepo;
     private UserRepository $userRepo;
     private AuditLogRepository $auditRepo;
+    private LoginAttemptRepository $attemptRepo;
 
     public function __construct()
     {
         $this->authRepo = new AuthRepository();
         $this->userRepo = new UserRepository();
         $this->auditRepo = new AuditLogRepository();
+        $this->attemptRepo = new LoginAttemptRepository();
     }
 
     /**
-     * Attempt to login a user
+     * Attempt to login a user with rate limiting
      */
     public function login(string $username, string $password): array
     {
+        // Rate limiting configuration
+        $maxAttempts = 5;
+        $lockoutMinutes = 15;
+
+        // 1. Check if user is currently locked out
+        $failedAttempts = $this->attemptRepo->countAttempts($username, $lockoutMinutes);
+        if ($failedAttempts >= $maxAttempts) {
+            throw new Exception("Too many failed login attempts. Please try again after $lockoutMinutes minutes.");
+        }
+
         $loginResult = $this->authRepo->attemptLogin($username, $password);
 
         if (!$loginResult) {
-            throw new Exception('Invalid username or password.');
+            // 2. Record failed attempt
+            $this->attemptRepo->recordAttempt($username);
+            throw new Exception("Invalid username or password.");
         }
 
         $user = $loginResult['raw_user'];
@@ -37,6 +52,9 @@ class AuthService
         if (isset($user['is_active']) && !$user['is_active']) {
             throw new Exception('Your account has been deactivated by the administrator.', 403);
         }
+
+        // 3. Login successful - Clear failed attempts
+        $this->attemptRepo->clearAttempts($username);
 
         // Prepare session payload and determine redirect path
         $sessionPayload = $loginResult['session_payload'];

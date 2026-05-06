@@ -106,17 +106,26 @@
             if (result.status === "success") {
                 window.location.href = result.redirect;
             } else {
-                
-                // *** Dito ang Logic para sa Deactivated Account ***
                 let alertTitle = "Login Failed";
-                let alertMessage = "Invalid username or password. Please try again.";
+                let alertMessage = result.message || "Invalid username or password. Please try again.";
                 let iconClass = "ph ph-x-circle text-red-600 text-3xl";
 
-                // I-check kung deactivated ang account gamit ang 'error_type'
-                if (result.error_type === 'deactivated') {
-                    alertTitle = "Account Suspended ";
-                    alertMessage = "Your account has been suspended by the administrator. Please contact support.";
-                    // Maaari ka ring magpalit ng icon kung gusto mo (hal. warning icon)
+                // Handle Rate Limiting / Lockout
+                if (result.message && result.message.includes("Too many failed login attempts")) {
+                    alertTitle = "Timeout";
+                    alertMessage = "Masyadong maraming requests. Please wait for 2 minutes.";
+                    iconClass = "ph ph-timer text-orange-600 text-3xl";
+                    
+                    // Lock UI for 2 minutes
+                    const inputs = form.querySelectorAll('input, button');
+                    inputs.forEach(el => el.disabled = true);
+                    
+                    setTimeout(() => {
+                        inputs.forEach(el => el.disabled = false);
+                    }, 120000); // 2 minutes
+                } else if (result.error_type === 'deactivated') {
+                    alertTitle = "Account Suspended";
+                    alertMessage = "Your account has been suspended by the administrator.";
                     iconClass = "ph ph-warning-circle text-orange-600 text-3xl"; 
                 }
 
