@@ -32,13 +32,12 @@ class BackupController extends Controller
 
   public function initiateBackup()
   {
-    set_time_limit(0); // Prevent timeout for large backups
+    set_time_limit(0); 
 
     $dbName = $_ENV['DB_DATABASE'] ?? 'Database';
     $filename = "full_backup_" . date('Ymd_His') . ".sql.gz";
     $path = $this->getBackupDir() . $filename;
 
-    // Use GZIP compression
     $zp = gzopen($path, 'w9');
     if (!$zp) {
       $this->errorResponse("Failed to create compressed backup file.", 500);
@@ -98,14 +97,12 @@ class BackupController extends Controller
     }
 
     try {
-      // 1. Export SQL to string (table specific is usually small enough for memory, but let's be safe)
       $sqlBuffer = "";
       $this->backupRepo->exportTableSql($tableName, function($data) use (&$sqlBuffer) {
         $sqlBuffer .= $data;
       });
       $zip->addFromString("{$baseName}.sql", $sqlBuffer);
 
-      // 2. Export CSV
       $csvOutput = fopen('php://temp', 'r+');
       $this->backupRepo->exportTableCsv($tableName, function($row) use ($csvOutput) {
         fputcsv($csvOutput, $row);
@@ -128,7 +125,6 @@ class BackupController extends Controller
 
   public function downloadBackup(string $filename)
   {
-    // Basic path traversal protection
     $filename = basename($filename);
     $filePath = $this->getBackupDir() . $filename;
 
@@ -137,7 +133,6 @@ class BackupController extends Controller
       exit("File not found.");
     }
 
-    // Clear buffer to prevent corrupted downloads
     if (ob_get_level()) ob_end_clean();
 
     header('Content-Description: File Transfer');
@@ -217,7 +212,7 @@ class BackupController extends Controller
     if (move_uploaded_file($file['tmp_name'], $tempPath)) {
       try {
         $this->backupRepo->restoreDatabase($tempPath);
-        unlink($tempPath); // Delete temp file after restore
+        unlink($tempPath); 
         $this->auditRepo->log($_SESSION['user_id'] ?? 0, 'RESTORE', 'SYSTEM', $file['name'], "Database restored from uploaded file.");
         $this->jsonResponse(['message' => "Database restored successfully from uploaded file!"]);
       } catch (\Throwable $e) {

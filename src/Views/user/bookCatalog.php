@@ -199,5 +199,5 @@
         </div>
     </div>
 
-    <script src="<?= BASE_URL ?>/js/staff/bookCatalog.js" defer></script>
-</div>
+    <script src="<?= BASE_URL ?>/js/user/bookCatalog.js" defer></script>
+    </div>

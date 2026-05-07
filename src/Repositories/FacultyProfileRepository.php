@@ -53,7 +53,6 @@ class FacultyProfileRepository
             $result['college_full_name'] = $result['college_code'] . ' - ' . $result['college_name'];
         }
 
-        // --- BORROWING QUALIFICATION CHECK ---
         $requiredFields = [
             'first_name', 'last_name', 'email', 'profile_picture',
             'college_id', 'contact'
@@ -67,7 +66,6 @@ class FacultyProfileRepository
             }
         }
         $result['is_qualified'] = $isQualified;
-        // --- END OF CHECK ---
     }
 
     return $result ?: null;

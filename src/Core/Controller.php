@@ -14,7 +14,6 @@ class Controller
             session_start();
         }
 
-        // Refresh permissions from DB on every request to avoid "stale" session data
         if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
             $role = $_SESSION['role'];
             if (RoleHelper::isStaff($role)) {
@@ -60,17 +59,14 @@ class Controller
         $role = $_SESSION['role'] ?? 'guest';
         $campusId = $_SESSION['user_data']['campus_id'] ?? null;
         
-        // Superadmin is always global
         if (RoleHelper::isSuperadmin($role)) {
             return null;
         }
 
-        // Admin can be Global (no campus_id) or Local (with campus_id)
         if (RoleHelper::isAdmin($role)) {
             return $campusId ?: null;
         }
 
-        // Librarian is always local
         if (RoleHelper::isLibrarian($role)) {
             return $campusId;
         }
@@ -108,7 +104,7 @@ class Controller
     {
         extract($data, EXTR_SKIP);
 
-        $basePath = __DIR__ . "/../Views/";
+        $basePath = ROOT_PATH . "/src/Views/";
 
         $head = $basePath . "partials/head.php";
         $sidebar = $basePath . "partials/sidebar.php";

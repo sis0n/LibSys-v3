@@ -1,7 +1,7 @@
 <?php
 namespace App\Repositories;
 
-use App\Core\Database; // Assuming this is your database connection class
+use App\Core\Database; 
 use PDO;
 use Exception;
 

@@ -20,16 +20,15 @@ date_default_timezone_set('Asia/Manila');
 $dotenv = Dotenv::createImmutable(ROOT_PATH);
 $dotenv->load();
 
-// [4] I-define ang BASE_URL
+// [4] I-define ang BASE_URL at STORAGE_URL mula sa .env
+$appUrl = rtrim($_ENV['APP_URL'] ?? 'http://localhost', '/');
+
 if (!defined('BASE_URL')) {
-    $appUrl = $_ENV['APP_URL'] ?? 'http://localhost';
-    define('BASE_URL', rtrim($appUrl, '/')); 
+    define('BASE_URL', $appUrl); 
 }
 
-// I-define ang STORAGE_URL bilang local public folder
 if (!defined('STORAGE_URL')) {
-    $appUrl = $_ENV['APP_URL'] ?? 'http://localhost/libsys-v3/public';
-    define('STORAGE_URL', rtrim($appUrl, '/'));
+    define('STORAGE_URL', $appUrl);
 }
 // ---------------------------------------------------------------------
 // --- FRONT CONTROLLER LOGIC: Mas Matibay na URI Calculation ---

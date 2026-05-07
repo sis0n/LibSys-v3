@@ -32,7 +32,7 @@ class LibraryPolicyController extends Controller
         $allowedRolesNormalized = array_map($normalize, $allowedRoles);
 
         if ($userRole === 'superadmin') {
-            return; // Superadmin always has access
+            return; 
         }
 
         if (!in_array($userRole, $allowedRolesNormalized)) {

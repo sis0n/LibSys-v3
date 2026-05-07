@@ -193,7 +193,6 @@ $baseUrl = \BASE_URL;
                     if ($hasPermission(RoleHelper::MOD_REPORTS)) $logItems[] = ["url" => "reports", "icon" => "ph ph-chart-bar", "label" => "Reports"];
                     if ($hasPermission(RoleHelper::MOD_TRANSACTION_HISTORY)) $logItems[] = ["url" => "transactionHistory", "icon" => "ph ph-arrows-left-right", "label" => "Transaction History"];
                     if ($isSuperAdmin) $logItems[] = ["url" => "auditLogs", "icon" => "ph ph-shield-check", "label" => "Audit Trail"];
-                    if ($hasPermission(RoleHelper::MOD_BULK_DELETE_QUEUE)) $logItems[] = ["url" => "bulkDeleteQueue", "icon" => "ph ph-trash-simple", "label" => "Bulk Delete Queue"];
                     
                     if (!empty($logItems)):
                         $logPages = array_column($logItems, 'url');

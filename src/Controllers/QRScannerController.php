@@ -35,28 +35,22 @@ class QRScannerController extends Controller
 
             if (!$transactionCode) throw new Exception('Transaction code is required.');
 
-            // Fetch data from service
             $result = $this->qrService->scanTicket($transactionCode, (int)$currentLibrarianCampusId);
             
             $ticketData = $result['ticket'];
             $itemsData = $result['items'];
 
-            // Smart URL Builder to prevent double paths
-            $baseUrl = rtrim($_ENV['APP_URL'] ?? 'http://localhost/LibSys/public', '/');
-            $formatUrl = function($path) use ($baseUrl) {
+            $formatUrl = function($path) {
                 if (empty($path)) return null;
                 if (str_starts_with($path, 'http')) return $path;
                 
                 $cleanPath = ltrim($path, '/');
-                // If path already contains storage/uploads, just append to baseUrl
                 if (str_contains($cleanPath, 'storage/uploads')) {
-                    return $baseUrl . '/' . $cleanPath;
+                    return STORAGE_URL . '/' . $cleanPath;
                 }
-                // Otherwise, add the storage/uploads prefix
-                return $baseUrl . '/storage/uploads/' . $cleanPath;
+                return STORAGE_URL . '/storage/uploads/' . $cleanPath;
             };
 
-            // Map data for Frontend JS
             $formattedUser = [
                 'id' => $ticketData['student_number'] ?? $ticketData['unique_faculty_id'] ?? $ticketData['employee_id'] ?? 'N/A',
                 'name' => ($ticketData['first_name'] ?? '') . ' ' . ($ticketData['last_name'] ?? ''),

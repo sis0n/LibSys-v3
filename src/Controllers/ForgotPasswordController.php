@@ -66,7 +66,6 @@ class ForgotPasswordController extends Controller
 
     $user = $this->userRepo->findByIdentifier($identifier);
 
-    // Rate limiting for Sending OTP
     $limitIdentifier = "SEND_OTP_" . $identifier;
     $maxSends = 3;
     $windowMinutes = 30;
@@ -99,7 +98,7 @@ class ForgotPasswordController extends Controller
   {
       try {
         $otp = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-        $expiry = time() + 600; // 10 minutes expiry
+        $expiry = time() + 600; 
 
         $this->tokenRepo->createToken($email, $otp, $expiry);
 
@@ -198,7 +197,6 @@ class ForgotPasswordController extends Controller
       return $this->errorResponse('Session expired. Please start over.', 400);
     }
 
-    // Rate limiting for Resending OTP
     $limitIdentifier = "SEND_OTP_" . $identifier;
     $maxSends = 3;
     $windowMinutes = 30;
@@ -230,7 +228,6 @@ class ForgotPasswordController extends Controller
       return $this->errorResponse('Invalid request. Please try again.', 400);
     }
 
-    // Rate limiting for OTP verification
     $limitIdentifier = "OTP_VERIFY_" . $email;
     $maxAttempts = 5;
     $lockoutMinutes = 15;

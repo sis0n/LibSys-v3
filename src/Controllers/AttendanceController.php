@@ -26,6 +26,14 @@ class AttendanceController extends Controller
         ]);
     }
 
+    public function myAttendance()
+    {
+        $this->view('user/myAttendance', [
+            'title' => 'My Attendance',
+            'currentPage' => 'myAttendance'
+        ]);
+    }
+
     public function fetchAttendance()
     {
         try {
@@ -111,14 +119,13 @@ class AttendanceController extends Controller
                     ];
                 } catch (Exception $dateTimeEx) {
                     error_log("DateTime error for log ID: " . ($log['id'] ?? 'unknown') . " - " . $dateTimeEx->getMessage());
-                    continue; // Skip malformed logs
+                    continue; 
                 }
             }
 
             return $this->json($formattedLogs);
         } catch (Exception $e) {
             error_log("AttendanceController::fetchLogsAjax Error: " . $e->getMessage());
-            // Return a special object that JS will handle
             return $this->json([
                 "success" => false,
                 "message" => $e->getMessage(),

@@ -1,5 +1,4 @@
 <?php
-// File: App/Controllers/DataController.php
 
 namespace App\Controllers;
 

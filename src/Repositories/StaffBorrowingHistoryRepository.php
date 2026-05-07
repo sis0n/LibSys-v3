@@ -74,7 +74,6 @@ class StaffBorrowingHistoryRepository
     return $stmt->fetchAll(\PDO::FETCH_ASSOC);
   }
 
-  // --- Pagination Start ---
   public function getPaginatedBorrowingHistory(int $userId, int $limit, int $offset): array
   {
     $stmt = $this->db->prepare("
@@ -120,5 +119,4 @@ class StaffBorrowingHistoryRepository
     $stmt->execute(['user_id' => $userId]);
     return (int)$stmt->fetchColumn();
   }
-  // --- Pagination End ---
 }

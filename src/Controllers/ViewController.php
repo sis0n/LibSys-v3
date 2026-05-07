@@ -20,15 +20,14 @@ class ViewController extends Controller
 
   private function getViewRoleFolder(string $role): string
   {
-    $roleMap = [
-        'admin' => 'Admin',
-        'superadmin' => 'Superadmin',
-        'student' => 'Student',
-        'faculty' => 'Faculty',
-        'librarian' => 'Librarian',
-        'staff' => 'staff'
-    ];
-    return $roleMap[$role] ?? $role;
+    $role = strtolower($role);
+    if ($role === 'admin' || $role === 'librarian') {
+      return 'staff';
+    }
+    if (in_array($role, ['student', 'faculty', 'staff'])) {
+      return 'user';
+    }
+    return $role;
   }
 
   public function handleDashboard()
@@ -59,34 +58,13 @@ class ViewController extends Controller
 
       case 'admin':
       case 'librarian':
-        $privilege_to_page = [
-          'user management' => 'userManagement',
-          'student promotion' => 'studentPromotion',
-          'book management' => 'bookManagement',
-          'equipment management' => 'equipmentManagement',
-          'qr scanner' => 'qrScanner',
-          'returning' => 'returning',
-          'borrowing form' => 'borrowingForm',
-          'attendance logs' => 'attendanceLogs',
-          'reports' => 'reports',
-          'transaction history' => 'transactionHistory',
-        ];
+        $redirectPath = \App\Models\User::getFirstAccessibleModuleUrl($role, $userPermissions);
+        header('Location: ' . BASE_URL . '/' . $redirectPath);
+        exit;
 
-        foreach ($privilege_to_page as $privilege => $pageName) {
-          if (in_array($privilege, $normalizedPermissions)) {
-            $view_path = $viewFolder . '/' . $pageName;
-            $current_page = $pageName;
-            $title = ucwords(preg_replace('/(?<!^)[A-Z]/', ' $0', $pageName));
-            break;
-          }
-        }
-
-        if (!$view_path) {
-            $view_path = $viewFolder . ($role === 'admin' ? '/userManagement' : '/bookManagement');
-            $current_page = $role === 'admin' ? 'userManagement' : 'bookManagement';
-            $title = $role === 'admin' ? 'User Management' : 'Book Management';
-        }
-        break;
+      default:
+        $this->view("errors/403", ["title" => "Forbidden"], false);
+        return;
     }
 
     if ($view_path) {
@@ -94,8 +72,6 @@ class ViewController extends Controller
         "title" => $title,
         "currentPage" => $current_page
       ]);
-    } else {
-      $this->view("errors/403", ["title" => "Forbidden"], false);
     }
   }
 
@@ -120,14 +96,12 @@ class ViewController extends Controller
       'transactionHistory' => 'transaction history',
       'backup' => 'backup',
       'restoreBooks' => 'restore books',
-      'restoreEquipment' => 'restore equipment',
       'restoreUser' => 'restore users',
       'userManagement' => 'user management',
       'libraryPolicies' => 'superadmin',
       'overdue' => 'overdue tracking',
       'campusManagement' => 'superadmin',
-      'auditLogs' => 'superadmin',
-      'bulkDeleteQueue' => 'bulk delete queue'
+      'auditLogs' => 'superadmin'
     ];
 
     $universalPages = [
@@ -148,12 +122,12 @@ class ViewController extends Controller
 
     if (array_key_exists($action, $protectedModules)) {
       if ($role === 'superadmin') {
-          // Superadmin has access to everything
       } else if ($role === 'admin' || $role === 'librarian') {
         $permissionName = $protectedModules[$action];
 
         if ($permissionName !== 'universal' && !$this->userPermissionsRepo->hasAccess($userId, $permissionName)) {
-          $this->view("errors/403", ["title" => "Forbidden"], false);
+          $redirectPath = \App\Models\User::getFirstAccessibleModuleUrl($role, $_SESSION['user_permissions'] ?? []);
+          header('Location: ' . BASE_URL . '/' . $redirectPath);
           exit;
         }
       } else {
@@ -173,8 +147,6 @@ class ViewController extends Controller
       "currentPage" => $action
     ];
 
-    // Inject campuses data for management pages that need it
-    // Special handling for consolidated management views
     if ($action === 'userManagement') {
         header('Location: ' . BASE_URL . '/userManagement');
         exit;

@@ -33,7 +33,7 @@ class TransactionHistoryController extends Controller
         try {
             $status = strtolower($_GET['status'] ?? 'all');
             $date   = $_GET['date'] ?? null;
-            $campusId = $this->getCampusFilter(); // Use getCampusFilter for campus isolation
+            $campusId = $this->getCampusFilter(); 
 
             if ($status === 'pending') {
                 return $this->jsonResponse([]);
@@ -42,7 +42,7 @@ class TransactionHistoryController extends Controller
             $transactions = $this->historyService->getAdminTransactions($status, $date, $campusId);
             return $this->jsonResponse($transactions);
         } catch (Exception $e) {
-            error_log("TransactionHistoryController Error: " . $e->getMessage()); // Log the error
+            error_log("TransactionHistoryController Error: " . $e->getMessage());
             return $this->errorResponse('Failed to fetch transactions.', 500);
         }
     }

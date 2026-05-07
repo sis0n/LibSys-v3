@@ -34,16 +34,7 @@ class CartController extends Controller
         $auth = $this->ensureAuthenticated();
         $cartItems = $this->cartService->getUserCart($auth['user_id']);
         
-        $role = $auth['role'];
-        $viewFolder = ucfirst($role);
-        if ($role === 'staff') $viewFolder = 'staff';
-        
-        if (!($role === 'student' || $role === 'faculty' || $role === 'staff')) {
-            header('Location: ' . \BASE_URL . '/dashboard');
-            exit;
-        }
-
-        $this->view("$viewFolder/myCart", [
+        $this->view("user/myCart", [
             "cartItems" => $cartItems,
             "title" => "My Cart"
         ]);
@@ -87,7 +78,7 @@ class CartController extends Controller
         try {
             $auth = $this->ensureAuthenticated();
             $cartItems = $this->cartService->getUserCart($auth['user_id']);
-            $this->json($cartItems); // Return array directly
+            $this->json($cartItems); 
         } catch (Exception $e) {
             $this->errorResponse($e->getMessage());
         }

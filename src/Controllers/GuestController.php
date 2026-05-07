@@ -20,7 +20,7 @@ class GuestController extends Controller
     {
         $books = $this->BookCatalogRepository->getAllBooks();
 
-        $this->view("Guest/landingPage", [
+        $this->view("guest/landingPage", [
             "title" => "LOSUCC",
             "books" => $books
         ], false);

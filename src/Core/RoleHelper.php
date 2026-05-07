@@ -53,19 +53,16 @@ class RoleHelper
     {
         $normalizedUserRole = self::compareNormalize($userRole);
         
-        // Superadmin has absolute access to everything
         if ($normalizedUserRole === self::compareNormalize(self::SUPERADMIN)) {
             return true;
         }
 
         $normalizedAllowed = array_map([self::class, 'compareNormalize'], $allowedAccess);
 
-        // 1. Check if direct role matches (e.g., 'student' allowed for a route)
         if (in_array($normalizedUserRole, $normalizedAllowed)) {
             return true;
         }
 
-        // 2. Check if any of the user's specific module permissions match
         $normalizedUserPermissions = array_map([self::class, 'compareNormalize'], $userPermissions);
         foreach ($normalizedUserPermissions as $perm) {
             if (in_array($perm, $normalizedAllowed)) {
@@ -120,12 +117,10 @@ class RoleHelper
     public static function hasGlobalAccess(string $role, ?int $campusId = null): bool {
         $normalized = self::compareNormalize($role);
         
-        // Superadmin is always global
         if ($normalized === self::compareNormalize(self::SUPERADMIN)) {
             return true;
         }
 
-        // Admin is global if they have no campus_id
         if ($normalized === self::compareNormalize(self::ADMIN)) {
             return $campusId === null;
         }

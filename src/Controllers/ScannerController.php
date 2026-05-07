@@ -45,7 +45,6 @@ class ScannerController extends Controller
                 throw new \Exception("Student not found in records.");
             }
 
-            // Tiyakin na ang required fields ay nandiyan
             $courseId = (int)($user['course_id'] ?? 0);
             $yearLevel = (int)($user['year_level'] ?? 0);
             $section = $user['section'] ?? '';
@@ -64,9 +63,9 @@ class ScannerController extends Controller
                 $user['first_name'],
                 $user['middle_name'],
                 $user['last_name'],
-                $yearLevel, // FIXED: Year Level (INT)
-                $section,   // FIXED: Section (STRING)
-                $courseId,  // FIXED: Course ID (INT)
+                $yearLevel, 
+                $section,   
+                $courseId,  
                 'qr',
                 $timestamp
             );

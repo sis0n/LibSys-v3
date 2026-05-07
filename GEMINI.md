@@ -38,10 +38,15 @@ A comprehensive Library Information System for UCC (University of Caloocan City)
 ## Development Conventions
 
 - **Naming (PSR-4 Standard):** 
-    - All core classes **MUST** use `PascalCase.php` for their filenames to ensure compatibility with case-sensitive systems (like Linux) and adhere to PSR-4 autoloading.
+    - All core classes **MUST** use `PascalCase.php` for their filenames.
     - **Controllers:** `BookManagementController.php`
     - **Models:** `Book.php`
     - **Repositories:** `BookManagementRepository.php`
+- **Path & URL Standardization:**
+    - Always use `ROOT_PATH` for filesystem operations (e.g., `include ROOT_PATH . '/src/Views/...'`).
+    - Use `BASE_URL` for public routes and assets.
+    - Use `STORAGE_URL` for file uploads and downloads.
+    - These are defined in `public/index.php` and derived from `.env`.
 - **Routing:** Add new routes in `src/Config/RouteConfig.php`. Use short class names (e.g., `BookManagementController@index`) as the Router automatically adds the namespace.
 - **Database:** Use PDO prepared statements in Repositories to prevent SQL injection.
 - **Styling:** Use Tailwind CSS utility classes. Avoid custom CSS unless necessary (modify `public/css/input.css`).
@@ -61,7 +66,7 @@ A comprehensive Library Information System for UCC (University of Caloocan City)
 3.  Install NPM dependencies: `npm install`
 4.  Create a `.env` file from the example below and fill in your details.
 5.  Database setup:
-    - Import the database schema (look for a `.sql` file in `backups/` or root if provided).
+    - Import the database schema (look for a `.sql` file in `database/` or root if provided).
 
 ### Development Commands
 - **Build CSS:** `npm run build`
@@ -77,16 +82,17 @@ Create a `.env` file in the root directory with the following content:
 APP_NAME="UCC Lib-Sys"
 APP_ENV=local                # Use 'production' on live server
 APP_DEBUG=true               # Use 'false' on live server
-APP_URL=http://localhost/libsys-v2/public
+APP_URL=http://localhost/LibSys-v3/public
 
 # ==================================================
 # Database Settings
 # ==================================================
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
-DB_DATABASE=libsys-mobile
+DB_DATABASE=libsys_v3
 DB_USERNAME=root
 DB_PASSWORD=
+```
 
 # ==================================================
 # Mail Settings (for Overdue Alerts)

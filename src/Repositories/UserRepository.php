@@ -555,7 +555,6 @@ class UserRepository
     try {
       error_log("UserRepository::findByStudentNumberWithDetails - Searching for: " . $studentNumber);
       
-      // Try searching by student_number in students table
       $stmt = $this->db->prepare("
             SELECT 
                 u.user_id, u.username, u.password, u.first_name, u.middle_name, u.last_name, u.suffix, 
@@ -572,7 +571,6 @@ class UserRepository
       $stmt->execute(['studentNumber' => $studentNumber]);
       $result = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-      // If not found, try searching by username in users table specifically for student roles
       if (!$result) {
           error_log("UserRepository::findByStudentNumberWithDetails - Not found in students table, trying users.username: " . $studentNumber);
           $stmt = $this->db->prepare("

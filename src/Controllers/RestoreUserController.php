@@ -16,7 +16,6 @@ class RestoreUserController extends Controller
   {
     parent::__construct();
     
-    // Updated permission check to include 'restore users' permission
     if (!$this->hasPermission('restore users')) {
       $this->view('errors/403', ['title' => 'Access Denied']);
       exit;
@@ -40,14 +39,12 @@ class RestoreUserController extends Controller
       'csrf_token' => $_SESSION['csrf_token'],
       'isGlobal' => RoleHelper::hasGlobalAccess($_SESSION['role'] ?? '', $_SESSION['user_data']['campus_id'] ?? null)
     ];
-    // Unified view path
     $this->view('management/restoreUser/index', $viewData);
   }
 
   public function getDeletedUsersJson()
   {
     try {
-      // Use base Controller's getCampusFilter()
       $campusId = $this->getCampusFilter();
       $users = $this->restoreUserRepo->getDeletedUsers($campusId);
       return $this->jsonResponse(['users' => $users]);
@@ -79,7 +76,6 @@ class RestoreUserController extends Controller
     try {
       $user = $this->restoreUserRepo->getUserById((int)$userId);
       
-      // Campus check for security
       $campusId = $this->getCampusFilter();
       if ($campusId !== null && (int)$user['campus_id'] !== $campusId) {
           return $this->errorResponse('Access Denied: You can only restore users from your campus.', 403);
@@ -121,7 +117,6 @@ class RestoreUserController extends Controller
     try {
       $user = $this->restoreUserRepo->getUserById((int)$userId);
 
-      // Campus check for security
       $campusId = $this->getCampusFilter();
       if ($campusId !== null && (int)$user['campus_id'] !== $campusId) {
           return $this->errorResponse('Access Denied: You can only archive users from your campus.', 403);

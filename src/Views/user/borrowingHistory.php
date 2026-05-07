@@ -60,4 +60,4 @@
 <script>
     const CURRENT_STUDENT_ID = <?= $_SESSION['user_data']['student_id'] ?? 0 ?>;
 </script>
-<script src="<?= BASE_URL ?>/js/student/borrowingHistory.js" defer></script>
+<script src="<?= BASE_URL ?>/js/user/borrowingHistory.js" defer></script>

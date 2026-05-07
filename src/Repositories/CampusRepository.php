@@ -16,7 +16,6 @@ class CampusRepository
 
     public function getAllCampuses()
     {
-        // Default behavior: Kunin lahat regardless of status, ordered by name
         $stmt = $this->db->query("SELECT * FROM campuses ORDER BY campus_name ASC");
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -79,7 +78,6 @@ class CampusRepository
         return $stmt->execute([':id' => $id]);
     }
 
-    // Delete is kept for record but should not be called from the UI anymore
     public function delete(int $id): bool
     {
         $stmt = $this->db->prepare("DELETE FROM campuses WHERE campus_id = :id");
@@ -88,12 +86,10 @@ class CampusRepository
 
     public function hasDependencies(int $id): bool
     {
-        // Check users
         $stmt = $this->db->prepare("SELECT COUNT(*) FROM users WHERE campus_id = :id AND deleted_at IS NULL");
         $stmt->execute([':id' => $id]);
         if ((int)$stmt->fetchColumn() > 0) return true;
 
-        // Check books
         $stmt = $this->db->prepare("SELECT COUNT(*) FROM books WHERE campus_id = :id AND is_active = 1");
         $stmt->execute([':id' => $id]);
         if ((int)$stmt->fetchColumn() > 0) return true;

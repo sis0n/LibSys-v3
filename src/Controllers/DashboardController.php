@@ -24,13 +24,18 @@ class DashboardController extends Controller
         $campusId = $this->getCampusFilter();
         $stats = $this->dashboardService->getStatistics($campusId);
 
-        $viewPath = "Superadmin/dashboard";
-        if (RoleHelper::isBorrower($role)) {
-            $viewPath = ucfirst($role) . "/dashboard";
-        } elseif (RoleHelper::isAdmin($role)) {
-            $viewPath = "Admin/dashboard";
-        } elseif (RoleHelper::isLibrarian($role)) {
-            $viewPath = "Librarian/dashboard";
+        if ($role === 'superadmin') {
+            $viewPath = "superadmin/dashboard";
+        } elseif (RoleHelper::isBorrower($role)) { 
+            $viewPath = "user/dashboard";
+        } elseif (RoleHelper::isAdmin($role) || RoleHelper::isLibrarian($role)) {
+            $permissions = $_SESSION['user_permissions'] ?? [];
+            $redirectPath = \App\Models\User::getFirstAccessibleModuleUrl($role, $permissions);
+            header('Location: ' . \BASE_URL . '/' . $redirectPath);
+            exit;
+        } else {
+            header('Location: ' . \BASE_URL . '/login');
+            exit;
         }
 
         $this->view($viewPath, [

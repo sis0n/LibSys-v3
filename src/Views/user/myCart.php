@@ -53,6 +53,6 @@
         <div id="selected-items"></div>
     </div>
 
-    <script src="<?= BASE_URL ?>/js/staff/myCart.js" defer></script> 
+    <script src="<?= BASE_URL ?>/js/user/myCart.js" defer></script>
 
 </body>

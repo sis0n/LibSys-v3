@@ -137,4 +137,4 @@
   </div>
 </div>
 
-<script src="<?= BASE_URL ?>/js/management/changePassword.js" defer></script>
+<script src="<?= BASE_URL ?>/js/user/changePassword.js" defer></script>

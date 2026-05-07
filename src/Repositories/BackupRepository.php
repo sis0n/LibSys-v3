@@ -21,12 +21,10 @@ class BackupRepository
   public function exportTableCsv(string $tableName, callable $callback): void
   {
     try {
-      // Get column names
       $stmt = $this->db->query("DESCRIBE `$tableName`");
       $columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
       $callback($columns);
 
-      // Stream rows using unbuffered query for memory efficiency
       $this->db->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
       $stmt = $this->db->query("SELECT * FROM `$tableName`");
       
@@ -56,14 +54,12 @@ class BackupRepository
   {
     $db = $this->db;
 
-    // 1. Structure
     $callback("\n-- Table structure for table `$tableName`\n");
     $callback("DROP TABLE IF EXISTS `$tableName`;\n");
     $createStmt = $db->query("SHOW CREATE TABLE `$tableName` ");
     $row = $createStmt->fetch(PDO::FETCH_ASSOC);
     $callback($row['Create Table'] . ";\n\n");
 
-    // 2. Data
     $callback("-- Dumping data for table `$tableName`\n");
     $db->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
     $stmt = $db->query("SELECT * FROM `$tableName` ");
@@ -116,21 +112,18 @@ class BackupRepository
     if (!$fp) throw new \Exception("Cannot open backup file for restoration.");
 
     try {
-      // Disable foreign key checks to prevent errors during table drops/truncates
       $db->exec("SET FOREIGN_KEY_CHECKS = 0;");
 
       $query = "";
       while (!($isGzipped ? gzeof($fp) : feof($fp))) {
         $line = $isGzipped ? gzgets($fp, 4096) : fgets($fp, 4096);
         
-        // Skip comments and empty lines
         if (trim($line) == "" || str_starts_with(trim($line), "--") || str_starts_with(trim($line), "/*")) {
           continue;
         }
 
         $query .= $line;
 
-        // If line ends with semicolon, it's a complete query
         if (str_ends_with(trim($line), ";")) {
           $db->exec($query);
           $query = "";

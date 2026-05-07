@@ -25,7 +25,6 @@ class BookManagementController extends Controller
         $role = $_SESSION['role'] ?? 'guest';
         $campusId = $_SESSION['user_data']['campus_id'] ?? null;
 
-        // Global Admin is privileged (can switch campuses)
         $isPrivileged = RoleHelper::isSuperadmin($role) || RoleHelper::isGlobalAdmin($role, $campusId);
 
         $data = [

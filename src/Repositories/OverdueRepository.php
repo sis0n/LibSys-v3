@@ -17,10 +17,8 @@ class OverdueRepository
 
     public function getOverdueStats(?int $campusId = null): array
     {
-        // 1. Refresh statuses: Set transaction to overdue if it's still 'borrowed' but past due date
         $this->db->query("UPDATE borrow_transactions SET status = 'overdue' WHERE status = 'borrowed' AND due_date < NOW()");
         
-        // 2. Sync items: Set item status to overdue if the parent transaction is overdue and item isn't returned
         $this->db->query("UPDATE borrow_transaction_items bti 
                           INNER JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id
                           SET bti.status = 'overdue' 
@@ -33,7 +31,6 @@ class OverdueRepository
             'notified_today' => 0
         ];
 
-        // OVERDUE CONDITION: Parent transaction is 'overdue' OR (Transaction not returned AND due_date passed)
         $overdueCondition = "(bt.status = 'overdue' OR (bt.status = 'borrowed' AND bt.due_date < NOW())) AND bti.returned_at IS NULL";
         
         $campusJoin = "";
@@ -48,19 +45,15 @@ class OverdueRepository
             $campusWhere = " AND u.campus_id = " . (int)$campusId;
         }
 
-        // Total Overdue
         $sqlTotal = "SELECT COUNT(bti.item_id) FROM borrow_transaction_items bti JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id $campusJoin WHERE $overdueCondition $campusWhere";
         $stats['total'] = (int)$this->db->query($sqlTotal)->fetchColumn();
 
-        // Critical Overdue (> 7 days late)
         $sqlCritical = "SELECT COUNT(bti.item_id) FROM borrow_transaction_items bti JOIN borrow_transactions bt ON bti.transaction_id = bt.transaction_id $campusJoin WHERE $overdueCondition AND DATEDIFF(NOW(), bt.due_date) > 7 $campusWhere";
         $stats['critical'] = (int)$this->db->query($sqlCritical)->fetchColumn();
 
-        // Due Today
         $sqlDueToday = "SELECT COUNT(bt.transaction_id) FROM borrow_transactions bt " . ($campusId !== null ? $campusJoin : "") . " WHERE DATE(bt.due_date) = CURDATE() AND bt.status = 'borrowed' $campusWhere";
         $stats['due_today'] = (int)$this->db->query($sqlDueToday)->fetchColumn();
 
-        // Notified Today
         $sqlNotified = "SELECT COUNT(nl.id) FROM notification_logs nl " . ($campusId !== null ? " JOIN users u ON nl.recipient_user_id = u.user_id " : "") . " WHERE DATE(nl.sent_at) = CURDATE() $campusWhere";
         $stats['notified_today'] = (int)$this->db->query($sqlNotified)->fetchColumn();
 

@@ -18,7 +18,7 @@ class UserProfileController extends Controller
 
     public function index()
     {
-        $this->view('management/profile/index', [
+        $this->view('user/profile/index', [
             'title' => 'My Profile',
             'currentPage' => 'myProfile'
         ]);
@@ -26,7 +26,7 @@ class UserProfileController extends Controller
 
     public function changePasswordPage()
     {
-        $this->view('management/profile/changePassword', [
+        $this->view('user/profile/changePassword', [
             'title' => 'Change Password',
             'currentPage' => 'changePassword'
         ]);
@@ -64,7 +64,6 @@ class UserProfileController extends Controller
 
             $result = $this->profileService->updateProfile((int)$userId, $role, $data, $_FILES);
 
-            // Sync Session
             if (isset($_SESSION['user_data'])) {
                 $_SESSION['user_data']['first_name'] = $result['first_name'];
                 $_SESSION['user_data']['last_name'] = $result['last_name'];

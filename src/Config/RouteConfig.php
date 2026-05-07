@@ -231,12 +231,10 @@ class RouteConfig
     $router->get('myProfile', 'UserProfileController@index');
     $router->get('changePassword', 'UserProfileController@changePasswordPage');
 
-    // Bulk Delete
-    $router->get('bulkDeleteQueue', 'BulkDeleteController@index', ['bulk delete queue']);
-    $router->get('api/bulk-delete/pending', 'BulkDeleteController@fetchPending', ['bulk delete queue']);
-    $router->get('api/bulk-delete/get/{id}', 'BulkDeleteController@getDetails', ['bulk delete queue']);
-    $router->post('api/bulk-delete/approve', 'BulkDeleteController@approve', ['bulk delete queue']);
-    $router->post('api/bulk-delete/reject', 'BulkDeleteController@reject', ['bulk delete queue']);
+    $router->get('myAttendance', 'AttendanceController@myAttendance', ['student']);
+    $router->get('borrowingHistory', 'StudentBorrowingHistoryController@index', ['student']);
+    $router->get('staff/borrowingHistory', 'StaffBorrowingHistoryController@index', ['staff', 'admin', 'librarian', 'superadmin']);
+    $router->get('faculty/borrowingHistory', 'FacultyBorrowingHistoryController@index', ['faculty']);
 
     // Fallback
     $router->get('{action}', 'ViewController@handleGenericPage');

@@ -34,12 +34,7 @@ class BookCatalogController extends Controller
         $result = $this->searchService->searchBooks([], $userCampusId);
 
         $role = strtolower($_SESSION['role'] ?? '');
-        $view_path = "Student/bookCatalog";
-        if ($role === 'faculty') {
-            $view_path = "Faculty/bookCatalog";
-        } elseif ($role === 'staff') {
-            $view_path = "staff/bookCatalog";
-        }
+        $view_path = "user/bookCatalog";
 
         $this->view($view_path, [
             "books" => $result['books'],

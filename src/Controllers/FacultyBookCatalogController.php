@@ -24,7 +24,6 @@ class FacultyBookCatalogController extends Controller
     $books = $this->bookRepo->getAllBooks($campusId);
     $campuses = $this->campusRepo->getAllCampuses();
 
-    // Get current campus name for default display
     $currentCampusName = "All Campuses";
     if ($campusId) {
         foreach ($campuses as $c) {
@@ -35,7 +34,6 @@ class FacultyBookCatalogController extends Controller
         }
     }
 
-    // Transform paths para isama ang BASE_URL
     $books = array_map(function($book) {
       if (!empty($book['cover'])) {
         $book['cover'] = BASE_URL . '/' . ltrim($book['cover'], '/');
@@ -43,7 +41,7 @@ class FacultyBookCatalogController extends Controller
       return $book;
     }, $books);
 
-    $this->view("Faculty/bookCatalog", [
+    $this->view("faculty/bookCatalog", [
       "books" => $books,
       "campuses" => $campuses,
       "currentCampusId" => $campusId,
@@ -176,7 +174,6 @@ class FacultyBookCatalogController extends Controller
       $campusId
     );
 
-    // Transform paths para isama ang BASE_URL
     $books = array_map(function($book) {
       if (!empty($book['cover'])) {
         $book['cover'] = BASE_URL . '/' . ltrim($book['cover'], '/');

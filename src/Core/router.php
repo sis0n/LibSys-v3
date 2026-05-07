@@ -24,12 +24,11 @@ class Router
 
   public function resolve(string $uri, string $method)
   {
-    // Tiyakin na walang leading/trailing slash
     $uri = trim($uri, '/');
 
     if (!isset($this->routes[$method])) {
       http_response_code(404);
-      include __DIR__ . '/../Views/errors/404.php';
+      include ROOT_PATH . '/src/Views/errors/404.php';
       return;
     }
 
@@ -47,7 +46,6 @@ class Router
         $controller = $info['controller'];
         $allowedAccess = $info['roles'];
 
-        // --- HYBRID AUTHORIZATION CHECK ---
         if (!empty($allowedAccess)) {
           $userRole = $_SESSION['role'] ?? 'guest';
           $userPermissions = $_SESSION['user_permissions'] ?? [];
@@ -55,11 +53,10 @@ class Router
 
           if (!$userId) {
             http_response_code(403);
-            include __DIR__ . '/../Views/errors/403.php';
+            include ROOT_PATH . '/src/Views/errors/403.php';
             return;
           }
 
-          // --- SESSION & ACCOUNT VALIDATION ---
           try {
             $db = \App\Core\Database::getInstance()->getConnection();
             $stmt = $db->prepare("SELECT campus_id, is_active FROM users WHERE user_id = ?");
@@ -70,7 +67,6 @@ class Router
               if (isset($_SESSION['user_data']) && $_SESSION['user_data']['campus_id'] != $currentData['campus_id']) {
                 $_SESSION['user_data']['campus_id'] = $currentData['campus_id'];
               }
-              // Force logout if deactivated (except superadmins)
               if ($currentData['is_active'] == 0 && !RoleHelper::isSuperadmin($userRole)) {
                 session_destroy();
                 header('Location: /login');
@@ -81,10 +77,9 @@ class Router
             error_log("Session Sync Error: " . $e->getMessage());
           }
 
-          // --- ROLE & PERMISSION CHECK ---
           if (!RoleHelper::hasAccess($userRole, $userPermissions, $allowedAccess)) {
             http_response_code(403);
-            include __DIR__ . '/../Views/errors/403.php';
+            include ROOT_PATH . '/src/Views/errors/403.php';
             return;
           }
         }
@@ -103,7 +98,6 @@ class Router
             throw new \Exception("Method $methodName not found in $controllerClass");
           }
 
-          // Pass dynamic params (like $id)
           return $controllerInstance->$methodName(...$matches);
         } catch (\Throwable $e) {
           error_log("Router error: " . $e->getMessage());
@@ -113,7 +107,7 @@ class Router
           }
 
           http_response_code(500);
-          $error_view = __DIR__ . '/../Views/errors/500.php';
+          $error_view = ROOT_PATH . '/src/Views/errors/500.php';
           if (file_exists($error_view)) {
             include $error_view;
           } else {
@@ -124,8 +118,7 @@ class Router
       }
     }
 
-    // No route matched
     http_response_code(404);
-    include __DIR__ . '/../Views/errors/404.php';
+    include ROOT_PATH . '/src/Views/errors/404.php';
   }
 }

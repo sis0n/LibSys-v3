@@ -20,7 +20,7 @@ class TicketController extends Controller
     public function index()
     {
         $userId = $_SESSION['user_data']['user_id'] ?? null;
-        $role = $_SESSION['role'] ?? 'guest';
+        $role = strtolower($_SESSION['role'] ?? 'guest');
         
         if (!$userId) {
             header('Location: ' . \BASE_URL . '/login');
@@ -29,12 +29,7 @@ class TicketController extends Controller
 
         $ticket = $this->ticketService->getActiveTicket((int)$userId, $role);
 
-        // Determine view folder based on role
-        $viewFolder = ucfirst($role);
-        // Special case for staff (folder is lowercase 'staff' in some parts of the project)
-        if ($role === 'staff') $viewFolder = 'staff';
-
-        $this->view("$viewFolder/qrBorrowingTicket", [
+        $this->view("user/qrBorrowingTicket", [
             "title" => "QR Borrowing Ticket",
             "ticket" => $ticket
         ]);

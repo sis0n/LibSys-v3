@@ -157,7 +157,6 @@ class DashboardRepository
       $userCampusWhere = $campusId !== null ? " AND u.campus_id = " . (int)$campusId : "";
       $bookCampusWhere = $campusId !== null ? " AND b.campus_id = " . (int)$campusId : "";
       
-      // Use LEFT JOIN for campuses to not exclude records with NULL/missing campus data
       $campusJoin = " LEFT JOIN campuses c ON u.campus_id = c.campus_id ";
       $bookCampusJoin = " LEFT JOIN campuses c ON b.campus_id = c.campus_id ";
 
@@ -396,7 +395,7 @@ class DashboardRepository
         $whereClause .= " AND DATE(a.first_scan_at) = CURDATE()";
     } elseif ($filter === 'month') {
         $whereClause .= " AND MONTH(a.first_scan_at) = MONTH(CURDATE()) AND YEAR(a.first_scan_at) = YEAR(CURDATE())";
-    } else { // year
+    } else { 
         $whereClause .= " AND YEAR(a.first_scan_at) = YEAR(CURDATE())";
     }
 

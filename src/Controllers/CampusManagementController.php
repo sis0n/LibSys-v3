@@ -14,7 +14,6 @@ class CampusManagementController extends Controller
     public function __construct()
     {
         parent::__construct();
-        // RBAC: Only Superadmin can manage campuses
         if (!RoleHelper::isSuperadmin($_SESSION['role'] ?? '')) {
             http_response_code(403);
             die("Forbidden: Access denied. Only Superadmin can manage campuses.");

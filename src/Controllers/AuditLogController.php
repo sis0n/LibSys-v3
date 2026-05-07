@@ -14,7 +14,6 @@ class AuditLogController extends Controller
     public function __construct()
     {
         parent::__construct();
-        // RBAC: Only Superadmin can view audit logs
         if (!RoleHelper::isSuperadmin($_SESSION['role'] ?? '')) {
             http_response_code(403);
             die("Forbidden");

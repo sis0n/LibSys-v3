@@ -16,6 +16,14 @@ class StudentBorrowingHistoryController extends Controller
         $this->historyService = new BorrowingHistoryService();
     }
 
+    public function index()
+    {
+        $this->view('user/borrowingHistory', [
+            'title' => 'My Borrowing History',
+            'currentPage' => 'borrowingHistory'
+        ]);
+    }
+
     public function fetchPaginatedBorrowingHistory()
     {
         try {

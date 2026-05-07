@@ -45,7 +45,6 @@ class StaffProfileRepository
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($result) {
-        // --- BORROWING QUALIFICATION CHECK ---
         $requiredFields = [
             'first_name', 'last_name', 'email', 'profile_picture',
             'position', 'contact'
@@ -59,7 +58,6 @@ class StaffProfileRepository
             }
         }
         $result['is_qualified'] = $isQualified;
-        // --- END OF CHECK ---
     }
 
     return $result ?: null;

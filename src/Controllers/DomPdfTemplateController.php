@@ -2,7 +2,7 @@
 
 namespace App\Controllers;
 
-require_once __DIR__ . '/../../vendor/autoload.php'; // Ensure Composer autoloader is included
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 use App\Core\Controller;
 use App\Repositories\ReportRepository;

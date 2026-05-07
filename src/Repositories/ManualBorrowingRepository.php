@@ -17,9 +17,6 @@ class ManualBorrowingRepository
 
   public function checkIfUserExists(string $input_user_id, ?int $campusId = null): ?string
   {
-    // Ignore campusId for lookup to allow inter-campus borrowing
-    
-    // Student Check
     $stmt = $this->db->prepare("SELECT s.student_id FROM students s JOIN users u ON s.user_id = u.user_id JOIN campuses cp ON u.campus_id = cp.campus_id WHERE s.student_number = :user_id AND cp.is_active = 1 AND s.deleted_at IS NULL");
     $params = [':user_id' => $input_user_id];
     $stmt->execute($params);

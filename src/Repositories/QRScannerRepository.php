@@ -113,22 +113,18 @@ class QRScannerRepository
     try {
       $this->db->beginTransaction();
 
-      // 1. Get user details and campus to find the policy
       $details = $this->getTransactionDetailsByCode($transactionCode);
       if (!$details) throw new Exception("Transaction not found.");
 
       $role = !empty($details['student_id']) ? 'student' : (!empty($details['faculty_id']) ? 'faculty' : 'staff');
       $campusId = $details['campus_id'] ?? 1;
 
-      // 2. Fetch the duration from library_policies
       $policyStmt = $this->db->prepare("SELECT borrow_duration_days FROM library_policies WHERE campus_id = :cid AND role = :role LIMIT 1");
       $policyStmt->execute(['cid' => $campusId, 'role' => $role]);
       $duration = $policyStmt->fetchColumn();
       
-      // Default to 7 if no policy found
       $days = ($duration !== false) ? (int)$duration : 7;
 
-      // 3. Update transaction: Set status, librarian, borrowed_at (now), and recalculated due_date
       $stmt = $this->db->prepare("
                 UPDATE borrow_transactions
                 SET status = 'borrowed',
@@ -145,7 +141,6 @@ class QRScannerRepository
 
       $transactionId = $details['transaction_id'];
       
-      // 4. Update items status
       $stmtItemStatus = $this->db->prepare("
                 UPDATE borrow_transaction_items
                 SET status = 'borrowed'
@@ -153,7 +148,6 @@ class QRScannerRepository
             ");
       $stmtItemStatus->execute(['transaction_id' => $transactionId]);
 
-      // 5. Update books availability
       $items = $this->getTransactionItems($transactionCode);
       $stmtBook = $this->db->prepare("UPDATE books SET availability = 'borrowed' WHERE book_id = :book_id");
       foreach ($items as $item) {
@@ -239,15 +233,12 @@ class QRScannerRepository
     try {
       $this->db->beginTransaction();
       
-      // Update transaction status
       $stmt = $this->db->prepare("UPDATE borrow_transactions SET status = 'borrowed', borrowed_at = NOW(), librarian_id = :lid WHERE transaction_id = :tid");
       $stmt->execute(['lid' => $librarianId, 'tid' => $transactionId]);
 
-      // Update items status
       $stmt = $this->db->prepare("UPDATE borrow_transaction_items SET status = 'borrowed' WHERE transaction_id = :tid AND status = 'pending'");
       $stmt->execute(['tid' => $transactionId]);
 
-      // Update books availability
       $stmt = $this->db->prepare("
         UPDATE books b
         JOIN borrow_transaction_items bti ON b.book_id = bti.book_id

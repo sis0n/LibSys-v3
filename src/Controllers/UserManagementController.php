@@ -18,13 +18,11 @@ class UserManagementController extends Controller
         $role = strtolower($_SESSION['role'] ?? '');
         $userId = $_SESSION['user_id'] ?? null;
 
-        // RBAC: HARD BLOCK for Librarians and non-staff
         if ($role === 'librarian' || !RoleHelper::isStaff($role) || $role === 'scanner') {
             $this->view('errors/403', ['title' => 'Access Denied'], false);
             exit;
         }
 
-        // Additional check for Admins to ensure they have the module permission
         if (!RoleHelper::isSuperadmin($role)) {
             $userPermissionsRepo = new \App\Repositories\UserPermissionModuleRepository();
             if (!$userPermissionsRepo->hasAccess($userId, 'user management')) {
@@ -45,7 +43,6 @@ class UserManagementController extends Controller
         $allCampuses = $campusRepo->getAllCampuses();
         $activeCampuses = array_filter($allCampuses, fn($c) => $c['is_active'] == 1);
 
-        // Global Admin is privileged (can switch campuses)
         $isPrivileged = RoleHelper::isSuperadmin($role) || RoleHelper::isGlobalAdmin($role, $campusId);
 
         $data = [
@@ -67,7 +64,6 @@ class UserManagementController extends Controller
         try {
             $campusId = $this->getCampusFilter();
             
-            // Allow manual campus filtering if user is privileged
             if ($campusId === null && isset($_GET['campus_id']) && $_GET['campus_id'] !== '') {
                 $campusId = (int)$_GET['campus_id'];
             }
@@ -96,7 +92,6 @@ class UserManagementController extends Controller
             $query = $_GET['q'] ?? '';
             $campusId = $this->getCampusFilter();
 
-            // Allow manual campus filtering if user is privileged
             if ($campusId === null && isset($_GET['campus_id']) && $_GET['campus_id'] !== '') {
                 $campusId = (int)$_GET['campus_id'];
             }

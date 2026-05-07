@@ -209,7 +209,6 @@ class AttendanceRepository
             $params = [];
 
             if ($start && $end) {
-                // Only append time if it's not already present (no space in the string)
                 $finalEnd = (strpos($end, ' ') === false) ? $end . ' 23:59:59' : $end;
                 $query .= " AND al.timestamp BETWEEN :start AND :end";
                 $params[':start'] = $start;
@@ -240,7 +239,6 @@ class AttendanceRepository
             
             if (!$results) return [];
 
-            // Consistency fix: add year_level_section
             return array_map(function ($row) {
                 $row['year_level_section'] = trim(($row['year_level'] ?? '') . ' ' . ($row['section'] ?? ''));
                 return $row;
