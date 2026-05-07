@@ -51,18 +51,20 @@ window.addEventListener("DOMContentLoaded", () => {
     let campusValueFilter = "all";
     let cart = [];
 
+    const userRole = document.getElementById("userRole")?.value || 'user';
+    
     let currentPage = 1;
     let currentBook = null;
     try {
-        const savedPage = sessionStorage.getItem('bookCatalogPage_staff');
+        const savedPage = sessionStorage.getItem(`bookCatalogPage_${userRole}`);
         if (savedPage) {
             const parsedPage = parseInt(savedPage, 10);
             if (!isNaN(parsedPage) && parsedPage > 0) currentPage = parsedPage;
-            else sessionStorage.removeItem('bookCatalogPage_staff');
+            else sessionStorage.removeItem(`bookCatalogPage_${userRole}`);
         }
 
-        const savedCampus = sessionStorage.getItem('bookCatalogCampus_staff');
-        const savedCampusText = sessionStorage.getItem('bookCatalogCampusText_staff');
+        const savedCampus = sessionStorage.getItem(`bookCatalogCampus_${userRole}`);
+        const savedCampusText = sessionStorage.getItem(`bookCatalogCampusText_${userRole}`);
         if (savedCampus && savedCampusText) {
             campusValueFilter = savedCampus;
             if (campusValue) campusValue.textContent = savedCampusText;
@@ -101,9 +103,9 @@ window.addEventListener("DOMContentLoaded", () => {
             closeAllMenus();
             currentPage = 1;
             try {
-                sessionStorage.setItem('bookCatalogCampus_staff', value);
-                sessionStorage.setItem('bookCatalogCampusText_staff', text);
-                sessionStorage.removeItem('bookCatalogPage_staff');
+                sessionStorage.setItem(`bookCatalogCampus_${userRole}`, value);
+                sessionStorage.setItem(`bookCatalogCampusText_${userRole}`, text);
+                sessionStorage.removeItem(`bookCatalogPage_${userRole}`);
             } catch (e) { }
             loadBooks(1);
             loadAvailableCount();
@@ -124,7 +126,7 @@ window.addEventListener("DOMContentLoaded", () => {
             if (el) el.classList.add("bg-[var(--color-orange-200)]", "font-semibold");
             closeAllMenus();
             currentPage = 1;
-            try { sessionStorage.removeItem('bookCatalogPage_staff'); } catch (e) { }
+            try { sessionStorage.removeItem(`bookCatalogPage_${userRole}`); } catch (e) { }
             loadBooks(1);
         }
     }
@@ -143,7 +145,7 @@ window.addEventListener("DOMContentLoaded", () => {
             if (el) el.classList.add("bg-[var(--color-orange-200)]", "font-semibold");
             closeAllMenus();
             currentPage = 1;
-            try { sessionStorage.removeItem('bookCatalogPage_staff'); } catch (e) { }
+            try { sessionStorage.removeItem(`bookCatalogPage_${userRole}`); } catch (e) { }
             loadBooks(1);
         }
     }
@@ -157,7 +159,7 @@ window.addEventListener("DOMContentLoaded", () => {
     // --- CART LOGIC ---
     async function loadCart() {
         try {
-            const r = await fetch("api/staff/cart/json");
+            const r = await fetch("api/cart/json");
             if (!r.ok) throw Error();
             const data = await r.json();
             cart = data.items || [];
@@ -181,7 +183,7 @@ window.addEventListener("DOMContentLoaded", () => {
     async function addToCart(id) {
         if (!id) return;
         try {
-            const r = await fetch(`api/staff/cart/add/${id}`);
+            const r = await fetch(`api/cart/add/${id}`);
             if (!r.ok) throw Error((await r.json()).message || `Err ${r.status}`);
             const d = await r.json();
             if (d.success) {
@@ -269,7 +271,7 @@ window.addEventListener("DOMContentLoaded", () => {
             if (sortValueFilter !== "default") params.set('sort', sortValueFilter);
             if (campusValueFilter !== "all") params.set('campus_id', campusValueFilter);
             
-            const res = await fetch(`api/staff/bookCatalog/fetch?${params.toString()}`);
+            const res = await fetch(`api/bookCatalog/fetch?${params.toString()}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             
@@ -291,7 +293,7 @@ window.addEventListener("DOMContentLoaded", () => {
                 updateResultsIndicator(books.length, totalCount);
             }
             renderPagination(totalPages, currentPage);
-            try { sessionStorage.setItem('bookCatalogPage_staff', currentPage); } catch(e){}
+            try { sessionStorage.setItem(`bookCatalogPage_${userRole}`, currentPage); } catch(e){}
         } catch (err) {
             console.error("LoadBooksInitial error:", err);
             if (typeof Swal !== 'undefined') Swal.close();
@@ -319,7 +321,7 @@ window.addEventListener("DOMContentLoaded", () => {
             if (sortValueFilter !== "default") params.set('sort', sortValueFilter);
             if (campusValueFilter !== "all") params.set('campus_id', campusValueFilter);
 
-            const res = await fetch(`api/staff/bookCatalog/fetch?${params.toString()}`);
+            const res = await fetch(`api/bookCatalog/fetch?${params.toString()}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             
@@ -337,7 +339,7 @@ window.addEventListener("DOMContentLoaded", () => {
                 updateResultsIndicator(books.length, totalCount);
             }
             renderPagination(totalPages, currentPage);
-            try { sessionStorage.setItem('bookCatalogPage_staff', currentPage); } catch(e){}
+            try { sessionStorage.setItem(`bookCatalogPage_${userRole}`, currentPage); } catch(e){}
         } catch (err) {
             console.error("LoadBooks error:", err);
             if (skeletons) skeletons.style.display = "none";
@@ -434,7 +436,7 @@ window.addEventListener("DOMContentLoaded", () => {
         try {
             const params = new URLSearchParams();
             if (campusValueFilter !== "all") params.set('campus_id', campusValueFilter);
-            const r = await fetch(`api/staff/bookCatalog/availableCount?${params.toString()}`);
+            const r = await fetch(`api/bookCatalog/availableCount?${params.toString()}`);
             if (!r.ok) throw Error();
             const d = await r.json();
             const el = document.getElementById("availableCount");
@@ -561,7 +563,7 @@ window.addEventListener("DOMContentLoaded", () => {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 currentPage = 1;
-                try { sessionStorage.removeItem('bookCatalogPage_staff'); } catch(e){}
+                try { sessionStorage.removeItem(`bookCatalogPage_${userRole}`); } catch(e){}
                 loadBooks(1);
             }, 500);
         });

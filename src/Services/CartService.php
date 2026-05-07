@@ -24,11 +24,51 @@ class CartService
     }
 
     /**
-     * Add book to cart with validation
+     * Add book to cart with validation (Library Policies)
      */
-    public function addToCart(int $userId, int $bookId): array
+    public function addToCart(int $userId, int $bookId, string $role = 'student'): array
     {
-        // Add business logic for cart limits or reservation rules here
+        $ticketRepo = new \App\Repositories\TicketRepository();
+        $policyRepo = new \App\Repositories\LibraryPolicyRepository();
+        $userRepo = new \App\Repositories\UserRepository();
+
+        // 1. Get User Data (specifically campus_id)
+        $user = $userRepo->findById($userId);
+        if (!$user) throw new Exception("User not found.");
+        $campusId = $user['campus_id'] ?? null;
+        if (!$campusId) throw new Exception("User campus not identified.");
+
+        // 2. Get Library Policy for this role and campus
+        $policy = $policyRepo->getPolicyByRole($role, $campusId);
+        if (!$policy) {
+            // Fallback or default if no policy is set yet
+            $maxBooks = 5; 
+        } else {
+            $maxBooks = (int)$policy['max_books'];
+        }
+
+        // 3. Count Active Borrowed Items (Pending, Borrowed, Overdue)
+        $activeBorrowedCount = $ticketRepo->countActiveBorrowedItems($userId);
+
+        // 4. Count Current Cart Items
+        $currentCartCount = $this->cartRepo->countCartItems($userId);
+
+        // 5. Total potential borrowings
+        $totalPotential = $activeBorrowedCount + $currentCartCount;
+
+        if ($totalPotential >= $maxBooks) {
+            throw new Exception("Borrowing limit reached. Your limit is {$maxBooks} books (including current borrowings and cart items).");
+        }
+
+        // 6. Check if already in cart
+        if ($this->cartRepo->isBookInCart($userId, $bookId)) {
+            return [
+                "success" => false,
+                "message" => "This book is already in your cart.",
+                "cart_count" => $currentCartCount
+            ];
+        }
+
         $success = $this->cartRepo->addToCart($userId, $bookId);
         
         return [

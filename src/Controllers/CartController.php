@@ -44,8 +44,15 @@ class CartController extends Controller
     {
         try {
             $auth = $this->ensureAuthenticated();
-            $result = $this->cartService->addToCart($auth['user_id'], (int)$bookId);
-            $this->jsonResponse($result);
+            $result = $this->cartService->addToCart($auth['user_id'], (int)$bookId, $auth['role']);
+            $cart = $this->cartService->getUserCart($auth['user_id']);
+            
+            $this->jsonResponse([
+                "success" => $result['success'],
+                "message" => $result['message'] ?? ($result['success'] ? "Book added to cart!" : "Could not add book."),
+                "cart" => $cart,
+                "cart_count" => $result['cart_count']
+            ]);
         } catch (Exception $e) {
             $this->errorResponse($e->getMessage());
         }

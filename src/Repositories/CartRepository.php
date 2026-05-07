@@ -34,6 +34,13 @@ class CartRepository
     return $stmt->execute([$userId, $bookId]);
   }
 
+  public function isBookInCart(int $userId, int $bookId): bool
+  {
+    $stmt = $this->db->prepare("SELECT 1 FROM carts WHERE user_id = ? AND book_id = ?");
+    $stmt->execute([$userId, $bookId]);
+    return (bool)$stmt->fetch();
+  }
+
   public function getCartByUser(int $userId): array
   {
     $sql = "SELECT c.cart_id, b.book_id, b.title, b.author, b.accession_number, b.subject, b.call_number

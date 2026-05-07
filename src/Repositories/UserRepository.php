@@ -360,6 +360,11 @@ class UserRepository
     return $stmt->fetch(PDO::FETCH_ASSOC);
   }
 
+  public function findById(int $id): ?array
+  {
+    return $this->getUserById($id);
+  }
+
   public function searchUsers(string $query, ?int $campusId = null): array
   {
     $searchQuery = "%" . strtolower($query) . "%";

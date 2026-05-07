@@ -19,6 +19,7 @@
 
             <!-- Campus Filter -->
             <div class="relative">
+                <input type="hidden" id="userRole" value="<?= htmlspecialchars($_SESSION['role'] ?? 'user') ?>">
                 <input type="hidden" id="userHomeCampusId" value="<?= $currentCampusId ?>">
                 <input type="hidden" id="userHomeCampusName" value="<?= htmlspecialchars($currentCampusName) ?>">
                 <button id="campusDropdownBtn"

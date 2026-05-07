@@ -35,17 +35,21 @@ class RouteConfig
 
     $router->get('api/guest/fetchBooks', 'GuestController@fetchGuestBooks');
 
+    // Unified Catalog API
+    $router->get('api/bookCatalog/availableCount', 'BookCatalogController@getAvailableCount', ['student', 'faculty', 'staff']);
+    $router->get('api/bookCatalog/fetch', 'BookCatalogController@fetch', ['student', 'faculty', 'staff']);
+
+    // Unified Cart API
+    $router->get('api/cart', 'CartController@index', ['student', 'faculty', 'staff']);
+    $router->get('api/cart/add/{id}', 'CartController@add', ['student', 'faculty', 'staff']);
+    $router->post('api/cart/remove/{id}', 'CartController@remove', ['student', 'faculty', 'staff']);
+    $router->post('api/cart/clear', 'CartController@clearCart', ['student', 'faculty', 'staff']);
+    $router->get('api/cart/json', 'CartController@getCartJson', ['student', 'faculty', 'staff']);
+    $router->post('api/cart/checkout', 'CartController@checkout', ['student', 'faculty', 'staff']);
+
     // Faculty API
     $router->get('api/faculty/attendance/get', 'AttendanceController@getMyAttendance', ['faculty']);
     $router->get('api/faculty/qrBorrowingTicket/checkStatus', 'TicketController@checkStatus');
-    $router->get('api/faculty/bookCatalog/availableCount', 'FacultyBookCatalogController@getAvailableCount', ['faculty']);
-    $router->get('api/faculty/bookCatalog/fetch', 'FacultyBookCatalogController@fetch', ['faculty']);
-    $router->get('api/faculty/cart', 'CartController@index', ['faculty']);
-    $router->get('api/faculty/cart/add/{id}', 'CartController@add', ['faculty']);
-    $router->post('api/faculty/cart/remove/{id}', 'CartController@remove', ['faculty']);
-    $router->post('api/faculty/cart/clear', 'CartController@clearCart', ['faculty']);
-    $router->get('api/faculty/cart/json', 'CartController@getCartJson', ['faculty']);
-    $router->post('api/faculty/cart/checkout', 'CartController@checkout', ['faculty']);
     $router->get('api/faculty/qrBorrowingTicket', 'TicketController@index', ['faculty']);
     $router->get('api/faculty/borrowing-history/pagination', 'FacultyBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['faculty']);
     $router->get('api/faculty/borrowing-history/stats', 'FacultyBorrowingHistoryController@fetchStats', ['faculty']);
@@ -54,29 +58,13 @@ class RouteConfig
     // Staff API
     $router->get('api/staff/attendance/get', 'AttendanceController@getMyAttendance', ['staff']);
     $router->get('api/staff/qrBorrowingTicket/checkStatus', 'TicketController@checkStatus', ['staff']);
-    $router->get('api/staff/bookCatalog/availableCount', 'StaffBookCatalogController@getAvailableCount', ['staff']);
-    $router->get('api/staff/bookCatalog/fetch', 'StaffBookCatalogController@fetch', ['staff']);
-    $router->get('api/staff/cart', 'CartController@index', ['staff']);
-    $router->get('api/staff/cart/add/{id}', 'CartController@add', ['staff']);
-    $router->post('api/staff/cart/remove/{id}', 'CartController@remove', ['staff']);
-    $router->post('api/staff/cart/clear', 'CartController@clearCart', ['staff']);
-    $router->get('api/staff/cart/json', 'CartController@getCartJson', ['staff']);
-    $router->post('api/staff/cart/checkout', 'CartController@checkout', ['staff']);
     $router->get('api/staff/qrBorrowingTicket', 'TicketController@index', ['staff']);
     $router->get('api/staff/borrowing-history/pagination', 'StaffBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['staff']);
     $router->get('api/staff/borrowing-history/stats', 'StaffBorrowingHistoryController@fetchStats', ['staff']);
 
     // Student API
     $router->get('api/student/attendance/get', 'AttendanceController@getMyAttendance', ['student']);
-    $router->get('api/student/cart', 'CartController@index', ['student']);
-    $router->get('api/student/cart/add/{id}', 'CartController@add', ['student']);
-    $router->post('api/student/cart/remove/{id}', 'CartController@remove', ['student']);
-    $router->post('api/student/cart/clear', 'CartController@clearCart', ['student']);
-    $router->get('api/student/cart/json', 'CartController@getCartJson', ['student']);
-    $router->post('api/student/cart/checkout', 'CartController@checkout', ['student']);
     $router->get('api/student/qrBorrowingTicket/checkStatus', 'TicketController@checkStatus');
-    $router->get('api/student/bookCatalog/availableCount', 'BookCatalogController@getAvailableCount', ['student']);
-    $router->get('api/student/bookCatalog/fetch', 'BookCatalogController@fetch', ['student']);
     $router->get('api/student/borrowingHistory/fetch', 'StudentBorrowingHistoryController@fetchHistory', ['student']);
     $router->get('api/student/borrowing-history/stats', 'StudentBorrowingHistoryController@fetchStats', ['student']);
     $router->get('api/student/borrowing-history/pagination', 'StudentBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['student']);

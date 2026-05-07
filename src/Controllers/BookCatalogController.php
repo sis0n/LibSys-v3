@@ -31,13 +31,9 @@ class BookCatalogController extends Controller
             }
         }
 
-        $result = $this->searchService->searchBooks([], $userCampusId);
-
-        $role = strtolower($_SESSION['role'] ?? '');
         $view_path = "user/bookCatalog";
 
         $this->view($view_path, [
-            "books" => $result['books'],
             "campuses" => $campuses,
             "currentCampusId" => $userCampusId,
             "currentCampusName" => $currentCampusName,
