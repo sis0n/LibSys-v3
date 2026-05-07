@@ -18,7 +18,7 @@ class UserManagementController extends Controller
         $role = strtolower($_SESSION['role'] ?? '');
         $userId = $_SESSION['user_id'] ?? null;
 
-        if ($role === 'librarian' || !RoleHelper::isStaff($role) || $role === 'scanner') {
+        if ($role === 'librarian' || !RoleHelper::isManagementStaff($role) || $role === 'scanner') {
             $this->view('errors/403', ['title' => 'Access Denied'], false);
             exit;
         }

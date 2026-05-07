@@ -102,13 +102,29 @@ class RoleHelper
     /**
      * High-level check for management staff (Superadmin, Admin, Librarian)
      */
-    public static function isStaff(string $role): bool {
+    public static function isManagementStaff(string $role): bool {
         $normalized = self::compareNormalize($role);
         return in_array($normalized, [
             self::compareNormalize(self::SUPERADMIN),
             self::compareNormalize(self::ADMIN),
             self::compareNormalize(self::LIBRARIAN)
         ]);
+    }
+
+    public static function isStudent(string $role): bool {
+        return self::compareNormalize($role) === self::compareNormalize(self::STUDENT);
+    }
+
+    public static function isFaculty(string $role): bool {
+        return self::compareNormalize($role) === self::compareNormalize(self::FACULTY);
+    }
+
+    public static function isStaffUser(string $role): bool {
+        return self::compareNormalize($role) === self::compareNormalize(self::STAFF);
+    }
+
+    public static function isBorrower(string $role): bool {
+        return self::isStudent($role) || self::isFaculty($role) || self::isStaffUser($role);
     }
 
     /**

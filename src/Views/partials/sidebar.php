@@ -27,7 +27,7 @@ $baseUrl = \BASE_URL;
         transition-transform duration-300 ease-in-out 
         z-40 overflow-hidden hover:overflow-y-auto">
 
-    <a href="<?= RoleHelper::isStaff($role) ? $baseUrl . '/dashboard' : '#' ?>"
+    <a href="<?= (RoleHelper::isManagementStaff($role) || RoleHelper::isBorrower($role)) ? $baseUrl . '/dashboard' : '#' ?>"
         class="flex items-center gap-4 px-6 py-4 border-b border-orange-200 cursor-pointer">
         <img src="<?= $baseUrl ?>/assets/library-icons/apple-touch-icon.png" alt="Logo" class="h-18">
         <span class="font-semibold text-lg text-orange-700">
@@ -117,7 +117,7 @@ $baseUrl = \BASE_URL;
                     </div>
                 </div>
 
-            <?php elseif (RoleHelper::isStaff($role)): ?>
+            <?php elseif (RoleHelper::isManagementStaff($role)): ?>
                 <!-- Staff (Superadmin, Admin, Librarian) Navigation -->
                 <a href="<?= $baseUrl ?>/dashboard"
                     class="flex items-center gap-x-3 px-3 py-2 rounded-lg transition <?= ($currentPage === 'dashboard') ? 'bg-green-600 text-white font-medium' : 'hover:bg-orange-100 text-orange-900' ?>">

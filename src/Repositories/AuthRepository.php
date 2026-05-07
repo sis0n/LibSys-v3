@@ -50,7 +50,7 @@ class AuthRepository
         $departmentOrCourse = $college['college_code'] ?? 'N/A';
       }
 
-      if (RoleHelper::isStaff($role)) {
+      if (RoleHelper::isManagementStaff($role)) {
         $modules = $this->userModuleRepo->getModulesByUserId($user['user_id']);
       }
 

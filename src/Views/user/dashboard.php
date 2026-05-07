@@ -2,26 +2,40 @@
 
 use App\Repositories\AttendanceRepository;
 use App\Repositories\StudentBorrowingHistoryRepository;
+use App\Repositories\FacultyBorrowingHistoryRepository;
+use App\Repositories\StaffBorrowingHistoryRepository;
+use App\Core\RoleHelper;
 
-$attendanceRepo = new AttendanceRepository();
-$historyRepo = new StudentBorrowingHistoryRepository();
-
+$role = $_SESSION['role'] ?? 'student';
 $userId = $_SESSION['user_id'];
+$isStudent = RoleHelper::isStudent($role);
 
-$allLogs = $attendanceRepo->getByUserId($userId);
-date_default_timezone_set('Asia/Manila');
-$firstOfMonth = new DateTime('first day of this month 00:00:00');
-$lastOfMonth = new DateTime('last day of this month 23:59:59');
-$today = new DateTime('today');
+// Initialize repos based on role
+if ($isStudent) {
+    $historyRepo = new StudentBorrowingHistoryRepository();
+} elseif (RoleHelper::isFaculty($role)) {
+    $historyRepo = new FacultyBorrowingHistoryRepository();
+} else {
+    $historyRepo = new StaffBorrowingHistoryRepository();
+}
+
+// Attendance logic - only for students
 $daysVisitedThisMonth = 0;
-$visitedDates = [];
-foreach ($allLogs as $log) {
-    $logDate = (new DateTime($log['timestamp']))->format('Y-m-d');
-    if (!in_array($logDate, $visitedDates)) {
-        $logDT = new DateTime($log['timestamp']);
-        if ($logDT >= $firstOfMonth && $logDT <= $lastOfMonth) {
-            $daysVisitedThisMonth++;
-            $visitedDates[] = $logDate;
+if ($isStudent) {
+    $attendanceRepo = new AttendanceRepository();
+    $allLogs = $attendanceRepo->getByUserId($userId);
+    date_default_timezone_set('Asia/Manila');
+    $firstOfMonth = new DateTime('first day of this month 00:00:00');
+    $lastOfMonth = new DateTime('last day of this month 23:59:59');
+    $visitedDates = [];
+    foreach ($allLogs as $log) {
+        $logDate = (new DateTime($log['timestamp']))->format('Y-m-d');
+        if (!in_array($logDate, $visitedDates)) {
+            $logDT = new DateTime($log['timestamp']);
+            if ($logDT >= $firstOfMonth && $logDT <= $lastOfMonth) {
+                $daysVisitedThisMonth++;
+                $visitedDates[] = $logDate;
+            }
         }
     }
 }
@@ -31,8 +45,9 @@ $totalBorrowed = $stats['currently_borrowed'];
 $totalOverdue = $stats['total_overdue'];
 
 $allHistory = $historyRepo->getDetailedHistory($userId);
+$today = new DateTime('today');
 $currentBorrowedBooks = array_filter($allHistory, function ($record) {
-    return in_array($record['status'], ['borrowed', 'overdue']);
+    return in_array($record['status'] ?? '', ['borrowed', 'overdue']);
 });
 ?>
 
@@ -42,7 +57,7 @@ $currentBorrowedBooks = array_filter($allHistory, function ($record) {
         <div class="text-gray-700">Here's your library overview for today.</div>
     </div>
 
-    <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+    <section class="grid grid-cols-1 <?= $isStudent ? 'md:grid-cols-3' : 'md:grid-cols-2' ?> gap-6 mb-6">
 
         <div
             class="relative bg-[var(--color-card)] shadow-md rounded-lg border border-[var(--color-border)] p-4 overflow-hidden">
@@ -53,6 +68,7 @@ $currentBorrowedBooks = array_filter($allHistory, function ($record) {
             <span class="text-sm text-gray-500">Currently borrowed</span>
         </div>
 
+        <?php if ($isStudent): ?>
         <div
             class="relative bg-[var(--color-card)] shadow-md rounded-lg border border-[var(--color-border)] p-4 overflow-hidden">
             <div class="absolute top-0 left-0 h-full w-1 bg-[var(--color-green-500)]"></div>
@@ -62,6 +78,7 @@ $currentBorrowedBooks = array_filter($allHistory, function ($record) {
             <p class="text-3xl font-bold mt-2"><?php echo $daysVisitedThisMonth ?></p>
             <span class="text-sm text-gray-500">This month</span>
         </div>
+        <?php endif; ?>
 
         <div
             class="relative bg-[var(--color-card)] shadow-md rounded-lg border border-[var(--color-border)] p-4 overflow-hidden">
@@ -90,7 +107,7 @@ $currentBorrowedBooks = array_filter($allHistory, function ($record) {
                 <?php foreach (array_slice($currentBorrowedBooks, 0, 3) as $book): ?>
                     <?php
                     $dueDate = new DateTime($book['due_date']);
-                    $isOverdue = ($dueDate < $today || $book['status'] === 'overdue');
+                    $isOverdue = ($dueDate < $today || ($book['status'] ?? '') === 'overdue');
                     ?>
                     <div
                         class="bg-[var(--color-orange-50)] border border-[var(--color-border)] rounded-md p-3 mb-3 flex justify-between items-center">
@@ -147,6 +164,7 @@ $currentBorrowedBooks = array_filter($allHistory, function ($record) {
                         <span class="block text-xs text-gray-500">Check your borrowing history</span>
                     </span>
                 </a>
+                <?php if ($isStudent): ?>
                 <a href="myAttendance"
                     class="flex items-start gap-3 bg-[var(--color-green-100)] border border-[var(--color-border)] rounded-md p-3 hover:bg-[var(--color-green-200)] transition">
                     <i class="ph ph-user-check text-lg mt-0.5"></i>
@@ -155,6 +173,7 @@ $currentBorrowedBooks = array_filter($allHistory, function ($record) {
                         <span class="block text-xs text-gray-500">Check your attendance history</span>
                     </span>
                 </a>
+                <?php endif; ?>
             </div>
         </div>
     </section>

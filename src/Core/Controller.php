@@ -16,7 +16,7 @@ class Controller
 
         if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
             $role = $_SESSION['role'];
-            if (RoleHelper::isStaff($role)) {
+            if (RoleHelper::isManagementStaff($role)) {
                 $userPermissionRepo = new \App\Repositories\UserPermissionModuleRepository();
                 $_SESSION['user_permissions'] = $userPermissionRepo->getModulesByUserId($_SESSION['user_id']);
             }

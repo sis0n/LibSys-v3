@@ -49,7 +49,7 @@ class StaffBorrowingHistoryRepository
                 bt.borrowed_at, 
                 bt.due_date, 
                 bti.returned_at, 
-                bti.status as item_status,
+                bti.status,
                 CONCAT(staff_user.first_name, ' ', staff_user.last_name) AS staff_name,
                 COALESCE(CONCAT(librarian.first_name, ' ', librarian.last_name), 'N/A') AS librarian_name,
                 CASE WHEN bti.book_id IS NOT NULL THEN 'Book' ELSE 'Equipment' END AS item_type
