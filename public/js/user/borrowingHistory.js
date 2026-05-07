@@ -9,13 +9,13 @@ const statReturned = document.getElementById('statReturned');
 
 let currentPage = 1;
 try {
-    const savedPage = sessionStorage.getItem('staffBorrowingHistoryPage');
+    const savedPage = sessionStorage.getItem('userBorrowingHistoryPage');
     if (savedPage) {
         const parsedPage = parseInt(savedPage, 10);
         if (!isNaN(parsedPage) && parsedPage > 0) {
             currentPage = parsedPage;
         } else {
-            sessionStorage.removeItem('staffBorrowingHistoryPage');
+            sessionStorage.removeItem('userBorrowingHistoryPage');
         }
     }
 } catch (e) {
@@ -117,7 +117,7 @@ async function fetchBorrowingData(page = 1) {
     const start = Date.now();
     
     try {
-        sessionStorage.setItem('staffBorrowingHistoryPage', page);
+        sessionStorage.setItem('userBorrowingHistoryPage', page);
     } catch (e) {
         console.error("SessionStorage Error:", e);
     }
@@ -148,7 +148,7 @@ async function fetchBorrowingData(page = 1) {
     }
 
     try {
-        const response = await fetch(`${BASE_URL_JS}/api/staff/borrowing-history/pagination?page=${page}&limit=${limit}`);
+        const response = await fetch(`${BASE_URL_JS}/api/borrowing-history/pagination?page=${page}&limit=${limit}`);
         if (!response.ok) throw new Error('Network response was not ok');
         
         const data = await response.json();
@@ -203,7 +203,7 @@ async function fetchBorrowingData(page = 1) {
 }
 async function fetchStats() {
     try {
-        const response = await fetch(`${BASE_URL_JS}/api/staff/borrowing-history/stats`);
+        const response = await fetch(`${BASE_URL_JS}/api/borrowing-history/stats`);
         const data = await response.json();
         if(data.success && data.stats) {
             statTotal.textContent = data.stats.total_borrowed;

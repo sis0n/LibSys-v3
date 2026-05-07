@@ -47,27 +47,9 @@ class RouteConfig
     $router->get('api/cart/json', 'CartController@getCartJson', ['student', 'faculty', 'staff']);
     $router->post('api/cart/checkout', 'CartController@checkout', ['student', 'faculty', 'staff']);
 
-    // Faculty API
-    $router->get('api/faculty/attendance/get', 'AttendanceController@getMyAttendance', ['faculty']);
-    $router->get('api/faculty/qrBorrowingTicket/checkStatus', 'TicketController@checkStatus');
-    $router->get('api/faculty/qrBorrowingTicket', 'TicketController@index', ['faculty']);
-    $router->get('api/faculty/borrowing-history/pagination', 'FacultyBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['faculty']);
-    $router->get('api/faculty/borrowing-history/stats', 'FacultyBorrowingHistoryController@fetchStats', ['faculty']);
-    $router->get('api/data/getColleges', 'DataController@getColleges', ['faculty']);
-
-    // Staff API
-    $router->get('api/staff/attendance/get', 'AttendanceController@getMyAttendance', ['staff']);
-    $router->get('api/staff/qrBorrowingTicket/checkStatus', 'TicketController@checkStatus', ['staff']);
-    $router->get('api/staff/qrBorrowingTicket', 'TicketController@index', ['staff']);
-    $router->get('api/staff/borrowing-history/pagination', 'StaffBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['staff']);
-    $router->get('api/staff/borrowing-history/stats', 'StaffBorrowingHistoryController@fetchStats', ['staff']);
-
-    // Student API
-    $router->get('api/student/attendance/get', 'AttendanceController@getMyAttendance', ['student']);
-    $router->get('api/student/qrBorrowingTicket/checkStatus', 'TicketController@checkStatus');
-    $router->get('api/student/borrowingHistory/fetch', 'StudentBorrowingHistoryController@fetchHistory', ['student']);
-    $router->get('api/student/borrowing-history/stats', 'StudentBorrowingHistoryController@fetchStats', ['student']);
-    $router->get('api/student/borrowing-history/pagination', 'StudentBorrowingHistoryController@fetchPaginatedBorrowingHistory', ['student']);
+    // Unified Borrowing History API
+    $router->get('api/borrowing-history/pagination', 'BorrowingHistoryController@fetchPaginatedBorrowingHistory', ['student', 'faculty', 'staff']);
+    $router->get('api/borrowing-history/stats', 'BorrowingHistoryController@fetchStats', ['student', 'faculty', 'staff']);
 
     // Unified Book Catalog Route
     $router->get('bookCatalog', 'BookCatalogController@index', ['faculty', 'staff', 'student']);
@@ -220,9 +202,7 @@ class RouteConfig
     $router->get('changePassword', 'UserProfileController@changePasswordPage');
 
     $router->get('myAttendance', 'AttendanceController@myAttendance', ['student']);
-    $router->get('borrowingHistory', 'StudentBorrowingHistoryController@index', ['student']);
-    $router->get('staff/borrowingHistory', 'StaffBorrowingHistoryController@index', ['staff', 'admin', 'librarian', 'superadmin']);
-    $router->get('faculty/borrowingHistory', 'FacultyBorrowingHistoryController@index', ['faculty']);
+    $router->get('borrowingHistory', 'BorrowingHistoryController@index', ['student', 'faculty', 'staff']);
 
     // Fallback
     $router->get('{action}', 'ViewController@handleGenericPage');

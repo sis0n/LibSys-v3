@@ -136,6 +136,56 @@ class TicketRepository
     return ['complete' => true, 'message' => 'Profile is complete.'];
   }
 
+  public function checkFacultyProfileCompletion(int $facultyId): array
+  {
+    $sql = "SELECT f.profile_updated, u.profile_picture
+                FROM faculty f
+                JOIN users u ON f.user_id = u.user_id
+                WHERE f.faculty_id = ?";
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([$facultyId]);
+    $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$data) {
+      return ['complete' => false, 'message' => 'No faculty record found.'];
+    }
+
+    if (!(bool)$data['profile_updated'] || empty($data['profile_picture'])) {
+      return [
+        'complete' => false,
+        'message' => 'Profile details are incomplete. Please complete your profile and upload a picture in "My Profile" before checking out.'
+      ];
+    }
+
+    return ['complete' => true, 'message' => 'Profile is complete.'];
+  }
+
+  public function checkStaffProfileCompletion(int $staffId): array
+  {
+    $sql = "SELECT s.profile_updated, u.profile_picture
+                FROM staff s
+                JOIN users u ON s.user_id = u.user_id
+                WHERE s.staff_id = ?";
+
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute([$staffId]);
+    $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$data) {
+      return ['complete' => false, 'message' => 'No staff record found.'];
+    }
+
+    if (!(bool)$data['profile_updated'] || empty($data['profile_picture'])) {
+      return [
+        'complete' => false,
+        'message' => 'Profile details are incomplete. Please complete your profile and upload a picture in "My Profile" before checking out.'
+      ];
+    }
+
+    return ['complete' => true, 'message' => 'Profile is complete.'];
+  }
+
   public function getCartItems(int $userId): array
   {
     $stmt = $this->db->prepare("
@@ -500,27 +550,57 @@ class TicketRepository
       $idValue = $this->getStudentIdByUserId($userId);
     } elseif ($role === 'faculty') {
       $idColumn = 'faculty_id';
-      $stmt = $this->db->prepare("SELECT faculty_id FROM faculty WHERE user_id = :uid");
-      $stmt->execute(['uid' => $userId]);
-      $idValue = $stmt->fetchColumn();
+      $idValue = $this->getFacultyIdByUserId($userId);
     } elseif ($role === 'staff') {
       $idColumn = 'staff_id';
-      $stmt = $this->db->prepare("SELECT staff_id FROM staff WHERE user_id = :uid");
-      $stmt->execute(['uid' => $userId]);
-      $idValue = $stmt->fetchColumn();
+      $idValue = $this->getStaffIdByUserId($userId);
     }
 
     if (!$idValue) return null;
 
     $stmt = $this->db->prepare("
-        SELECT transaction_id, transaction_code, qrcode, due_date, status, generated_at, expires_at
+        SELECT transaction_id, transaction_code, qrcode, due_date, status, generated_at, expires_at, student_id, faculty_id, staff_id
         FROM borrow_transactions
         WHERE {$idColumn} = :id AND status = 'pending'
         ORDER BY generated_at DESC
         LIMIT 1
     ");
     $stmt->execute(['id' => $idValue]);
-    return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+    $ticket = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$ticket) return null;
+
+    // Fetch borrower details
+    $borrower = null;
+    if ($role === 'student' && $ticket['student_id']) {
+        $details = $this->getStudentInfo((int)$ticket['student_id']);
+        $borrower = [
+            'id' => $details['student_number'] ?? 'N/A',
+            'name' => $_SESSION['user_data']['fullname'] ?? 'User',
+            'year_level' => $details['year_level'] ?? 'N/A',
+            'section' => $details['section'] ?? '',
+            'course' => $details['course'] ?? 'N/A'
+        ];
+    } elseif ($role === 'faculty' && $ticket['faculty_id']) {
+        $details = $this->getFacultyInfo((int)$ticket['faculty_id']);
+        $borrower = [
+            'id' => $details['student_number'] ?? 'N/A', // getFacultyInfo returns unique_faculty_id as student_number
+            'name' => $_SESSION['user_data']['fullname'] ?? 'User',
+            'department' => $details['course'] ?? 'N/A' // getFacultyInfo returns college_name as course
+        ];
+    } elseif ($role === 'staff' && $ticket['staff_id']) {
+        $details = $this->getStaffInfo((int)$ticket['staff_id']);
+        $borrower = [
+            'id' => $details['student_number'] ?? 'N/A', // getStaffInfo returns employee_id as student_number
+            'name' => $_SESSION['user_data']['fullname'] ?? 'User',
+            'position' => $details['course'] ?? 'N/A' // getStaffInfo returns position as course
+        ];
+    }
+
+    $ticket['borrower'] = $borrower;
+    $ticket['books'] = $this->getTransactionItems((int)$ticket['transaction_id']);
+
+    return $ticket;
   }
 
   public function updateStatus(int $transactionId, string $status): bool

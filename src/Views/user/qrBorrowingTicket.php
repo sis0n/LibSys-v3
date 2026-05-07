@@ -76,24 +76,47 @@ if ($transaction_code && !$isBorrowed && !$isExpired) {
 
             <dl class="space-y-3 text-sm flex-1">
                 <div class="flex justify-between items-center">
-                    <dt class="text-amber-700 font-medium">Student Number:</dt>
-                    <dd id="detailsStudentNumber" class="text-right"><?= htmlspecialchars($student["student_number"] ?? "N/A") ?></dd>
+                    <dt id="labelId" class="text-amber-700 font-medium">
+                        <?php 
+                        $role = strtolower($_SESSION['role'] ?? 'guest');
+                        if ($role === 'faculty') echo 'Faculty ID:';
+                        elseif ($role === 'staff') echo 'Employee ID:';
+                        else echo 'Student Number:';
+                        ?>
+                    </dt>
+                    <dd id="detailsStudentNumber" class="text-right"><?= htmlspecialchars($ticket["borrower"]["id"] ?? "N/A") ?></dd>
                 </div>
                 <div class="flex justify-between items-center">
                     <dt class="text-amber-700 font-medium">Name:</dt>
-                    <dd id="detailsStudentName" class="text-right"><?= htmlspecialchars($student["name"] ?? "Student Name") ?></dd>
+                    <dd id="detailsStudentName" class="text-right"><?= htmlspecialchars($ticket["borrower"]["name"] ?? "User Name") ?></dd>
                 </div>
-                <div class="flex justify-between items-center">
+                
+                <?php if ($role === 'student'): ?>
+                <div id="rowYearSec" class="flex justify-between items-center">
                     <dt class="text-amber-700 font-medium">Year & Section:</dt>
-                    <dd id="detailsStudentYrSec" class="text-right"><?= !empty($student["year_level"]) ? htmlspecialchars($student["year_level"] . ($student["section"] ?? '')) : "N/A" ?></dd>
+                    <dd id="detailsStudentYrSec" class="text-right"><?= !empty($ticket["borrower"]["year_level"]) ? htmlspecialchars($ticket["borrower"]["year_level"] . ($ticket["borrower"]["section"] ?? '')) : "N/A" ?></dd>
                 </div>
+                <?php endif; ?>
+
                 <div class="flex justify-between items-center">
-                    <dt class="text-amber-700 font-medium">Course:</dt>
-                    <dd id="detailsStudentCourse" class="text-right"><?= htmlspecialchars($student["course"] ?? "N/A") ?></dd>
+                    <dt id="labelCourse" class="text-amber-700 font-medium">
+                        <?php 
+                        if ($role === 'faculty') echo 'Department:';
+                        elseif ($role === 'staff') echo 'Position:';
+                        else echo 'Course:';
+                        ?>
+                    </dt>
+                    <dd id="detailsStudentCourse" class="text-right">
+                        <?php 
+                        if ($role === 'faculty') echo htmlspecialchars($ticket["borrower"]["department"] ?? "N/A");
+                        elseif ($role === 'staff') echo htmlspecialchars($ticket["borrower"]["position"] ?? "N/A");
+                        else echo htmlspecialchars($ticket["borrower"]["course"] ?? "N/A");
+                        ?>
+                    </dd>
                 </div>
                 <div class="flex justify-between items-center">
                     <dt class="text-amber-700 font-medium">Books:</dt>
-                    <dd id="detailsBookCount" class="text-right"><?= !empty($books) ? count($books) : 0 ?> Book(s)</dd>
+                    <dd id="detailsBookCount" class="text-right"><?= !empty($ticket['books']) ? count($ticket['books']) : 0 ?> Book(s)</dd>
                 </div>
             </dl>
 
@@ -109,18 +132,18 @@ if ($transaction_code && !$isBorrowed && !$isExpired) {
     </div>
 
     <!-- Items List Section -->
-    <div id="checkedOutSection" class="space-y-6 mt-6 <?= empty($books) ? 'hidden' : '' ?>">
-        <?php if (!empty($books)): ?>
+    <div id="checkedOutSection" class="space-y-6 mt-6 <?= empty($ticket['books']) ? 'hidden' : '' ?>">
+        <?php if (!empty($ticket['books'])): ?>
             <div class="p-4 border border-amber-200 bg-amber-50 rounded-lg flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <i class="ph ph-qr-code text-2xl text-amber-600"></i>
                     <div><h3 class="font-medium text-amber-900">Checked Out Items</h3><p class="text-sm text-amber-700">Included in this QR ticket</p></div>
                 </div>
-                <div class="text-right"><p class="text-2xl font-bold text-amber-700"><?= count($books) ?></p><p class="text-xs text-amber-600">Total</p></div>
+                <div class="text-right"><p class="text-2xl font-bold text-amber-700"><?= count($ticket['books']) ?></p><p class="text-xs text-amber-600">Total</p></div>
             </div>
             <div class="border-t border-x border-green-300 bg-green-50 rounded-xl overflow-hidden">
-                <div class="p-4 flex items-center justify-between border-b border-green-200"><h4 class="font-medium text-green-700 flex items-center gap-2"><i class="ph ph-book text-lg"></i> Books (<?= count($books) ?>)</h4></div>
-                <?php foreach ($books as $index => $book): ?>
+                <div class="p-4 flex items-center justify-between border-b border-green-200"><h4 class="font-medium text-green-700 flex items-center gap-2"><i class="ph ph-book text-lg"></i> Books (<?= count($ticket['books']) ?>)</h4></div>
+                <?php foreach ($ticket['books'] as $index => $book): ?>
                     <div class="bg-white p-4 flex gap-3 border-b border-green-300 last:border-0">
                         <div class="flex items-center"><i class="ph ph-book-open text-3xl text-green-500"></i></div>
                         <div class="flex-1">
@@ -149,9 +172,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const ticketInstruction = document.getElementById('ticket-instruction');
     
     const detailsElems = {
+        labelId: document.getElementById('labelId'),
+        labelCourse: document.getElementById('labelCourse'),
         number: document.getElementById('detailsStudentNumber'),
         name: document.getElementById('detailsStudentName'),
         yrsec: document.getElementById('detailsStudentYrSec'),
+        rowYearSec: document.getElementById('rowYearSec'),
         course: document.getElementById('detailsStudentCourse'),
         count: document.getElementById('detailsBookCount')
     };
@@ -159,10 +185,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const STORAGE_URL = "<?= STORAGE_URL ?>";
     const BASE_URL = "<?= BASE_URL ?>";
+    const USER_ROLE = "<?= strtolower($_SESSION['role'] ?? 'guest') ?>";
 
     let statusInterval;
     let isChecking = false;
-    let hadActiveTicket = <?= ($transaction_code) ? 'true' : 'false' ?>;
+    let hadActiveTicket = <?= (!empty($ticket['transaction_code'])) ? 'true' : 'false' ?>;
 
     function displayMessage(text, type = 'info') {
         ticketMessageContainer.innerHTML = '';
@@ -207,10 +234,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateDetails(data) {
         if (data.borrower) {
-            detailsElems.number.textContent = data.borrower.student_number || 'N/A';
+            detailsElems.number.textContent = data.borrower.id || 'N/A';
             detailsElems.name.textContent = data.borrower.name || 'N/A';
-            detailsElems.yrsec.textContent = `${data.borrower.year_level ?? 'N/A'}${data.borrower.section ?? ''}`;
-            detailsElems.course.textContent = data.borrower.course || 'N/A';
+            
+            if (USER_ROLE === 'student') {
+                if (detailsElems.yrsec) detailsElems.yrsec.textContent = `${data.borrower.year_level ?? 'N/A'}${data.borrower.section ?? ''}`;
+                detailsElems.course.textContent = data.borrower.course || 'N/A';
+                if (detailsElems.labelId) detailsElems.labelId.textContent = 'Student Number:';
+                if (detailsElems.labelCourse) detailsElems.labelCourse.textContent = 'Course:';
+            } else if (USER_ROLE === 'faculty') {
+                if (detailsElems.rowYearSec) detailsElems.rowYearSec.classList.add('hidden');
+                detailsElems.course.textContent = data.borrower.department || 'N/A';
+                if (detailsElems.labelId) detailsElems.labelId.textContent = 'Faculty ID:';
+                if (detailsElems.labelCourse) detailsElems.labelCourse.textContent = 'Department:';
+            } else if (USER_ROLE === 'staff') {
+                if (detailsElems.rowYearSec) detailsElems.rowYearSec.classList.add('hidden');
+                detailsElems.course.textContent = data.borrower.position || 'N/A';
+                if (detailsElems.labelId) detailsElems.labelId.textContent = 'Employee ID:';
+                if (detailsElems.labelCourse) detailsElems.labelCourse.textContent = 'Position:';
+            }
         }
         detailsElems.count.textContent = data.books ? `${data.books.length} Book(s)` : '0 Book(s)';
 

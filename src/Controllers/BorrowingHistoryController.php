@@ -6,7 +6,7 @@ use App\Core\Controller;
 use App\Services\BorrowingHistoryService;
 use Exception;
 
-class StaffBorrowingHistoryController extends Controller
+class BorrowingHistoryController extends Controller
 {
     private BorrowingHistoryService $historyService;
 
@@ -29,15 +29,23 @@ class StaffBorrowingHistoryController extends Controller
         try {
             $userId = $_SESSION['user_data']['user_id'] ?? null;
             if (!$userId) throw new Exception('Unauthorized', 401);
+            
+            $role = strtolower($_SESSION['role'] ?? 'guest');
 
             $page = (int)($_GET['page'] ?? 1);
             $limit = (int)($_GET['limit'] ?? 5);
             $offset = ($page - 1) * $limit;
 
-            $result = $this->historyService->getOtherHistory('staff', $userId, $limit, $offset);
+            if ($role === 'student') {
+                $result = $this->historyService->getStudentHistory($userId, $limit, $offset);
+            } else {
+                $result = $this->historyService->getOtherHistory($role, $userId, $limit, $offset);
+            }
+
             $totalPages = ceil($result['total'] / $limit);
 
             return $this->jsonResponse([
+                'success' => true,
                 'borrowingHistory' => $result['history'],
                 'totalPages' => $totalPages,
                 'currentPage' => $page,
@@ -53,9 +61,19 @@ class StaffBorrowingHistoryController extends Controller
         try {
             $userId = $_SESSION['user_data']['user_id'] ?? null;
             if (!$userId) throw new Exception('Unauthorized', 401);
+            
+            $role = strtolower($_SESSION['role'] ?? 'guest');
 
-            $stats = $this->historyService->getOtherStats('staff', $userId);
-            return $this->jsonResponse(['stats' => $stats]);
+            if ($role === 'student') {
+                $stats = $this->historyService->getStudentStats($userId);
+            } else {
+                $stats = $this->historyService->getOtherStats($role, $userId);
+            }
+
+            return $this->jsonResponse([
+                'success' => true,
+                'stats' => $stats
+            ]);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage(), $e->getCode() ?: 500);
         }

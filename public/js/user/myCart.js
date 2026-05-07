@@ -3,7 +3,7 @@ let checkedMap = {};
 
 async function loadCart() {
     try {
-        const res = await fetch("api/staff/cart/json");
+        const res = await fetch("api/cart/json");
         if (!res.ok) throw new Error("Failed to load cart");
         cart = await res.json();
         renderCart();
@@ -64,7 +64,7 @@ async function checkoutCart() {
     });
 
     try {
-        const res = await fetch("api/staff/cart/checkout", {
+        const res = await fetch("api/cart/checkout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ cart_ids: selectedIds })
@@ -303,7 +303,7 @@ async function clearCart() {
     });
 
     try {
-        const res = await fetch("api/staff/cart/clear", {
+        const res = await fetch("api/cart/clear", {
             method: "POST"
         });
         await new Promise(r => setTimeout(r, 300)); // Simulate delay
@@ -424,7 +424,7 @@ async function removeFromCart(cartId) {
 
 
     try {
-        const res = await fetch(`api/staff/cart/remove/${cartId}`, {
+        const res = await fetch(`api/cart/remove/${cartId}`, {
             method: "POST"
         });
         await new Promise(r => setTimeout(r, 300)); // Simulate delay

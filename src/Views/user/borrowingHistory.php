@@ -57,7 +57,5 @@
     <div id="paginationContainer" class="pagination-wrapper text-center mt-8"></div>
 </div>
 
-<script>
-    const CURRENT_STUDENT_ID = <?= $_SESSION['user_data']['student_id'] ?? 0 ?>;
-</script>
+<script>const CURRENT_STUDENT_ID = <?= $_SESSION['user_data']['student_id'] ?? 0 ?>;</script>
 <script src="<?= BASE_URL ?>/js/user/borrowingHistory.js" defer></script>

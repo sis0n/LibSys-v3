@@ -4,15 +4,23 @@ namespace App\Services;
 
 use App\Repositories\CartRepository;
 use App\Repositories\TicketRepository;
+use App\Repositories\LibraryPolicyRepository;
+use App\Repositories\UserRepository;
 use Exception;
 
 class CartService
 {
     private CartRepository $cartRepo;
+    private TicketRepository $ticketRepo;
+    private LibraryPolicyRepository $policyRepo;
+    private UserRepository $userRepo;
 
     public function __construct()
     {
         $this->cartRepo = new CartRepository();
+        $this->ticketRepo = new TicketRepository();
+        $this->policyRepo = new LibraryPolicyRepository();
+        $this->userRepo = new UserRepository();
     }
 
     /**
@@ -28,39 +36,28 @@ class CartService
      */
     public function addToCart(int $userId, int $bookId, string $role = 'student'): array
     {
-        $ticketRepo = new \App\Repositories\TicketRepository();
-        $policyRepo = new \App\Repositories\LibraryPolicyRepository();
-        $userRepo = new \App\Repositories\UserRepository();
-
-        // 1. Get User Data (specifically campus_id)
-        $user = $userRepo->findById($userId);
+        $user = $this->userRepo->findById($userId);
         if (!$user) throw new Exception("User not found.");
         $campusId = $user['campus_id'] ?? null;
         if (!$campusId) throw new Exception("User campus not identified.");
 
-        // 2. Get Library Policy for this role and campus
-        $policy = $policyRepo->getPolicyByRole($role, $campusId);
+        $policy = $this->policyRepo->getPolicyByRole($role, $campusId);
         if (!$policy) {
-            // Fallback or default if no policy is set yet
             $maxBooks = 5; 
         } else {
             $maxBooks = (int)$policy['max_books'];
         }
 
-        // 3. Count Active Borrowed Items (Pending, Borrowed, Overdue)
-        $activeBorrowedCount = $ticketRepo->countActiveBorrowedItems($userId);
+        $activeBorrowedCount = $this->ticketRepo->countActiveBorrowedItems($userId);
 
-        // 4. Count Current Cart Items
         $currentCartCount = $this->cartRepo->countCartItems($userId);
 
-        // 5. Total potential borrowings
         $totalPotential = $activeBorrowedCount + $currentCartCount;
 
         if ($totalPotential >= $maxBooks) {
             throw new Exception("Borrowing limit reached. Your limit is {$maxBooks} books (including current borrowings and cart items).");
         }
 
-        // 6. Check if already in cart
         if ($this->cartRepo->isBookInCart($userId, $bookId)) {
             return [
                 "success" => false,
@@ -102,52 +99,55 @@ class CartService
             throw new Exception("No items selected for checkout.");
         }
 
-        $ticketRepo = new TicketRepository();
-        
         $roleId = null;
         $roleColumn = '';
 
         if ($role === 'student') {
-            $roleId = $ticketRepo->getStudentIdByUserId($userId);
+            $roleId = $this->ticketRepo->getStudentIdByUserId($userId);
             $roleColumn = 'student_id';
             if (!$roleId) throw new Exception("Student record not found.");
             
-            // Check Profile Completion (Student only for now as per requirement or keep it for all)
-            $profileStatus = $ticketRepo->checkProfileCompletion($roleId);
+            $profileStatus = $this->ticketRepo->checkProfileCompletion($roleId);
             if (!$profileStatus['complete']) {
                 throw new Exception($profileStatus['message']);
             }
         } elseif ($role === 'faculty') {
-            $roleId = $ticketRepo->getFacultyIdByUserId($userId);
+            $roleId = $this->ticketRepo->getFacultyIdByUserId($userId);
             $roleColumn = 'faculty_id';
             if (!$roleId) throw new Exception("Faculty record not found.");
+
+            $profileStatus = $this->ticketRepo->checkFacultyProfileCompletion($roleId);
+            if (!$profileStatus['complete']) {
+                throw new Exception($profileStatus['message']);
+            }
         } elseif ($role === 'staff') {
-            $roleId = $ticketRepo->getStaffIdByUserId($userId);
+            $roleId = $this->ticketRepo->getStaffIdByUserId($userId);
             $roleColumn = 'staff_id';
             if (!$roleId) throw new Exception("Staff record not found.");
+
+            $profileStatus = $this->ticketRepo->checkStaffProfileCompletion($roleId);
+            if (!$profileStatus['complete']) {
+                throw new Exception($profileStatus['message']);
+            }
         } else {
             throw new Exception("Invalid role for checkout.");
         }
 
-        // 3. Get Cart Items Details
-        $items = $ticketRepo->getCartItemsByIds($userId, $cartIds);
+        $items = $this->ticketRepo->getCartItemsByIds($userId, $cartIds);
         if (empty($items)) {
             throw new Exception("Selected items not found in your cart.");
         }
 
         $bookIds = array_column($items, 'book_id');
 
-        // 4. Check Books Availability
-        $unavailableBooks = $ticketRepo->areBooksAvailable($bookIds);
+        $unavailableBooks = $this->ticketRepo->areBooksAvailable($bookIds);
         if (!empty($unavailableBooks)) {
             $titles = array_column($unavailableBooks, 'title');
             throw new Exception("Some books are no longer available: " . implode(', ', $titles));
         }
 
-        // 5. Generate Transaction Code
         $transactionCode = strtoupper(bin2hex(random_bytes(6)));
 
-        // 6. Generate QR Code
         $qrPath = ROOT_PATH . "/public/storage/uploads/qrcodes/" . $transactionCode . ".svg";
         $qrDir = dirname($qrPath);
         if (!is_dir($qrDir)) {
@@ -163,14 +163,17 @@ class CartService
             throw new Exception("Failed to generate QR code: " . $e->getMessage());
         }
 
-        // 7. Create Database Transaction
         try {
-            $ticketRepo->beginTransaction();
+            $this->ticketRepo->beginTransaction();
 
-            // Set due date (7 days from now)
-            $dueDate = date('Y-m-d H:i:s', strtotime('+7 days'));
+            $user = $this->userRepo->findById($userId);
+            $campusId = $user['campus_id'] ?? 1;
+            $policy = $this->policyRepo->getPolicyByRole($role, $campusId);
+            $durationDays = $policy ? (int)$policy['borrow_duration_days'] : 7;
 
-            $transactionId = $ticketRepo->createPendingTransaction(
+            $dueDate = date('Y-m-d H:i:s', strtotime("+{$durationDays} days"));
+
+            $transactionId = $this->ticketRepo->createPendingTransaction(
                 $roleId,
                 $transactionCode,
                 $dueDate,
@@ -178,17 +181,15 @@ class CartService
                 $roleColumn
             );
 
-            $ticketRepo->addTransactionItems($transactionId, $items);
+            $this->ticketRepo->addTransactionItems($transactionId, $items);
             
-            // Set books to pending availability
-            $ticketRepo->setBooksAvailability($bookIds, 'pending');
+            $this->ticketRepo->setBooksAvailability($bookIds, 'pending');
 
-            // Clear selected items from cart
-            $ticketRepo->removeCartItemsByIds($userId, $cartIds);
+            $this->ticketRepo->removeCartItemsByIds($userId, $cartIds);
 
-            $ticketRepo->commit();
+            $this->ticketRepo->commit();
         } catch (Exception $e) {
-            $ticketRepo->rollback();
+            $this->ticketRepo->rollback();
             if (file_exists($qrPath)) unlink($qrPath);
             throw $e;
         }
